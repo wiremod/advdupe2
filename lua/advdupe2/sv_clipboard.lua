@@ -787,7 +787,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			valid = MakeProp(Player, unpack(ArgList)) //Create prop_physics like this because if the model doesn't exist it will cause
 		elseif(AdvDupe2.duplicator.WhiteList[EntTable.Class] || (EntTable.BuildDupeInfo.IsNPC && ((tobool(GetConVarString("AdvDupe2_AllowNPCPasting")) && string.sub(EntTable.Class, 1, 4)=="npc_") || SinglePlayer())))then
 			//Create sents using their spawn function with the arguments we stored earlier
-			sent = true
+			/*sent = true
 
 			if(!EntTable.BuildDupeInfo.IsVehicle || !EntTable.BuildDupeInfo.IsNPC || EntTable.Class!="prop_ragdoll")then	//These three are auto done
 				sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
@@ -796,7 +796,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			if(!sent)then
 				print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 				return nil
-			end
+			end*/
 			
 			status,valid = pcall(  EntityClass.Func, Player, unpack(ArgList) )
 		else
