@@ -92,21 +92,23 @@ local function CopyEntTable( Ent, Offset )
 	Tab.PhysicsObjects = {}
 
 	-- Physics Objects
-	local iNumPhysObjects = Ent:GetPhysicsObjectCount()
-	local PhysObj
-	
-	for Bone = 0, iNumPhysObjects-1 do 
-		PhysObj = Ent:GetPhysicsObjectNum( Bone )
-		if PhysObj!=nil then
-			Tab.PhysicsObjects[ Bone ] = Tab.PhysicsObjects[ Bone ] or {}
-			if(PhysObj:IsMoveable())then Tab.PhysicsObjects[ Bone ].Frozen = true end
-			PhysObj:EnableMotion(false)
-			Tab.PhysicsObjects[ Bone ].Pos = PhysObj:GetPos() - Tab.Pos
-			Tab.PhysicsObjects[ Bone ].Angle = PhysObj:GetAngle()
+	//if(IsValid(Ent:GetPhysicsObject()))then
+		local iNumPhysObjects = Ent:GetPhysicsObjectCount()
+		local PhysObj
+		
+		for Bone = 0, iNumPhysObjects-1 do 
+			PhysObj = Ent:GetPhysicsObjectNum( Bone )
+			if PhysObj!=nil then
+				Tab.PhysicsObjects[ Bone ] = Tab.PhysicsObjects[ Bone ] or {}
+				if(PhysObj:IsMoveable())then Tab.PhysicsObjects[ Bone ].Frozen = true end
+				PhysObj:EnableMotion(false)
+				Tab.PhysicsObjects[ Bone ].Pos = PhysObj:GetPos() - Tab.Pos
+				Tab.PhysicsObjects[ Bone ].Angle = PhysObj:GetAngle()
+			end
 		end
-	end
-	
-	Tab.PhysicsObjects[0].Pos = Tab.Pos - Offset
+		
+		Tab.PhysicsObjects[0].Pos = Tab.Pos - Offset
+	//end
 
 	Tab.Pos = nil
 	if(Tab.Class!="prop_physics")then
@@ -424,7 +426,7 @@ end
 	Params: <table>Constraint, <table> EntityList, <table> EntityTable
 	Returns: <entity> CreatedConstraint
 ]]
-local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Player)
+local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Player, DontEnable)
 
 	local Factory = duplicator.ConstraintType[ Constraint.Type ]
 
@@ -461,6 +463,9 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 							end		
 							return
 						else	
+							if(IsValid(Val:GetPhysicsObject()))then
+								Val:GetPhysicsObject():EnableMotion(false)
+							end
 							--Important for perfect duplication
 							--Get which entity is which so we can reposition them before constraining
 							if(Key== "Ent" || Key == "Ent1")then
@@ -520,7 +525,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	if(Constraint.BuildDupeInfo)then
 						
 		if second ~= nil and not second:IsWorld() and Constraint.BuildDupeInfo.EntityPos ~= nil then
-			ReEnableSecond = second:GetPhysicsObject():IsMoveable()
+			if(!DontEnable)then ReEnableSecond = second:GetPhysicsObject():IsMoveable() end
 			second:GetPhysicsObject():EnableMotion(false)
 			second:SetPos(first:GetPos()-Constraint.BuildDupeInfo.EntityPos)
 			if(Constraint.BuildDupeInfo.Bone2) then
@@ -533,7 +538,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 						
 		if first ~= nil and Constraint.BuildDupeInfo.Ent1Ang ~= nil then
-			ReEnableFirst = first:GetPhysicsObject():IsMoveable()
+			if(!DontEnable)then ReEnableFirst = first:GetPhysicsObject():IsMoveable() end
 			first:GetPhysicsObject():EnableMotion(false)
 			first:SetAngles(Constraint.BuildDupeInfo.Ent1Ang)
 			if(Constraint.BuildDupeInfo.Bone1) then
@@ -556,7 +561,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	
 	local Ent 
 	local status = pcall( function() Ent = Factory.Func( unpack(Args) ) end )
-	if not status then 
+	if not status or not Ent then 
 		if(Player)then
 			AdvDupe2.Notify(ply, "ERROR, Failed to create "..Constraint.Type.." Constraint!", NOTIFY_ERROR)
 		else
@@ -564,7 +569,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 		return 
 	end
-	
+
 	Ent.BuildDupeInfo = table.Copy(Constraint.BuildDupeInfo)
 	
 	//Move the entities back after constraining them
@@ -688,7 +693,7 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	Data.Pos = Pos
 	Data.Angle = Ang
 	Data.Model = Model
-
+	Data.Frozen = true
 	// Make sure this is allowed
 	if( Player )then
 		if ( !gamemode.Call( "PlayerSpawnProp", Player, Model ) ) then return false end
@@ -1011,27 +1016,29 @@ local function AdvDupe2_Spawn()
 				v.BuildDupeInfo.AngleReset = v.Angle
 			end
 
-			//if(v.SavedParentIdx)then v.BuildDupeInfo.DupeParentID = v.SavedParentIdx  end
-			Queue.CreatedEntities[k] = CreateEntityFromTable(v, Queue.Player)
+			//Queue.CreatedEntities[k] = CreateEntityFromTable(v, Queue.Player)
+			local Ent = CreateEntityFromTable(v, Queue.Player)
 			
-			if Queue.CreatedEntities[ k ] then
-				Queue.Player:AddCleanup( "AdvDupe2", Queue.CreatedEntities[ k ] )
-				Queue.CreatedEntities[ k ].BoneMods = table.Copy( v.BoneMods )
-				Queue.CreatedEntities[ k ].EntityMods = table.Copy( v.EntityMods )
-				Queue.CreatedEntities[ k ].PhysicsObjects = table.Copy( v.PhysicsObjects )
-				if(v.CollisionGroup)then Queue.CreatedEntities[ k ]:SetCollisionGroup(v.CollisionGroup) end
-				duplicator.ApplyEntityModifiers ( Queue.Player, Queue.CreatedEntities[ k ] )
-				duplicator.ApplyBoneModifiers ( Queue.Player, Queue.CreatedEntities[ k ] )
-				Queue.CreatedEntities[k]:SetNotSolid(true)
-			elseif(Queue.CreatedEntities[ k ]==false)then
-				Queue.CreatedEntities[ k ] = nil
+			if Ent then
+				Queue.Player:AddCleanup( "AdvDupe2", Ent )
+				Ent.BoneMods = table.Copy( v.BoneMods )
+				Ent.EntityMods = table.Copy( v.EntityMods )
+				Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
+				if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
+				duplicator.ApplyEntityModifiers ( Queue.Player, Ent )
+				duplicator.ApplyBoneModifiers ( Queue.Player, Ent )
+				if(IsValid(Ent:GetPhysicsObject()))then Ent:GetPhysicsObject():EnableMotion(false) end
+				Ent:SetNotSolid(true)
+			elseif(Ent==false)then
+				Ent = nil
 				Queue.Entity = false
 				Queue.Constraint = true
 				Queue.Current = 1
 				Queue.ConstraintList = {}
 			else
-				Queue.CreatedEntities[ k ] = nil
+				Ent = nil
 			end
+			Queue.CreatedEntities[ k ] = Ent
 			
 			local perc = math.floor((Queue.Percent*Queue.Current)*100)
 			AdvDupe2.UpdateProgressBar(Queue.Player,perc)
@@ -1056,7 +1063,7 @@ local function AdvDupe2_Spawn()
 				end
 				if(!Queue.ConstraintList[Queue.Current])then Queue.Current = Queue.Current+1 return end
 				
-				local Entity = CreateConstraintFromTable( Queue.ConstraintList[Queue.Current], Queue.CreatedEntities, Queue.EntityList, Queue.Player )
+				local Entity = CreateConstraintFromTable( Queue.ConstraintList[Queue.Current], Queue.CreatedEntities, Queue.EntityList, Queue.Player, true )
 				
 				if IsValid(Entity) then
 					table.insert( Queue.CreatedConstraints, Entity )
@@ -1108,7 +1115,7 @@ local function AdvDupe2_Spawn()
 									end
 								end
 							end
-							if(edit)then
+							if(edit && IsValid(v:GetPhysicsObject()))then
 								v:SetCollisionGroup(COLLISION_GROUP_WORLD)
 								v:GetPhysicsObject():EnableMotion(false)
 								v:GetPhysicsObject():Sleep()
