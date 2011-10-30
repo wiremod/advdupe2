@@ -330,7 +330,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -764,7 +764,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			if ( Key == "ang" || Key == "Ang" || Key == "angle" ) then Key = "Angle" end
 			if ( Key == "model" ) then Key = "Model" end
 			if ( Key == "VehicleTable" )then	//Exploit fix, not sure if its still an exploit
-				EntTable[Key] = {vehiclescript=EntTable[Key].vehiclescript, limitview=EntTable[Key].limitview}
+				EntTable[Key]["KeyValues"] = {vehiclescript=EntTable[Key]["KeyValues"] .vehiclescript, limitview=EntTable[Key]["KeyValues"] .limitview}
 			end
 			Arg = EntTable[ Key ]
 			
