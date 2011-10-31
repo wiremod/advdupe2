@@ -404,9 +404,14 @@ local invcodes = {[2]={[0]="\254"},[5]={[22]="\1",[11]="\2"},[6]={[13]="\7",[35]
 
 local function huffmanDecode(encoded)
 	
-	local encoded_length = #encoded+1
-	local h1,h2,h3 = byte(encoded, 1, 3)	
+	local h1,h2,h3 = byte(encoded, 1, 3)
+	
+	if (not h3) or (#encoded < 4) then
+		error("invalid input")
+	end
+	
 	local original_length = (h3<<16) | (h2<<8) | h1
+	local encoded_length = #encoded+1
 	local decoded = {}
 	local decoded_length = 0
 	local buffer = 0
@@ -479,6 +484,9 @@ end
 
 local function invEscapeSub(str)
 	local escseq,body = match(str,"^(.-)\n(.-)$")
+	
+	if not escseq then error("invalid input") end
+	
 	return gsub(body,escseq,"\26")
 end
 
@@ -576,7 +584,10 @@ local function deserializeAD1(dupestring)
 		--Restore table references
 		for id,tbls in pairs( subtables ) do
 			for _,tbl in pairs( tbls ) do
-				merge( tbl, tables[id] )
+				if not tables[id] then error("attempt to reference a nonexistent table") end
+				for k,v in pairs(tables[id]) do
+					tbl[k] = v
+				end
 			end
 		end
 		
