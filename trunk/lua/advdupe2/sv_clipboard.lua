@@ -318,7 +318,7 @@ AdvDupe2.duplicator.Copy = Copy
 local function LoadSents()
 	AdvDupe2.duplicator.EntityList = {prop_physics=true, prop_ragdoll=true, prop_vehicle_prisoner_pod=true, prop_vehicle_airboat=true, prop_vehicle_jeep=true, prop_vehicle_jeep_old=true, phys_magnet=true, prop_effect=true}
 	AdvDupe2.duplicator.WhiteList = {prop_physics=true, prop_ragdoll=true, prop_vehicle_prisoner_pod=true, prop_vehicle_airboat=true, prop_vehicle_jeep=true, prop_vehicle_jeep_old=true, phys_magnet=true, prop_effect=true}
-	local exclusion = {prop_effect= true, gmod_player_start=true, gmod_ghost=true, lua_run=true}//, gmod_wire_hologram=true}
+	local exclusion = {prop_effect= true, gmod_player_start=true, gmod_ghost=true, lua_run=true, gmod_wire_hologram=true}
 	for _,v in pairs(scripted_ents.GetList( )) do
 		if _:sub(1,4) == "base" then continue end
 		if _:sub(1,4) == "info" then continue end
@@ -332,7 +332,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
