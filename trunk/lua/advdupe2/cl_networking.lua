@@ -10,6 +10,8 @@
 
 include "nullesc.lua"
 
+AdvDupe2.NetFile = ""
+
 local function CheckFileNameCl(path)
 	if file.Exists(path) then
 		path = string.sub(path, 1, #path-4)

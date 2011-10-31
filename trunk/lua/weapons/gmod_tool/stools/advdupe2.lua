@@ -917,51 +917,53 @@ if SERVER then
 
 			if(!IsValid(ply))then return end
 			
+			if not success then 
+				AdvDupe2.Notify(ply,"Could not open "..dupe,NOTIFY_ERROR)
+				return
+			end
+			
 			if(!SinglePlayer())then
 				if(#dupe["Constraints"]>tonumber(GetConVarString("AdvDupe2_MaxConstraints")))then
 					AdvDupe2.Notify(ply,"Amount of constraints is greater than "..GetConVarString("AdvDupe2_MaxConstraints"),NOTIFY_ERROR)
 					return false
 				end
 				
+				local entcount = table.Count(dupe["Entities"])
+				
 				if(tonumber(GetConVarString("AdvDupe2_MaxEntities"))>0)then
-					if(table.Count(dupe["Entities"])>tonumber(GetConVarString("AdvDupe2_MaxEntities")))then
+					if(entcount>tonumber(GetConVarString("AdvDupe2_MaxEntities")))then
 						AdvDupe2.Notify(ply,"Amount of entities is greater than "..GetConVarString("AdvDupe2_MaxEntities"),NOTIFY_ERROR)
 						return false
 					end
 				else
-					if(table.Count(dupe["Entities"])>tonumber(GetConVarString("sbox_maxprops")))then
+					if(entcount>tonumber(GetConVarString("sbox_maxprops")))then
 						AdvDupe2.Notify(ply,"Amount of entities is greater than "..GetConVarString("sbox_maxprops"),NOTIFY_ERROR)
 						return false
 					end
 				end
 			end
-			
-			if not success then 
-				AdvDupe2.Notify(ply,"Could not open "..dupe,NOTIFY_ERROR)
-				return
-			end
 
 			ply.AdvDupe2.Entities = {}
 			ply.AdvDupe2.Constraints = {}
 			ply.AdvDupe2.HeadEnt={}
-			local time = ""
-			local desc = ""
-			local date = ""
-			local creator = ""
+			local time
+			local desc
+			local date
+			local creator
 			
 			if(info.ad1)then
-				time = moreinfo["Time"]
-				desc = info["Description"]
-				date = info["Date"]
-				creator = info["Creator"]
+				time = moreinfo["Time"] or ""
+				desc = info["Description"] or ""
+				date = info["Date"] or ""
+				creator = info["Creator"] or ""
 				
 				ply.AdvDupe2.HeadEnt.Index = tonumber(moreinfo.Head)
-				local startpos = string.Explode(",", moreinfo.StartPos)
-				ply.AdvDupe2.HeadEnt.Pos = Vector(tonumber(startpos[1]), tonumber(startpos[2]), tonumber(startpos[3]))
-				ply.AdvDupe2.HeadEnt.Z = tonumber(string.Explode(",", moreinfo.HoldPos)[3])*-1
-				local z = ply.AdvDupe2.HeadEnt.Z
-				local Pos = nil
-				local Ang = nil
+				local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
+				ply.AdvDupe2.HeadEnt.Pos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+				local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+				ply.AdvDupe2.HeadEnt.Z = z
+				local Pos
+				local Ang
 				for k,v in pairs(dupe["Entities"])do
 					Pos = nil
 					Ang = nil
