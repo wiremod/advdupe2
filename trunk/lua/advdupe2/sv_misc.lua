@@ -19,11 +19,12 @@ local function SavePositions( Constraint )
 
 	if IsValid(Constraint) then
 	
+		Constraint.Identity = Constraint:GetCreationID()
+
 		if Constraint.BuildDupeInfo then return end
 		
 		if not Constraint.BuildDupeInfo then Constraint.BuildDupeInfo = {} end
 			
-		Constraint.Identity = Constraint:GetCreationID()
 		local Ent1
 		local Ent2
 		if IsValid(Constraint.Ent) then
