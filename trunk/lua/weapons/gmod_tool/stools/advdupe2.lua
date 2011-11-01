@@ -927,7 +927,7 @@ if SERVER then
 					AdvDupe2.Notify(ply,"Amount of constraints is greater than "..GetConVarString("AdvDupe2_MaxConstraints"),NOTIFY_ERROR)
 					return false
 				end
-				
+				/*
 				local entcount = table.Count(dupe["Entities"])
 				
 				if(tonumber(GetConVarString("AdvDupe2_MaxEntities"))>0)then
@@ -940,7 +940,7 @@ if SERVER then
 						AdvDupe2.Notify(ply,"Amount of entities is greater than "..GetConVarString("sbox_maxprops"),NOTIFY_ERROR)
 						return false
 					end
-				end
+				end*/
 			end
 
 			ply.AdvDupe2.Entities = {}
@@ -998,7 +998,7 @@ if SERVER then
 				ply.AdvDupe2.HeadEnt = dupe["HeadEnt"]
 			end
 			
-			//ply.AdvDupe2.Name = name[#name]
+			ply.AdvDupe2.Name = name
 			
 			umsg.Start("AdvDupe2_SetDupeInfo", ply)
 				umsg.String(name)
