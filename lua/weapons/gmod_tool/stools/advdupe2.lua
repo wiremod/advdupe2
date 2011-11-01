@@ -48,7 +48,7 @@ function TOOL:LeftClick( trace )
 	if(tobool(ply:GetInfo("advdupe2_original_origin")))then
 		origin = ply.AdvDupe2.HeadEnt.Pos
 	end
-	AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin, tobool(ply:GetInfo("advdupe2_paste_constraints")), tobool(ply:GetInfo("advdupe2_paste_parents")), tobool(ply:GetInfo("advdupe2_paste_disparents")))
+	AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin, tobool(ply:GetInfo("advdupe2_paste_constraints")), tobool(ply:GetInfo("advdupe2_paste_parents")), tobool(ply:GetInfo("advdupe2_paste_disparents")),tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
 	//AdvDupe2.duplicator.Paste(ply, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), ply.AdvDupe2.Position, ply.AdvDupe2.Angle, nil, true)
 	return true
 end
@@ -1443,6 +1443,7 @@ if CLIENT then
 	
 	//Experimental
 	CreateClientConVar("advdupe2_paste_disparents", 0, false, true)
+	CreateClientConVar("advdupe2_paste_protectoveride", 0, false, true)
 	
 	local function BuildCPanel()
 		local CPanel = GetControlPanel("advdupe2")
@@ -1724,6 +1725,12 @@ if CLIENT then
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable parented props physics interaction" )
 			Check:SetConVar( "advdupe2_paste_disparents" ) 
+			Check:SetValue( 0 )
+			CategoryContent4:AddItem(Check)
+			
+			Check = vgui.Create("DCheckBoxLabel")
+			Check:SetText( "Disable Dupe Spawn Protection" )
+			Check:SetConVar( "advdupe2_paste_protectoveride" ) 
 			Check:SetValue( 0 )
 			CategoryContent4:AddItem(Check)
 	end
