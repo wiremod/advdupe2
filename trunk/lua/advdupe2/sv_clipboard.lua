@@ -619,9 +619,9 @@ local function DoGenericPhysics( Entity, data, Player )
 		if ( IsValid(Phys) ) then	
 			Phys:SetPos( Args.Pos )
 			Phys:SetAngle( Args.Angle )
-			if ( Args.Frozen == true ) then 
+			//if ( Args.Frozen == true ) then 
 				Phys:EnableMotion( false ) 
-			end		
+			//end		
 			Player:AddFrozenPhysicsObject( Entity, Phys )
 		end	
 	end
@@ -731,7 +731,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 	end
 	
-	//local sent = false
+	local sent = false
 	local status, valid
 	local GENERIC = false
 	// This class is unregistered. Instead of failing try using a generic
@@ -1115,7 +1115,7 @@ local function AdvDupe2_Spawn()
 					local phys
 					local edit
 					for _,v in pairs( Queue.CreatedEntities ) do
-						//if(!IsValid(v))then v = nil continue end
+						if(!IsValid(v))then v = nil continue end
 						edit = true
 						if(Queue.EntityList[_].BuildDupeInfo.DupeParentID!=nil && Queue.Parenting)then
 							v:SetParent(Queue.CreatedEntities[Queue.EntityList[_].BuildDupeInfo.DupeParentID])
@@ -1182,6 +1182,7 @@ local function AdvDupe2_Spawn()
 						
 						undo.AddEntity( v )
 					end
+					undo.SetCustomUndoText("Undone "..(Queue.Name or "Advanced Duplication"))
 					undo.SetPlayer( Queue.Player )
 				undo.Finish()
 
@@ -1287,6 +1288,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 	end
 
 	Queue.Current = 1
+	Queue.Name = Player.AdvDupe2.Name
 	Queue.Entity = true
 	Queue.Constraint = false
 	Queue.Parenting = Parenting
