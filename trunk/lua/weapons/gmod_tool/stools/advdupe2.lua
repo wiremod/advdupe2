@@ -897,8 +897,7 @@ if SERVER then
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
 		
 		local path, area = args[1], tonumber(args[2])
-		local name = string.Explode("/", args[1])
-		name = name[#name]
+		local name = args[1]:match("[^/]+$")
 		
 		if(area==0)then
 			data = ply:ReadAdvDupe2File(path)
@@ -1208,10 +1207,7 @@ if SERVER then
 			Path = "adv_duplicator/"..ply:SteamIDSafe().."/"..Path
 		end
 		
-		local OldName = string.Explode("/", Path)
-		OldName = OldName[#OldName]
-		
-		local NewPath = string.sub(Path, 1, -#OldName-1)..NewName
+		local NewPath = string.sub(Path, 1, -#Path:match("[^/]+$")-1)..NewName
 		
 		if file.Exists(NewPath..".txt") then
 			local found = false
@@ -1229,8 +1225,7 @@ if SERVER then
 		
 		if(file.Exists(NewPath..".txt"))then
 			file.Delete(Path..".txt")
-			NewName = string.Explode("/", NewPath)
-			RenameNode(ply, NewName[#NewName])
+			RenameNode(ply, NewPath:match("[^/]+$"))
 		else
 			AdvDupe2.Notify(ply, "File rename failed.", NOTIFY_ERROR)
 		end
@@ -1252,11 +1247,8 @@ if SERVER then
 		if(area1==nil || area2==nil)then return end
 		if((area1==2 && area2!=2) || (area2==2 && area1!=2))then return end
 		
-		local name = string.Explode("/", path1)
-		name = name[#name]
-		
 		path1 = ply:SteamIDSafe().."/"..path1
-		path2 = ply:SteamIDSafe().."/"..path2.."/"..name
+		path2 = ply:SteamIDSafe().."/"..path2.."/"..path1:match("[^/]+$")
 
 		if(area1==0)then
 			path1 = AdvDupe2.DataFolder.."/"..path1
@@ -1296,10 +1288,9 @@ if SERVER then
 		file.Write(path2..".txt", File)
 		if(file.Exists(path2..".txt"))then
 			file.Delete(path1..".txt")
-			local name = string.Explode("/", path2)
 			
 			umsg.Start("AdvDupe2_MoveNode", ply)
-				umsg.String(name[#name])
+				umsg.String(path2:match("[^/]+$"))
 			umsg.End()
 		else
 			AdvDupe2.Notify(ply, "File could not be moved.", NOTIFY_ERROR)
