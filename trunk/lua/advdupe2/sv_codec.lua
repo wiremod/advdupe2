@@ -342,6 +342,11 @@ local function lzwDecode(encoded)
 		if firstbyte > 252 then --now we know it's a length indicator for a multibyte index
 			index = 0
 			firstbyte = 256 - firstbyte
+			
+			--[[if pos+firstbyte > encoded_length then	--will test for performance impact
+				error("expected index got EOF")
+			end]]
+			
 			for i = pos+firstbyte, pos+1, -1 do
 				index = (index << 8) | byte(encoded,i)
 			end
@@ -553,7 +558,7 @@ local function deserializeAD1(dupestring)
 		subtables = {}
 		local head
 		
-		for id,chunk in block:gmatch('([A-H0-9]+){(.-)}') do
+		for id,chunk in block:gmatch('(%w+){(.-)}') do
 			
 			--check if this table is the trunk
 			if byte(id) == 72 then
