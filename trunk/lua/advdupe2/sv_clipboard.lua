@@ -78,8 +78,6 @@ local function CopyEntTable( Ent, Offset )
 	Tab.Model 			= Ent:GetModel()
 	Tab.Skin 			= Ent:GetSkin()
 	if(Tab.Skin==0)then	Tab.Skin = nil end
-	Tab.CollisionGroup 	= Ent:GetCollisionGroup()
-	if(Tab.CollisionGroup==0)then Tab.CollisionGroup = nil end
 	
 	if(Tab.Class == "gmod_cameraprop")then
 		Tab.key = Ent:GetNetworkedInt("key")
@@ -234,7 +232,6 @@ local function CopyConstraintTable( Const, Offset )
 			end
 			
 			Constraint.Type = Const.Type
-			Constraint.Identity = Const.Identity
 			if(Const.BuildDupeInfo)then Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo) end
 		end		
 
@@ -273,17 +270,10 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 	local index 
 	for k, Constraint in pairs( Ent.Constraints ) do
 		
-		/*if(!Constraint.BuildDupeInfo)then
-			Constraint.BuildDupeInfo = {}
-		end*/
+		index = Constraint:GetCreationID()
+		Constraint.Identity = index
+		print(index)
 		
-		if(!Constraint.Identity)then
-			index = Constraint:GetCreationID()
-			Constraint.Identity = Constraint:GetCreationID()
-		else	
-			index = Constraint.Identity
-		end
-
 		if ( index and !ConstraintTable[ index ] ) then
 			local ConstTable, ents = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
 			ConstraintTable[ index ] = ConstTable
@@ -332,7 +322,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -601,6 +591,41 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	if(Ent and Ent.length)then Ent.length = Constraint["length"] end //Fix for weird bug with ropes
 
 	return Ent
+end
+
+local function ApplyEntityModifiers( Player, Ent )
+	if(!Ent.EntityMods)then return end
+	
+	local status, error
+	for Type, ModFunction in pairs( duplicator.EntityModifiers ) do
+		if ( Ent.EntityMods[ Type ] ) then
+			status, error = pcall(ModFunction, Player, Ent, Ent.EntityMods[ Type ] )
+			if(!status)then
+				Player:ChatPrint('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
+			end
+		end
+	end
+
+end
+
+local function ApplyBoneModifiers( Player, Ent )
+	if(!Ent.BoneMods || !Ent.PhysicsObjects)then return end
+	
+	local status, error, PhysObject
+	for Type, ModFunction in pairs( duplicator.BoneModifiers ) do
+		for Bone, Args in pairs( Ent.PhysicsObjects ) do
+			if ( Ent.BoneMods[ Bone ] && Ent.BoneMods[ Bone ][ Type ] ) then 
+				PhysObject = Ent:GetPhysicsObjectNum( Bone )
+				if ( Ent.PhysicsObjects[ Bone ] ) then
+					status, error = pcall(ModFunction, Player, Ent, Bone, PhysObject, Ent.BoneMods[ Bone ][ Type ] )
+					if(!status)then
+						Player:ChatPrint('Error applying bone modifer, "'..tostring(Type)..'". ERROR: '..error)
+					end
+				end
+			end
+		end
+	end
+	
 end
 
 --[[
@@ -1029,15 +1054,10 @@ local function AdvDupe2_Spawn()
 				Ent.BoneMods = table.Copy( v.BoneMods )
 				Ent.EntityMods = table.Copy( v.EntityMods )
 				Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
-				if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
-				local status, error = pcall(duplicator.ApplyEntityModifiers, Queue.Player, Ent )
-				if(!status)then
-					AdvDupe2.Notify(Queue.Player, "Error applying modifiers. ERROR: "..error)
-				end
-				status, error = pcall(duplicator.ApplyBoneModifiers, Queue.Player, Ent )
-				if(!status)then
-					AdvDupe2.Notify(Queue.Player, "Error applying bone modifiers. ERROR: "..error)
-				end
+
+				ApplyEntityModifiers( Queue.Player, Ent )
+				ApplyBoneModifiers( Queue.Player, Ent )
+
 				local Phys = Ent:GetPhysicsObject()
 				if(IsValid(Phys))then Phys:EnableMotion(false) Phys:Sleep() end
 				if(!Queue.DisableProtection)then Ent:SetNotSolid(true) end

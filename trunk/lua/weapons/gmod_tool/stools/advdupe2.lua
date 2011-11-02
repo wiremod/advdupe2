@@ -111,6 +111,7 @@ end
 
 //Reset the offsets of height, pitch, yaw, and roll back to default
 function AdvDupe2.ResetOffsets(ply)
+	ply.AdvDupe2.Name = nil
 	umsg.Start("AdvDupe2_ResetOffsets", ply)
 	umsg.End()
 end
