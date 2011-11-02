@@ -18,7 +18,7 @@
 local function SavePositions( Constraint )
 
 	if IsValid(Constraint) then
-	
+
 		Constraint.Identity = Constraint:GetCreationID()
 
 		if Constraint.BuildDupeInfo then return end
@@ -68,20 +68,24 @@ local function FixMagnet(Magnet)
 end
 
 //Find out when a Constraint is created
-hook.Add( "OnEntityCreated", "AdvDupe2_SavePositions", function(entity)
+timer.Simple(0, function()
+					hook.Add( "OnEntityCreated", "AdvDupe2_SavePositions", function(entity)
 
-	if not ValidEntity( entity ) then return end
-	
-	local class = string.Explode("_",entity:GetClass())
-	if class[2] == "magnet" then
-		timer.Simple( 0, FixMagnet, entity )
-	end
-	
-	if class[1] == "phys" then
-		timer.Simple( 0, SavePositions, entity )
-	end
+						if not IsValid( entity ) then return end
+						
+						local a,b = entity:GetClass():match("^(.-)_(.+)")
 
-end )
+						if b == "magnet" then
+							timer.Simple( 0, FixMagnet, entity )
+						end
+						
+						if a == "phys" then
+							if(b=="constraintsystem")then return end
+							timer.Simple( 0, SavePositions, entity )
+						end
+
+					end )
+				end)
 
 --	Register camera entity class
 --	fixes key not being saved (Conna)
