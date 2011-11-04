@@ -923,7 +923,7 @@ if SERVER then
 			end
 			
 			if(!SinglePlayer())then
-				if(#dupe["Constraints"]>tonumber(GetConVarString("AdvDupe2_MaxConstraints")))then
+				if(tonumber(GetConVarString("AdvDupe2_MaxConstraints"))!=0 && #dupe["Constraints"]>tonumber(GetConVarString("AdvDupe2_MaxConstraints")))then
 					AdvDupe2.Notify(ply,"Amount of constraints is greater than "..GetConVarString("AdvDupe2_MaxConstraints"),NOTIFY_ERROR)
 					return false
 				end

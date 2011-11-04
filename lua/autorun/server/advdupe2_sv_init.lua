@@ -50,7 +50,7 @@ end
 
 CreateConVar("AdvDupe2_MaxFileSize", "200", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxEntities", "0", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_MaxConstraints", "300", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_MaxConstraints", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_AllowUploading", "true", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_AllowDownloading", "true", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_AllowPublicFolder", "true", {FCVAR_ARCHIVE})
