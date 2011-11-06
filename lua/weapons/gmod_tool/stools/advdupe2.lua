@@ -1127,7 +1127,7 @@ if SERVER then
 		end
 		
 		for k,v in pairs(Folders)do
-			file.TFind("Data/"..Search..v.."/*", 
+			file.TFind("data/"..Search..v.."/*", 
 				function(Search2, Folders2, Files2)
 					TFindDelete(Search2, Folders2, Files2)
 				end)
@@ -1175,7 +1175,7 @@ if SERVER then
 		end
 		
 		if(folder && file.IsDir(path))then 
-			file.TFind("Data/"..path.."/*", 
+			file.TFind("data/"..path.."/*", 
 				function(Search, Folders, Files)
 					TFindDelete(Search, Folders, Files)
 				end)
@@ -1336,7 +1336,7 @@ if SERVER then
 			if(!ply.AdvDupe2)then ply.AdvDupe2 = {} end
 			if(ply.AdvDupe2.SendFiles)then return end 
 		
-			file.TFind("Data/"..ply:GetAdvDupe2Folder().."/*", 
+			file.TFind("data/"..ply:GetAdvDupe2Folder().."/*", 
 				function(Search, Folders, Files) 
 					if(!ply.AdvDupe2)then ply.AdvDupe2 = {} end
 					ply.AdvDupe2.Folders = {}
@@ -1363,10 +1363,10 @@ if SERVER then
 						Folder.ID = ply.AdvDupe2.FolderID
 						Folder.Public = true
 						table.insert(ply.AdvDupe2.Folders, Folder)
-						file.TFind("Data/advdupe2/=Public=/*", function(Search, Folders, Files) TFind(ply, Search, Folders, Files, Folder.ID) end)
+						file.TFind("data/advdupe2/=Public=/*", function(Search, Folders, Files) TFind(ply, Search, Folders, Files, Folder.ID) end)
 					end
 					
-					file.TFind("Data/"..AD1.."/*", 
+					file.TFind("data/"..AD1.."/*", 
 						function(Search2, Folders2, Files2)
 							TFind(ply, Search2, Folders2, Files2, AD1Folder.ID) 
 						end)
@@ -1450,7 +1450,12 @@ if CLIENT then
 		List:Dock( FILL )
 		List:SetSpacing( 2 )
 		List:SetPadding( 2 )
-				
+	
+		/*local FileBrowser = vgui.Create("advdupe2_newbrowser")
+		AdvDupe2.FileBrowser = FileBrowser
+		List:AddItem(FileBrowser)
+		FileBrowser:SetSize(235,450)*/
+
 		local FileBrowser = vgui.Create("advdupe2_browser")
 		AdvDupe2.FileBrowser = FileBrowser
 		List:AddItem(FileBrowser)
