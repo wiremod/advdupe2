@@ -360,7 +360,7 @@ local function DeleteFilesInFolders(Search, Folders, Files)
 	end
 	
 	for k,v in pairs(Folders)do
-		file.TFind("Data/"..Search..v.."/*", DeleteFilesInFolders)
+		file.TFind("data/"..Search..v.."/*", DeleteFilesInFolders)
 	end
 
 end
@@ -451,7 +451,7 @@ local function Delete(Tree, Folder, Server)
 									RunConsoleCommand("AdvDupe2_DeleteFile", path, area, "true")
 								else
 									if(area==1)then path = "=Public=/"..path end
-									path = "Data/"..AdvDupe2.DataFolder.."/"..path.."/*"
+									path = "data/"..AdvDupe2.DataFolder.."/"..path.."/*"
 									if(Node.ChildNodes)then
 										RemoveFileNodes(Node)
 									end
