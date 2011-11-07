@@ -38,10 +38,10 @@ local function CopyEntTable( Ent, Offset )
 	end
 
 	local EntityClass = duplicator.FindEntityClass( Ent:GetClass() )
-
-	if EntityClass then
 	
-		local EntTable = table.Copy(Ent:GetTable())
+	local EntTable = table.Copy(Ent:GetTable())
+	if EntityClass then
+
 		local Arg
 		for iNumber, Key in pairs( EntityClass.Args ) do
 			-- Translate keys from old system
@@ -62,7 +62,7 @@ local function CopyEntTable( Ent, Offset )
 		end
 		
 	end	
-	
+
 	Tab.BoneMods = table.Copy( Ent.BoneMods )
 	if(Ent.EntityMods)then
 		Tab.EntityMods = Ent.EntityMods
@@ -137,6 +137,11 @@ local function CopyEntTable( Ent, Offset )
 		Tab.FlexScale = Ent:GetFlexScale()
 	else
 		Tab.Flex = nil
+	end
+	
+	if ( EntTable.CollisionGroup ) then
+		if ( !Tab.EntityMods ) then Tab.EntityMods = {} end
+		Tab.EntityMods.CollisionGroupMod = EntTable.CollisionGroup
 	end
 	
 	// Make this function on your SENT if you want to modify the
@@ -322,7 +327,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -595,7 +600,7 @@ end
 
 local function ApplyEntityModifiers( Player, Ent )
 	if(!Ent.EntityMods)then return end
-	
+	if(Ent.EntityMods["CollisionGroupMod"])then Ent:SetCollisionGroup(Ent.EntityMods["CollisionGroupMod"]) end
 	local status, error
 	for Type, ModFunction in pairs( duplicator.EntityModifiers ) do
 		if ( Ent.EntityMods[ Type ] ) then
@@ -797,9 +802,9 @@ local function CreateEntityFromTable(EntTable, Player)
 			if ( Key == "pos" || Key == "position" ) then Key = "Pos" end
 			if ( Key == "ang" || Key == "Ang" || Key == "angle" ) then Key = "Angle" end
 			if ( Key == "model" ) then Key = "Model" end
-			if ( Key == "VehicleTable" )then	//Exploit fix, not sure if its still an exploit
-				EntTable[Key]["KeyValues"] = {vehiclescript=EntTable[Key]["KeyValues"] .vehiclescript, limitview=EntTable[Key]["KeyValues"] .limitview}
-			end
+			//if ( Key == "VehicleTable" )then	//Exploit fix, not sure if its still an exploit
+			//	EntTable[Key]["KeyValues"] = {vehiclescript=EntTable[Key]["KeyValues"] .vehiclescript, limitview=EntTable[Key]["KeyValues"] .limitview}
+			//end
 			Arg = EntTable[ Key ]
 			
 			// Special keys
@@ -846,6 +851,7 @@ local function CreateEntityFromTable(EntTable, Player)
 					Player:AddFrozenPhysicsObject( valid, PhysObj )
 				end
 			end
+			if(EntTable.Skin)then valid:SetSkin(EntTable.Skin) end
 			/*if(Player)then
 				if(!valid:IsVehicle() && EntTable.Class!="prop_ragdoll" && !valid:IsNPC())then	//These three get called automatically
 					if(EntTable.Class=="prop_effect")then
