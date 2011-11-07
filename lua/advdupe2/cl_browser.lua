@@ -523,6 +523,7 @@ end
 
 function PANEL:DoClick(Node)
 	if(!Node || !Node.IsFile)then return end
+	PrintTable(self:GetTable())
 	if(CurTime()-self.LastClick<=0.25 && self.LastNode==Node)then
 		local path, area = ParsePath(GetNodePath(Node))
 		RunConsoleCommand("AdvDupe2_OpenFile", path, area)
@@ -567,7 +568,7 @@ end
 function PANEL:DoRightClick(Node)
 	if(Node==nil)then return end
 	self:SetSelectedItem(Node)
-	local parent = self:GetParent()
+	local parent = self:GetParent():GetParent()
 	local Menu = DermaMenu()
 		
 	if(SinglePlayer())then
@@ -602,7 +603,7 @@ function PANEL:DoRightClick(Node)
 			Menu:AddOption("Delete", function() Delete(self, true, false) end)
 		end
 	
-	elseif(parent.Server)then
+	elseif(parent.TabCtrl:GetActiveTab().Server)then
 
 		if(Node.IsFile)then
 			Menu:AddOption("Open", 	function() 
@@ -676,11 +677,11 @@ function PANEL:Init()
 	PANEL.Panel = self
 	self.Nodes = {}
 	self.CNodes = {}
-	self.LastClick = CurTime()
 	
 	self.TabCtrl = vgui.Create("DPropertySheet", self)
 
 	self.ServerBrw = vgui.Create("DTree")
+	self.ServerBrw.LastClick = CurTime()
 	self.ServerBrw.DoClick = self.DoClick
 	self.ServerBrw.DoRightClick = self.DoRightClick
 	if(SinglePlayer())then
