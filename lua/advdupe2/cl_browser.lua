@@ -681,9 +681,10 @@ function PANEL:Init()
 	self.ServerBrw = vgui.Create("DTree")
 	self.ServerBrw.DoClick = self.DoClick
 	self.ServerBrw.DoRightClick = self.DoRightClick
-	//if(SinglePlayer())then
-	//	self.TabCtrl:AddSheet( "Local", self.ServerBrw, "gui/silkicons/user", false, false, "Server Files" )
-	//else
+	if(SinglePlayer())then
+		local Tab = self.TabCtrl:AddSheet( "Local", self.ServerBrw, "gui/silkicons/user", false, false, "Server Files" )
+		Tab.Tab.Server = true
+	else
 		local Tab = self.TabCtrl:AddSheet( "Server", self.ServerBrw, "gui/silkicons/world", false, false, "Server Files" )
 		Tab.Tab.Server = true
 		
@@ -692,7 +693,7 @@ function PANEL:Init()
 		Tab = self.TabCtrl:AddSheet( "Client", self.ClientBrw, "gui/silkicons/user", false, false, "Client Files" )
 		Tab.Tab.Server = false
 		self:UpdateClientFiles()
-	//end
+	end
 	
 	self.Refresh = vgui.Create("DImageButton", self)
 	self.Refresh:SetMaterial( "gui/silkicons/arrow_refresh.vmt" )
