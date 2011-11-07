@@ -892,7 +892,7 @@ if SERVER then
 		end
 		
 		if(!SinglePlayer() && CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
-			AdvDupe2.Notify(ply,"Cannot open at the moment.", NOTIFY_ERROR)
+			AdvDupe2.Notify(ply,"Cannot open at the moment. Please Wait...", NOTIFY_ERROR)
 			return
 		end
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
@@ -1023,7 +1023,7 @@ if SERVER then
 		if(args[1]=="" || args[1]==nil || args[3]=="" || args[3]==nil)then return end
 
 		if(!SinglePlayer() && CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
-			AdvDupe2.Notify(ply,"Cannot save at the moment.", NOTIFY_ERROR)
+			AdvDupe2.Notify(ply,"Cannot save at the moment. Please Wait...", NOTIFY_ERROR)
 			return
 		end
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
@@ -1083,7 +1083,7 @@ if SERVER then
 	local function NewFolder(ply, cmd, args)
 	
 		if(!SinglePlayer() && CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
-			AdvDupe2.Notify(ply,"Cannot create a new folder at the moment.", NOTIFY_ERROR)
+			AdvDupe2.Notify(ply,"Cannot create a new folder at the moment.  Please Wait...", NOTIFY_ERROR)
 			return
 		end
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
@@ -1138,7 +1138,7 @@ if SERVER then
 	local function DeleteFile(ply, cmd, args)
 	
 		if(!SinglePlayer() && CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
-			AdvDupe2.Notify(ply,"Cannot delete at the moment.", NOTIFY_ERROR)
+			AdvDupe2.Notify(ply,"Cannot delete at the moment.  Please Wait...", NOTIFY_ERROR)
 			return
 		end
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
@@ -1189,7 +1189,7 @@ if SERVER then
 	local function RenameFile(ply, cmd, args)
 	
 		if(!SinglePlayer() && CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
-			AdvDupe2.Notify(ply,"Cannot rename at the moment.", NOTIFY_ERROR)
+			AdvDupe2.Notify(ply,"Cannot rename at the moment.  Please Wait...", NOTIFY_ERROR)
 			return
 		end
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
@@ -1237,7 +1237,7 @@ if SERVER then
 	local function MoveFile(ply, cmd, args)
 		
 		if(!SinglePlayer() && CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
-			AdvDupe2.Notify(ply,"Cannot move file at the moment.", NOTIFY_ERROR)
+			AdvDupe2.Notify(ply,"Cannot move file at the moment.  Please Wait...", NOTIFY_ERROR)
 			return
 		end
 		ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
@@ -1325,23 +1325,27 @@ if SERVER then
 	concommand.Add("AdvDupe2_SendFiles", function(ply, cmd, args) 
 
 			if(ply.AdvDupe2 && !SinglePlayer() && CurTime()-(ply.AdvDupe2.NextSend or 0) < 0)then 
-				AdvDupe2.Notify(ply,"Cannot update at the moment.",NOTIFY_ERROR)
+				AdvDupe2.Notify(ply,"Cannot update at the moment.  Please Wait...",NOTIFY_ERROR)
 				return 	
-			elseif(tonumber(args[1])==0)then
+			end
+			
+			if(!ply.AdvDupe2)then ply.AdvDupe2 = {} end
+			ply.AdvDupe2.SendFiles = false
+			ply.AdvDupe2.LastFile = 0
+			ply.AdvDupe2.FolderID = 0
+			ply.AdvDupe2.Folders = {}
+			ply.AdvDupe2.Files = {}
+			if(tonumber(args[1])==0)then
 				umsg.Start("AdvDupe2_ClearBrowser", ply)
 				umsg.End()
 				return
 			end 
 			
-			if(!ply.AdvDupe2)then ply.AdvDupe2 = {} end
-			if(ply.AdvDupe2.SendFiles)then return end 
-		
+
+			
 			file.TFind("data/"..ply:GetAdvDupe2Folder().."/*", 
 				function(Search, Folders, Files) 
 					if(!ply.AdvDupe2)then ply.AdvDupe2 = {} end
-					ply.AdvDupe2.Folders = {}
-					ply.AdvDupe2.Files = {}
-					ply.AdvDupe2.FolderID = 0
 					ply.AdvDupe2.NextSend = CurTime() + tonumber(GetConVarString("AdvDupe2_UpdateFilesDelay"))
 					
 					local AD1 = "adv_duplicator"
@@ -1372,8 +1376,6 @@ if SERVER then
 						end)
 					
 					TFind(ply, Search, Folders, Files, 0) 
-					ply.AdvDupe2.LastFile = 0
-					ply.AdvDupe2.SendFiles = true
 				end) 
 				
 				
@@ -1450,11 +1452,6 @@ if CLIENT then
 		List:Dock( FILL )
 		List:SetSpacing( 2 )
 		List:SetPadding( 2 )
-	
-		/*local FileBrowser = vgui.Create("advdupe2_newbrowser")
-		AdvDupe2.FileBrowser = FileBrowser
-		List:AddItem(FileBrowser)
-		FileBrowser:SetSize(235,450)*/
 
 		local FileBrowser = vgui.Create("advdupe2_browser")
 		AdvDupe2.FileBrowser = FileBrowser
