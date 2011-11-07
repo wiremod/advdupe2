@@ -676,6 +676,8 @@ function PANEL:Init()
 	PANEL.Panel = self
 	self.Nodes = {}
 	self.CNodes = {}
+	self.LastClick = CurTime()
+	
 	self.TabCtrl = vgui.Create("DPropertySheet", self)
 
 	self.ServerBrw = vgui.Create("DTree")
