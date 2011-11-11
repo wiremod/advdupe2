@@ -798,6 +798,7 @@ end
 
 function PANEL:AdjustFiller(Menu)
 	local Tab = self.Panel:GetTable()
+	if(!Tab.Filler)then return end
 	if(Menu)then
 		if(g_ContextMenu:GetTall()<ScrH()*0.5)then
 			local Tall = g_ActiveControlPanel:GetTall() + 10
