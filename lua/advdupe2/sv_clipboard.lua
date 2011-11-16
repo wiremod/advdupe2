@@ -336,8 +336,7 @@ hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 	Params: <entity> Entity
 	Returns: <table> Entities, <table> Constraints
 ]]
-//Ghosts are a problem and entities need to be returned by there index, not seqeuntial
-//Also need to make a get entities function for constraints
+//Need to make a get entities function for constraints
 function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 	local EntTable = {}
 	local ConstraintTable = {}
@@ -610,6 +609,12 @@ local function ApplyEntityModifiers( Player, Ent )
 			end
 		end
 	end
+	if(Ent.EntityMods["mass"] && duplicator.EntityModifiers["mass"])then
+		status, error = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"] )
+		if(!status)then
+			Player:ChatPrint('Error applying entity modifer, "mass". ERROR: '..error)
+		end
+	end
 
 end
 
@@ -864,7 +869,9 @@ local function CreateEntityFromTable(EntTable, Player)
 		else
 			gamemode.Call( "PlayerSpawnedProp", Player, valid:GetModel(), valid )
 		end
-
+		
+		valid:GetPhysicsObject():Wake()
+		
 		return valid
 	else
 		if(valid==false)then 
