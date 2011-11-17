@@ -523,7 +523,6 @@ end
 
 function PANEL:DoClick(Node)
 	if(!Node || !Node.IsFile)then return end
-	PrintTable(self:GetTable())
 	if(CurTime()-self.LastClick<=0.25 && self.LastNode==Node)then
 		local path, area = ParsePath(GetNodePath(Node))
 		RunConsoleCommand("AdvDupe2_OpenFile", path, area)

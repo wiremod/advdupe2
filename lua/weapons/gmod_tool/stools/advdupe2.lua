@@ -25,7 +25,7 @@ function TOOL:LeftClick( trace )
 
 	if(!trace)then return false end
 	if(CLIENT)then return true end
-	
+
 	local ply = self:GetOwner()
 
 	if(!ply.AdvDupe2 || !ply.AdvDupe2.Entities)then return false end
@@ -117,16 +117,20 @@ function AdvDupe2.ResetOffsets(ply)
 end
 
 //Remove player's ghosts and tell the client to stop updating ghosts
-local function RemoveGhosts(ply)
-	ply.AdvDupe2.Ghosting = false
-	if(ply.AdvDupe2.GhostEntities)then
-		for k,v in pairs(ply.AdvDupe2.GhostEntities)do
+function TOOL:RemoveGhosts(ply)
+
+	if(IsValid(ply) && ply.AdvDupe2)then ply.AdvDupe2.Ghosting = false end
+	
+	if(self.GhostEntities)then
+		for k,v in pairs(self.GhostEntities)do
 			if(IsValid(v))then
 				v:Remove()
 			end
 		end
 	end
-	ply.AdvDupe2.GhostEntities = nil
+	
+	self.GhostEntities = nil
+	if(!IsValid(ply) || !ply.AdvDupe2)then return end
 	ply.AdvDupe2.GhostToSpawn = nil
 	ply.AdvDupe2.CurrentGhost = 1
 	umsg.Start("AdvDupe2_NotGhosting", ply)
@@ -184,7 +188,7 @@ function TOOL:RightClick( trace )
 			return true
 		end
 		
-		RemoveGhosts(ply)
+		self:RemoveGhosts(ply)
 		ply.AdvDupe2.HeadEnt = {}
 		ply.AdvDupe2.Entities = {}
 		ply.AdvDupe2.Constraints = {}
@@ -215,7 +219,7 @@ function TOOL:RightClick( trace )
 			//If shift and alt are being held, clear the dupe
 			if(ply:KeyDown(IN_WALK) && ply:KeyDown(IN_SPEED))then
 
-				RemoveGhosts(ply)
+				self:RemoveGhosts(ply)
 				ply.AdvDupe2.Entities = nil
 				ply.AdvDupe2.Constraints = nil
 				umsg.Start("AdvDupe2_ResetDupeInfo", ply)
@@ -244,7 +248,7 @@ function TOOL:RightClick( trace )
 			
 			//Only add the one ghost
 			local index = trace.Entity:EntIndex()
-			if(ply.AdvDupe2.Entities[index] && !ply.AdvDupe2.GhostEntities[index])then
+			if(ply.AdvDupe2.Entities[index] && !self.GhostEntities[index])then
 				if(!ply.AdvDupe2.GhostToSpawn)then ply.AdvDupe2.GhostToSpawn={} end
 				ply.AdvDupe2.GhostToSpawn[#ply.AdvDupe2.GhostToSpawn] = index
 				ply.AdvDupe2.LastGhost = CurTime()+0.02
@@ -252,7 +256,7 @@ function TOOL:RightClick( trace )
 			end
 
 		else
-			RemoveGhosts(ply)
+			self:RemoveGhosts(ply)
 		
 			ply.AdvDupe2.HeadEnt = {}
 			ply.AdvDupe2.HeadEnt.Index = trace.Entity:EntIndex()
@@ -334,7 +338,7 @@ function AdvDupe2.FinishPasting(Player, Paste)
 		umsg.End()
 		return
 	else
-		RemoveGhosts(Player)
+		Player:GetTool("advdupe2"):RemoveGhosts(Player)
 	end
 
 end
@@ -347,8 +351,8 @@ local function UpdateGhost(ply, toolWep)
 
 	local GhostEnt = toolWep:GetNetworkedEntity("GhostEntity", nil)
 	
-	if(!IsValid(GhostEnt))then
-		if SERVER then RemoveGhosts(ply) end
+	if(!IsValid(GhostEnt) || !IsValid(ply))then
+		if SERVER then toolWep:RemoveGhosts(ply) end
 		return 
 	end
 
@@ -430,7 +434,7 @@ local function MakeGhostsFromTable( toolWep, gParent, EntTable, Player)
 	end
 	// If there are too many entities we might not spawn..
 	if !IsValid(GhostEntity) then 
-		RemoveGhosts(Player)
+		toolWep:RemoveGhosts(Player)
 		AdvDupe2.RemoveProgressBar(Player)
 		AdvDupe2.Notify(Player, "To many entities to spawn ghosts", NOTIFY_ERROR)
 		return 
@@ -496,7 +500,7 @@ function TOOL:Think()
 	
 	if(SERVER && ply.AdvDupe2)then
 		
-		if(ply.AdvDupe2.GhostEntities && !ply.AdvDupe2.Pasting)then
+		if(self.GhostEntities && !ply.AdvDupe2.Pasting)then
 			UpdateGhost(ply, self.Weapon)
 		end
 		
@@ -513,7 +517,7 @@ function TOOL:Think()
 					ply.AdvDupe2.CurrentGhost=1
 				end
 
-				ply.AdvDupe2.GhostEntities[i] = MakeGhostsFromTable( self.Weapon, ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities[i]), ply)
+				self.GhostEntities[i] = MakeGhostsFromTable( self.Weapon, ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities[i]), ply)
 				ply.AdvDupe2.CurrentGhost = ply.AdvDupe2.CurrentGhost+1
 				local barperc = math.floor((ply.AdvDupe2.CurrentGhost/total)*100)
 				if(!ply.AdvDupe2.Downloading)then
@@ -665,6 +669,8 @@ end
 function TOOL:Deploy()
 	if ( CLIENT ) then return end
 	local ply = self:GetOwner()
+	self.GhostEntities = nil
+	
 	if ( !ply.AdvDupe2 ) then ply.AdvDupe2={} end
 	
 	if(!ply.AdvDupe2.Entities)then return end
@@ -690,17 +696,15 @@ end
 //Removes progress bar and removes ghosts when tool is put away
 function TOOL:Holster()
 	if( CLIENT ) then return end
-	
 	local ply = self:GetOwner()
 	if(self:GetStage()==1)then 
 		AdvDupe2.RemoveSelectBox(ply)
 	end
 	
 	AdvDupe2.RemoveProgressBar(ply)
-	
-	if ( !ply.AdvDupe2 || !ply.AdvDupe2.GhostEntities || ply.AdvDupe2.Pasting ) then return end
-
-	RemoveGhosts(ply)
+		
+	if ( ply.AdvDupe2 && ply.AdvDupe2.Pasting ) then return end
+	self:RemoveGhosts(ply)
 
 end
 
@@ -787,7 +791,7 @@ function TOOL:Reload( trace )
 	if ply.AdvDupe2 and ply.AdvDupe2.Entities then
 
 		local headent = ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index]
-		local ghostent = ply.AdvDupe2.GhostEntities[ply.AdvDupe2.HeadEnt.Index]
+		local ghostent = self.GhostEntities[ply.AdvDupe2.HeadEnt.Index]
 		if(headent.Class=="gmod_contr_spawner") then return false end
 		local spawner = MakeContraptionSpawner( ply, ghostent:GetPos(), ghostent:GetAngles(), ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")) or .33,tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")) or 0, headent.Model, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),  tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
 		ply:AddCleanup( "AdvDupe2", spawner )
@@ -807,20 +811,19 @@ if SERVER then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
 	function AdvDupe2.StartGhosting(ply)
-		RemoveGhosts(ply)
 		
 		if(!ply.AdvDupe2.Entities)then return end
-		
-		local index = ply.AdvDupe2.HeadEnt.Index
-
 		local tool = ply:GetTool()
 		if(!tool || ply:GetActiveWeapon():GetClass()!="gmod_tool" || tool.Mode!="advdupe2")then return end
 		
-		ply.AdvDupe2.GhostEntities	= {}
-		ply.AdvDupe2.GhostEntities[index] = MakeGhostsFromTable( tool.Weapon, nil, table.Copy(ply.AdvDupe2.Entities[index]), ply)
+		local index = ply.AdvDupe2.HeadEnt.Index
+		
+		tool:RemoveGhosts(ply)
+		tool.GhostEntities	= {}
+		tool.GhostEntities[index] = MakeGhostsFromTable( tool.Weapon, nil, table.Copy(ply.AdvDupe2.Entities[index]), ply)
 
-		if !IsValid(ply.AdvDupe2.GhostEntities[index]) then
-			ply.AdvDupe2.GhostEntities = nil
+		if !IsValid(tool.GhostEntities[index]) then
+			tool.GhostEntities = nil
 			AdvDupe2.Notify(ply, "Parent ghost is invalid, not creating ghosts", NOTIFY_ERROR)
 			return
 		end
@@ -962,6 +965,7 @@ if SERVER then
 				ply.AdvDupe2.HeadEnt.Pos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
 				local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
 				ply.AdvDupe2.HeadEnt.Z = z
+				ply.AdvDupe2.HeadEnt.Pos.Z = ply.AdvDupe2.HeadEnt.Pos.Z + z
 				local Pos
 				local Ang
 				for k,v in pairs(dupe["Entities"])do
@@ -1392,7 +1396,7 @@ if SERVER then
 	end
 	
 	concommand.Add("AdvDupe2_RemakeGhosts", function(ply, cmd, args)
-		RemoveGhosts(ply)
+		ply:GetTool("advdupe2"):RemoveGhosts(ply)
 		AdvDupe2.StartGhosting(ply)
 		AdvDupe2.ResetOffsets(ply)
 	end)
