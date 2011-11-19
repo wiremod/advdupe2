@@ -414,8 +414,8 @@ local function Delete(Tree, Folder, Server)
 	confirm.DoClick = 	function() 
 							if(!Folder)then
 								if(Server)then
-									Tree:GetParent().NodeToDelete = Node
-									Tree:GetParent().ParentToDelete = Node:GetParentNode()
+									PANEL.Panel.NodeToDelete = Node
+									PANEL.Panel.ParentToDelete = Node:GetParentNode()
 									RunConsoleCommand("AdvDupe2_DeleteFile", path, area, "false")
 								else
 									if(area==1)then path = "=Public=/"..path end
@@ -441,8 +441,8 @@ local function Delete(Tree, Folder, Server)
 								file.Delete(path)
 							else
 								if(Server)then
-									Tree:GetParent().NodeToDelete = false
-									Tree:GetParent().ParentToDelete = Node
+									PANEL.Panel.NodeToDelete = false
+									PANEL.Panel.ParentToDelete = Node
 									RunConsoleCommand("AdvDupe2_DeleteFile", path, area, "true")
 								else
 									if(area==1)then path = "=Public=/"..path end
