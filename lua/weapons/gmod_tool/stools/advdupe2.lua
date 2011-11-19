@@ -695,7 +695,12 @@ end
 
 //Removes progress bar and removes ghosts when tool is put away
 function TOOL:Holster()
-	if( CLIENT ) then return end
+	if( CLIENT ) then 
+		if(AdvDupe2.Rotation)then
+			hook.Remove("PlayerBindPress", "AdvDupe2_BindPress")
+		end
+		return 
+	end
 	local ply = self:GetOwner()
 	if(self:GetStage()==1)then 
 		AdvDupe2.RemoveSelectBox(ply)
@@ -740,10 +745,10 @@ function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, Constraint
 	end
 
 	if !SinglePlayer() and delay < 0.2 then
-		delay = 0.33
+		delay = 0.2
 	end
 	
-	if !SinglePlayer() and (undo_delay <=0 or undo_delay>=60) then
+	if !SinglePlayer() and (undo_delay <=0 or undo_delay>60) then
 		undo_delay = 15
 	end
 		
@@ -782,7 +787,17 @@ function TOOL:Reload( trace )
 
 	//If a contraption spawner was clicked then update it with the current settings
 	if(trace.Entity:GetClass()=="gmod_contr_spawner")then
-		trace.Entity:GetTable():SetOptions(ply, tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")) or .33,tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
+		local delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")) or .33
+		local undo_delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")) or 15
+		if(!SinglePlayer())then
+			if(delay<0.2)then
+				delay = 0.2
+			end
+			if(undo_delay<=0 || undo_delay>60)then
+				undo_delay = 15
+			end
+		end
+		trace.Entity:GetTable():SetOptions(ply, delay, undo_delay, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
 		return true
 	end
 
@@ -807,7 +822,7 @@ end
 
 if SERVER then
 
-	CreateConVar("sbox_maxgmod_contr_spawners",5)
+	CreateConVar("sbox_maxcontr_spawners",5)
 
 	function AdvDupe2.StartGhosting(ply)
 		
@@ -1673,16 +1688,31 @@ if CLIENT then
 				
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Spawn Delay" )
-			NumSlider:SetMin( 0 )
-			NumSlider:SetMax( 256 )
-			NumSlider:SetDecimals( 0 )
+			if(SinglePlayer())then
+				NumSlider:SetMin( 0 )
+			else
+				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<0.2)then
+					RunConsoleCommand("advdupe2_contr_spawner_delay", "0.2")
+				end
+				NumSlider:SetMin( 0.2 )
+			end
+			NumSlider:SetMax( 10 )
+			NumSlider:SetDecimals( 1 )
 			NumSlider:SetConVar("advdupe2_contr_spawner_delay")
 			CategoryContent3:AddItem(NumSlider)
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Undo Delay" )
-			NumSlider:SetMin( 0 )
-			NumSlider:SetMax( 256 )
+			if(SinglePlayer())then 
+				NumSlider:SetMin( 0 )
+				NumSlider:SetMax( 256 )
+			else
+				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < 1 || tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > 60)then
+					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", "1")
+				end
+				NumSlider:SetMin( 1 )
+				NumSlider:SetMax( 60 )
+			end
 			NumSlider:SetDecimals( 0 )
 			NumSlider:SetConVar("advdupe2_contr_spawner_undo_delay")
 			CategoryContent3:AddItem(NumSlider)

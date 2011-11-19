@@ -1,6 +1,6 @@
 AdvDupe2 = {
 	Version = "1.0.4",
-	Revision = 27
+	Revision = 28
 }
 
 AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
