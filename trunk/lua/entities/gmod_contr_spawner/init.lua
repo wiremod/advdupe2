@@ -90,7 +90,7 @@ function ENT:AddGhosts()
 			if(EntTable.BuildDupeInfo && EntTable.BuildDupeInfo.PhysicsObjects)then
 				Phys = EntTable.BuildDupeInfo.PhysicsObjects[0]
 			else
-				v.BuildDupeInfo = {}
+				if(!v.BuildDupeInfo)then v.BuildDupeInfo = {} end
 				v.BuildDupeInfo.PhysicsObjects = table.Copy(v.PhysicsObjects)
 				Phys = EntTable.PhysicsObjects[0]
 			end
@@ -137,7 +137,6 @@ function ENT:GetDeletionDelay()	return self.undo_delay	end
 function ENT:OnTakeDamage( dmginfo ) self.Entity:TakePhysicsDamage( dmginfo ) end
 
 function ENT:SetDupeInfo( HeadEnt, EntityTable, ConstraintTable )
-
 	self.HeadEnt = HeadEnt
 	self.EntityTable = EntityTable
 	self.ConstraintTable = ConstraintTable
@@ -151,7 +150,6 @@ end
 
  
 function ENT:DoSpawn( ply )
-
 	self.EntityTable[self.HeadEnt].PhysicsObjects[0].Pos = self:GetPos()
 	self.EntityTable[self.HeadEnt].PhysicsObjects[0].Angle = self:GetAngles()
 	for k,v in pairs(self.Ghosts)do
