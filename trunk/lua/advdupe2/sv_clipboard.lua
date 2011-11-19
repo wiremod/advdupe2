@@ -274,10 +274,9 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 
 	local index 
 	for k, Constraint in pairs( Ent.Constraints ) do
-		
+
 		index = Constraint:GetCreationID()
 		Constraint.Identity = index
-		print(index)
 		
 		if ( index and !ConstraintTable[ index ] ) then
 			local ConstTable, ents = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
@@ -924,34 +923,34 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			v.BuildDupeInfo.AngleReset = v.Angle
 		end
 
-		CreatedEntities[k] = CreateEntityFromTable(v, Player)
+		
+		local Ent = CreateEntityFromTable(v, Player)
 
-		if CreatedEntities[ k ] then
-			if(Player)then Player:AddCleanup( "AdvDupe2", CreatedEntities[ k ] ) end
-			CreatedEntities[ k ].BoneMods = table.Copy( v.BoneMods )
-			CreatedEntities[ k ].EntityMods = table.Copy( v.EntityMods )
-			CreatedEntities[ k ].PhysicsObjects = table.Copy( v.PhysicsObjects )
-			if(v.CollisionGroup)then CreatedEntities[ k ]:SetCollisionGroup(v.CollisionGroup) end
-			duplicator.ApplyEntityModifiers ( Player, CreatedEntities[ k ] )
-			duplicator.ApplyBoneModifiers ( Player, CreatedEntities[ k ] )
-			CreatedEntities[k]:SetNotSolid(true)
-		elseif(CreatedEntities[ k ]==false)then
-			CreatedEntities[ k ] = nil
+		if Ent then
+			if(Player)then Player:AddCleanup( "AdvDupe2", Ent ) end
+			Ent.BoneMods = table.Copy( v.BoneMods )
+			Ent.EntityMods = table.Copy( v.EntityMods )
+			Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
+			if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
+			ApplyEntityModifiers( Player, Ent )
+			ApplyBoneModifiers( Player, Ent )
+			Ent:SetNotSolid(true)
+		elseif(Ent==false)then
+			Ent = nil
 			ConstraintList = {}
 			break
 		else
-			CreatedEntities[ k ] = nil
+			Ent = nil
 		end
 		
+		CreatedEntities[k] = Ent
 	end
-	
+
 	local CreatedConstraints = {}
 	local Entity
 	--
 	-- Create constraints
 	--
-	
-
 	
 	for k, Constraint in pairs( ConstraintList ) do
 		Entity = CreateConstraintFromTable( Constraint, CreatedEntities, EntityList, Player )
@@ -971,7 +970,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 				end
 				v:GetPhysicsObject():EnableMotion(false)
 
-				if(EntityList[_].BuildDupeInfo.DupeParentID!=nil)then
+				if(EntityList[_].BuildDupeInfo.DupeParentID && Parenting)then
 					v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
 				end
 				v:SetNotSolid(false)
@@ -983,7 +982,6 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 		undo.Finish()
 		
 		//if(Tool)then AdvDupe2.FinishPasting(Player, true) end
-		
 	else
 	
 		for _,v in pairs( CreatedEntities ) do
@@ -993,7 +991,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			end
 			v:GetPhysicsObject():EnableMotion(false)
 
-			if(EntityList[_].BuildDupeInfo.DupeParentID!=nil && Parenting)then
+			if(EntityList[_].BuildDupeInfo.DupeParentID && Parenting)then
 				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
 			end
 				
@@ -1002,7 +1000,6 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 	end
 	
 	return CreatedEntities, CreatedConstraints
-	
 end
 
 

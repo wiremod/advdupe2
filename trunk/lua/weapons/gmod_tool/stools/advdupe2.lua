@@ -760,7 +760,6 @@ function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, Constraint
 		addvel		= addvel;
 	}
 	table.Merge(spawner:GetTable(), tbl)
-
 	spawner:SetDupeInfo(HeadEnt, EntityTable, ConstraintTable)
 	spawner:AddGhosts()
 
@@ -911,8 +910,7 @@ if SERVER then
 		else
 			data = AdvDupe2.ReadFile(ply, path, "adv_duplicator")
 		end
-		if(data==false)then
-			AdvDupe2.Notify(ply,"File size is greater than "..GetConVarString("AdvDupe2_MaxFileSize"), NOTIFY_ERROR)
+		if(data==false || data==nil)then
 			return
 		end
 		
@@ -1184,7 +1182,7 @@ if SERVER then
 					TFindDelete(Search, Folders, Files)
 				end)
 		end
-		umsg.Start("AdvDupe2_DeleteNode")
+		umsg.Start("AdvDupe2_DeleteNode", ply)
 		umsg.End()
 		
 	end

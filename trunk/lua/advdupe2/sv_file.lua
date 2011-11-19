@@ -62,11 +62,22 @@ end
 	Return:	<string> contents
 ]]
 function AdvDupe2.ReadFile(ply, name, dirOverride)
+
 	if SinglePlayer() then
-		return file.Read(string.format("%s/%s.txt", dirOverride or AdvDupe2.DataFolder, name))
+		local path = string.format("%s/%s.txt", dirOverride or AdvDupe2.DataFolder, name)
+		if(!file.Exists(path))then
+			AdvDupe2.Notify(ply, "File does not exist!", NOTIFY_ERROR)
+			return nil
+		else
+			return file.Read(path)
+		end
 	else
 		local path = string.format("%s/%s/%s.txt", dirOverride or AdvDupe2.DataFolder, ply and ply:SteamIDSafe() or "=Public=", name)
-		if(file.Size(path)/1024>tonumber(GetConVarString("AdvDupe2_MaxFileSize")))then
+		if(!file.Exists(path))then
+			AdvDupe2.Notify(ply, "File does not exist!", NOTIFY_ERROR)
+			return nil
+		elseif(file.Size(path)/1024>tonumber(GetConVarString("AdvDupe2_MaxFileSize")))then
+			AdvDupe2.Notify(ply,"File size is greater than "..GetConVarString("AdvDupe2_MaxFileSize"), NOTIFY_ERROR)
 			return false
 		else
 			return file.Read(path)
