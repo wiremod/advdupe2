@@ -822,7 +822,7 @@ end
 
 if SERVER then
 
-	CreateConVar("sbox_maxcontr_spawners",5)
+	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
 	function AdvDupe2.StartGhosting(ply)
 		
