@@ -35,7 +35,7 @@ function TOOL:LeftClick( trace )
 		return false 
 	end
 	
-	local z = tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z
+	local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -16000, 16000)
 	ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
 	ply.AdvDupe2.Angle = Angle(tonumber(ply:GetInfo("advdupe2_offset_pitch")), tonumber(ply:GetInfo("advdupe2_offset_yaw")), tonumber(ply:GetInfo("advdupe2_offset_roll")))
 
@@ -368,7 +368,7 @@ local function UpdateGhost(ply, toolWep)
 		else
 			local EntAngle = toolWep:GetNetworkedAngle("HeadAngle", Angle(0,0,0))
 			if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
-			trace.HitPos.Z = trace.HitPos.Z + toolWep:GetNetworkedFloat("HeadZPos", 0) + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0
+			trace.HitPos.Z = trace.HitPos.Z + math.Clamp((toolWep:GetNetworkedFloat("HeadZPos", 0) + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0), -16000, 16000)
 			local Pos, Angle = LocalToWorld(toolWep:GetNetworkedVector("HeadOffset", Vector(0,0,0)), EntAngle, trace.HitPos, Angle(math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_roll")) or 0,-180,180))) 
 			PhysObj:SetPos(Pos)
 			PhysObj:SetAngle(Angle)
