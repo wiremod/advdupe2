@@ -806,9 +806,8 @@ local function CreateEntityFromTable(EntTable, Player)
 			if ( Key == "pos" || Key == "position" ) then Key = "Pos" end
 			if ( Key == "ang" || Key == "Ang" || Key == "angle" ) then Key = "Angle" end
 			if ( Key == "model" ) then Key = "Model" end
-			//if ( Key == "VehicleTable" )then	//Exploit fix, not sure if its still an exploit
-			//	EntTable[Key]["KeyValues"] = {vehiclescript=EntTable[Key]["KeyValues"] .vehiclescript, limitview=EntTable[Key]["KeyValues"] .limitview}
-			//end
+			if ( Key == "VehicleTable" )then EntTable[Key]["KeyValues"]["PlayerOn"] = nil end
+			
 			Arg = EntTable[ Key ]
 			
 			// Special keys
