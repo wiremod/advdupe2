@@ -31,6 +31,8 @@ local constraints = {Weld=true,  Axis=true, Ballsocket=true, Elastic=true, Hydra
 ---------------------------------------------------------*/
 local function CopyEntTable( Ent, Offset )
 
+	if(!IsValid(Ent:GetPhysicsObject()))then return nil end
+
 	local Tab = {}
 
 	if Ent.PreEntityCopy then
@@ -46,7 +48,7 @@ local function CopyEntTable( Ent, Offset )
 		for iNumber, Key in pairs( EntityClass.Args ) do
 			-- Translate keys from old system
 			if ( Key == "pos" or Key == "position" ) then Key = "Pos" end
-			if ( Key == "ang" or Key == "Ang" or Key == "angle" ) then Key = "Angle" end
+			if ( Key == "ang" or Key == "Ang" or Key == "angle" or Key == "Angle" ) then continue end
 			if ( Key == "model" ) then Key = "Model" end
 
 			Arg = EntTable[ Key ]
@@ -65,7 +67,7 @@ local function CopyEntTable( Ent, Offset )
 
 	Tab.BoneMods = table.Copy( Ent.BoneMods )
 	if(Ent.EntityMods)then
-		Tab.EntityMods = Ent.EntityMods
+		Tab.EntityMods = table.Copy(Ent.EntityMods)
 	end
 
 	if Ent.PostEntityCopy then
@@ -73,7 +75,6 @@ local function CopyEntTable( Ent, Offset )
 	end
 
 	Tab.Pos 			= Ent:GetPos()
-	Tab.Angle 			= nil
 	Tab.Class 			= Ent:GetClass()
 	Tab.Model 			= Ent:GetModel()
 	Tab.Skin 			= Ent:GetSkin()
@@ -90,23 +91,20 @@ local function CopyEntTable( Ent, Offset )
 	Tab.PhysicsObjects = {}
 
 	-- Physics Objects
-	//if(IsValid(Ent:GetPhysicsObject()))then
-		local iNumPhysObjects = Ent:GetPhysicsObjectCount()
-		local PhysObj
-		
-		for Bone = 0, iNumPhysObjects-1 do 
-			PhysObj = Ent:GetPhysicsObjectNum( Bone )
-			if PhysObj!=nil then
-				Tab.PhysicsObjects[ Bone ] = Tab.PhysicsObjects[ Bone ] or {}
-				if(PhysObj:IsMoveable())then Tab.PhysicsObjects[ Bone ].Frozen = true end
-				PhysObj:EnableMotion(false)
-				Tab.PhysicsObjects[ Bone ].Pos = PhysObj:GetPos() - Tab.Pos
-				Tab.PhysicsObjects[ Bone ].Angle = PhysObj:GetAngle()
-			end
+	local PhysObj
+
+	for Bone = 0, Ent:GetPhysicsObjectCount()-1 do 
+		PhysObj = Ent:GetPhysicsObjectNum( Bone )
+		if IsValid(PhysObj) then
+			Tab.PhysicsObjects[ Bone ] = Tab.PhysicsObjects[ Bone ] or {}
+			if(PhysObj:IsMoveable())then Tab.PhysicsObjects[ Bone ].Frozen = true end
+			PhysObj:EnableMotion(false)
+			Tab.PhysicsObjects[ Bone ].Pos = PhysObj:GetPos() - Tab.Pos
+			Tab.PhysicsObjects[ Bone ].Angle = PhysObj:GetAngle()
 		end
-		
-		Tab.PhysicsObjects[0].Pos = Tab.Pos - Offset
-	//end
+	end
+
+	Tab.PhysicsObjects[0].Pos = Tab.Pos - Offset
 
 	Tab.Pos = nil
 	if(Tab.Class!="prop_physics")then
@@ -124,7 +122,7 @@ local function CopyEntTable( Ent, Offset )
 	local FlexNum = Ent:GetFlexNum()
 	Tab.Flex = Tab.Flex or {}
 	local weight
-	local flexes = false
+	local flexes
 	for i = 0, FlexNum do
 		weight = Ent:GetFlexWeight( i )
 		if(weight!=0)then
@@ -139,7 +137,7 @@ local function CopyEntTable( Ent, Offset )
 		Tab.Flex = nil
 	end
 	
-	if ( EntTable.CollisionGroup ) then
+	if( EntTable.CollisionGroup )then
 		if ( !Tab.EntityMods ) then Tab.EntityMods = {} end
 		Tab.EntityMods.CollisionGroupMod = EntTable.CollisionGroup
 	end
@@ -167,83 +165,79 @@ end
 */
 local function CopyConstraintTable( Const, Offset )
 
+	if(Const==nil)then return nil, {} end
+	local Type = duplicator.ConstraintType[ Const.Type ]
+	if(!Type)then return nil, {} end
 	local Constraint = {}
 	local Entities = {}
 
-	if(Const!=nil)then
-		Const.Constraint = nil
-		Const.OnDieFunctions=nil
-		Constraint.Entity={}
-		local Type = duplicator.ConstraintType[ Const.Type ]
-	
-		if ( Type ) then 
-			for k, key in pairs( Type.Args ) do
-				if(!string.find(key, "Ent") and !string.find(key, "Bone"))then
-					Constraint[key] = Const[ key ]
-				end		
-			end	
-				
-			if((Const["Ent"] && Const["Ent"]:IsWorld()) || IsValid(Const["Ent"]))then
-				Constraint.Entity[ 1 ] = {}
-				Constraint.Entity[ 1 ].Index = Const["Ent"]:EntIndex()
-				if(!Const["Ent"]:IsWorld())then table.insert( Entities, Const["Ent"] ) end
-			else
-				local ent
-				for i=1,4 do
-					ent = "Ent"..i
-					
-					if((Const[ent] && Const[ent]:IsWorld()) || IsValid(Const[ent]))then
-						Constraint.Entity[ i ] 				= {}
-						Constraint.Entity[ i ].Index 		= Const[ent]:EntIndex()
-						Constraint.Entity[ i ].Bone			= Const[ "Bone"..i ]
-						Constraint.Entity[ i ].Length		= Const[ "Length"..i ]
-						Constraint.Entity[ i ].World		= Const[ "World"..i ]
+	Const.Constraint = nil
+	Const.OnDieFunctions=nil
+	Constraint.Entity={}
 
-						if Const[ ent ]:IsWorld() then
-							Constraint.Entity[ i ].World = true
-							if ( Const[ "LPos"..i ] ) then
-								if(i!= 4 and i!=2)then
-									if(Const["Ent2"])then
-										Constraint.Entity[ i ].LPos = Const[ "LPos"..i ] - Const["Ent2"]:GetPos()
-										Constraint[ "LPos"..i ] = Const[ "LPos"..i ] - Const["Ent2"]:GetPos()
-									elseif(Const["Ent4"])then
-										Constraint.Entity[ i ].LPos = Const[ "LPos"..i ] - Const["Ent4"]:GetPos()
-										Constraint[ "LPos"..i ] = Const[ "LPos"..i ] - Const["Ent4"]:GetPos()
-									end
-								elseif(Const["Ent1"])then
-									Constraint.Entity[ i ].LPos = Const[ "LPos"..i ] - Const["Ent1"]:GetPos()
-									Constraint[ "LPos"..i ] = Const[ "LPos"..i ] - Const["Ent1"]:GetPos()
-								end
-							else
-								Constraint.Entity[ i ].LPos = Offset
-								Constraint[ "LPos"..i ] = Offset
-							end
-						else
-							Constraint.Entity[ i ].LPos	= Const[ "LPos"..i ]
-							Constraint.Entity[ i ].WPos = Const[ "WPos"..i ]
-						end
-									
-						if(!Const[ent]:IsWorld())then table.insert( Entities, Const[ent] ) end
-					end
-					
-					if(Const["WPos"..i])then
-						if(!Const["Ent1"]:IsWorld())then
-							Constraint["WPos"..i] = Const[ "WPos"..i ] - Const["Ent1"]:GetPos()
-						else
-							Constraint["WPos"..i] = Const[ "WPos"..i ] - Const["Ent4"]:GetPos()
-						end
-					end
-				end	
-			end
-			
-			Constraint.Type = Const.Type
-			if(Const.BuildDupeInfo)then Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo) end
+	for k, key in pairs( Type.Args ) do
+		if(!string.find(key, "Ent") and !string.find(key, "Bone"))then
+			Constraint[key] = Const[ key ]
 		end		
+	end	
 
-	end
+	if((Const["Ent"] && Const["Ent"]:IsWorld()) || IsValid(Const["Ent"]))then
+		Constraint.Entity[ 1 ] = {}
+		Constraint.Entity[ 1 ].Index = Const["Ent"]:EntIndex()
+		if(!Const["Ent"]:IsWorld())then table.insert( Entities, Const["Ent"] ) end
+	else
+		local ent
+		for i=1,4 do
+			ent = "Ent"..i
+
+			if((Const[ent] && Const[ent]:IsWorld()) || IsValid(Const[ent]))then
+				Constraint.Entity[ i ] 				= {}
+				Constraint.Entity[ i ].Index 		= Const[ent]:EntIndex()
+				Constraint.Entity[ i ].Bone			= Const[ "Bone"..i ]
+				Constraint.Entity[ i ].Length		= Const[ "Length"..i ]
+				Constraint.Entity[ i ].World		= Const[ "World"..i ]
+
+				if Const[ ent ]:IsWorld() then
+					Constraint.Entity[ i ].World = true
+					if ( Const[ "LPos"..i ] ) then
+						if(i!= 4 and i!=2)then
+							if(Const["Ent2"])then
+								Constraint.Entity[ i ].LPos = Const[ "LPos"..i ] - Const["Ent2"]:GetPos()
+								Constraint[ "LPos"..i ] = Const[ "LPos"..i ] - Const["Ent2"]:GetPos()
+							elseif(Const["Ent4"])then
+								Constraint.Entity[ i ].LPos = Const[ "LPos"..i ] - Const["Ent4"]:GetPos()
+								Constraint[ "LPos"..i ] = Const[ "LPos"..i ] - Const["Ent4"]:GetPos()
+							end
+						elseif(Const["Ent1"])then
+							Constraint.Entity[ i ].LPos = Const[ "LPos"..i ] - Const["Ent1"]:GetPos()
+							Constraint[ "LPos"..i ] = Const[ "LPos"..i ] - Const["Ent1"]:GetPos()
+						end
+					else
+						Constraint.Entity[ i ].LPos = Offset
+						Constraint[ "LPos"..i ] = Offset
+					end
+				else
+					Constraint.Entity[ i ].LPos	= Const[ "LPos"..i ]
+					Constraint.Entity[ i ].WPos = Const[ "WPos"..i ]
+				end
+
+				if(!Const[ent]:IsWorld())then table.insert( Entities, Const[ent] ) end
+			end
+					
+			if(Const["WPos"..i])then
+				if(!Const["Ent1"]:IsWorld())then
+					Constraint["WPos"..i] = Const[ "WPos"..i ] - Const["Ent1"]:GetPos()
+				else
+					Constraint["WPos"..i] = Const[ "WPos"..i ] - Const["Ent4"]:GetPos()
+				end
+			end
+		end	
+			
+		Constraint.Type = Const.Type
+		if(Const.BuildDupeInfo)then Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo) end
+	end		
 
 	return Constraint, Entities
-
 end
 
 --[[
@@ -254,35 +248,29 @@ end
 ]]
 local function Copy( Ent, EntTable, ConstraintTable, Offset )
 
-
-	local phys
-
 	local index = Ent:EntIndex()
 	
 	EntTable[index] = CopyEntTable(Ent, Offset)
-
+	if(EntTable[index]==nil)then return EntTable, ConstraintTable end
+	
 	if ( !constraint.HasConstraints( Ent ) ) then 
-		local PhysObjs = EntTable[Ent:EntIndex()].PhysicsObjects
-		for i=0, Ent:GetPhysicsObjectCount() do
-			phys = Ent:GetPhysicsObjectNum(i)
-			if(IsValid(phys))then
-				phys:EnableMotion(PhysObjs[i].Frozen)
-			end
+		for k,v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects)do
+			Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 		end
 		return EntTable, ConstraintTable 
 	end
 
-	local index 
+	local ConstTable, EntTab
 	for k, Constraint in pairs( Ent.Constraints ) do
 
 		index = Constraint:GetCreationID()
 		Constraint.Identity = index
 		
 		if ( index and !ConstraintTable[ index ] ) then
-			local ConstTable, ents = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
+			ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
 			ConstraintTable[ index ] = ConstTable
 			
-			for j,e in pairs(ents) do
+			for j,e in pairs(EntTab) do
 				if ( e and ( e:IsWorld() or e:IsValid() ) ) and ( !EntTable[ e:EntIndex() ] ) then
 					Copy( e, EntTable, ConstraintTable, Offset )
 				end
@@ -291,12 +279,8 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 
 	end
 
-	local PhysObjs = EntTable[Ent:EntIndex()].PhysicsObjects
-	for i=0, Ent:GetPhysicsObjectCount() do
-		phys = Ent:GetPhysicsObjectNum(i)
-		if(IsValid(phys))then
-			phys:EnableMotion(PhysObjs[i].Frozen)
-		end		
+	for k,v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects)do
+		Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 	end
 	
 	return EntTable, ConstraintTable
@@ -326,7 +310,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -337,34 +321,23 @@ hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 ]]
 //Need to make a get entities function for constraints
 function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
-	local EntTable = {}
-	local ConstraintTable = {}
-
+	local EntTable, ConstraintTable = {}, {}
+	local index, add, AddEnts, AddConstrs, ConstTable, EntTab
+	
 	for _,Ent in pairs(Entities)do
 
-		local phys
-
-		local index = Ent:EntIndex()
+		index = Ent:EntIndex()
 		EntTable[index] = CopyEntTable(Ent, Offset)
+		if(EntTable[index]==nil)then continue end
 		
 		if ( !constraint.HasConstraints( Ent ) ) then
-			local PhysObjs = EntTable[Ent:EntIndex()].PhysicsObjects
-			for i=0, Ent:GetPhysicsObjectCount() do
-				 phys = Ent:GetPhysicsObjectNum(i)
-				if(IsValid(phys))then
-					phys:EnableMotion(PhysObjs[i].Frozen)	//Restore the frozen state of the entity and all of its objects
-				end
+			for k,v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects)do
+				Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 			end
 			continue
 		end
 
-		local index
-		local add
 		for k, Constraint in pairs( Ent.Constraints ) do
-
-			/*if(!Constraint.BuildDupeInfo)then
-				Constraint.BuildDupeInfo = {}
-			end*/
 
 			if(!Constraint.Identity)then
 				index = Constraint:GetCreationID()
@@ -374,19 +347,19 @@ function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 			end
 	
 			if ( index and !ConstraintTable[ index ] ) then
-				local ConstTable, ents = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
+				ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
 				//If the entity is constrained to an entity outside of the area box, don't copy the constraint.
 				if(!CopyOutside)then
 					add = true
-					for j,e in pairs(ents)do
+					for j,e in pairs(EntTab)do
 						if(!Entities[e:EntIndex()])then add=false end
 					end
 					if(add)then ConstraintTable[ index ] = ConstTable  end
 				else	//Copy entities and constraints outside of the box that are constrained to entities inside the box
-					for k,v in pairs(ents)do
+					for k,v in pairs(EntTab)do
 						ConstraintTable[ index ] = ConstTable
 						if(v:EntIndex()!=_)then
-							local AddEnts, AddConstrs = Copy(v, {}, {}, Offset)
+							AddEnts, AddConstrs = Copy(v, {}, {}, Offset)
 							for j,e in pairs(AddEnts)do
 								if(!EntTable[j])then EntTable[j] = e end
 							end
@@ -400,12 +373,8 @@ function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 			end
 		end
 		
-		local PhysObjs = EntTable[Ent:EntIndex()].PhysicsObjects
-		for i=0, Ent:GetPhysicsObjectCount() do
-			phys = Ent:GetPhysicsObjectNum(i)
-			if(IsValid(phys))then
-				phys:EnableMotion(PhysObjs[i].Frozen)	//Restore the frozen state of the entity and all of its objects
-			end	
+		for k,v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects)do
+			Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 		end
 
 	end
@@ -570,23 +539,19 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		if(first!=nil)then
 			first:SetPos(EntityTable[firstindex].BuildDupeInfo.PosReset)
 			first:SetAngles(EntityTable[firstindex].BuildDupeInfo.AngleReset)
-			if(Bone1)then
+			if(Bone1 && Bone1Index!=0)then
 				Bone1:SetPos(EntityTable[firstindex].BuildDupeInfo.PosReset + EntityTable[firstindex].BuildDupeInfo.PhysicsObjects[Bone1Index].Pos)
 				Bone1:SetAngle(EntityTable[firstindex].PhysicsObjects[Bone1Index].Angle)
-				Bone1:Sleep()
 			end
-			first:GetPhysicsObject():Sleep()
 			if(ReEnableFirst)then first:GetPhysicsObject():EnableMotion(true) end
 		end
 		if(second!=nil)then
 			second:SetPos(EntityTable[secondindex].BuildDupeInfo.PosReset)
 			second:SetAngles(EntityTable[secondindex].BuildDupeInfo.AngleReset)
-			if(Bone2)then
+			if(Bone2 && Bone2Index!=0)then
 				Bone2:SetPos(EntityTable[secondindex].BuildDupeInfo.PosReset + EntityTable[secondindex].BuildDupeInfo.PhysicsObjects[Bone2Index].Pos)
 				Bone2:SetAngle(EntityTable[secondindex].PhysicsObjects[Bone2Index].Angle)
-				Bone2:Sleep()
 			end
-			second:GetPhysicsObject():Sleep()
 			if(ReEnableSecond)then second:GetPhysicsObject():EnableMotion(true) end
 		end
 	end
@@ -653,9 +618,7 @@ local function DoGenericPhysics( Entity, data, Player )
 		if ( IsValid(Phys) ) then	
 			Phys:SetPos( Args.Pos )
 			Phys:SetAngle( Args.Angle )
-			//if ( Args.Frozen == true ) then 
-				Phys:EnableMotion( false ) 
-			//end		
+			Phys:EnableMotion( false ) 	
 			Player:AddFrozenPhysicsObject( Entity, Phys )
 		end	
 	end
@@ -806,8 +769,8 @@ local function CreateEntityFromTable(EntTable, Player)
 			if ( Key == "pos" || Key == "position" ) then Key = "Pos" end
 			if ( Key == "ang" || Key == "Ang" || Key == "angle" ) then Key = "Angle" end
 			if ( Key == "model" ) then Key = "Model" end
-			if ( Key == "VehicleTable" )then
-				EntTable[Key]["KeyValues"] = {vehiclescript=EntTable[Key]["KeyValues"].vehiclescript, limitview=EntTable[Key]["KeyValues"].limitview}
+			if ( Key == "VehicleTable" && EntTable[Key].KeyValues)then
+				EntTable[Key].KeyValues = {vehiclescript=EntTable[Key].KeyValues.vehiclescript, limitview=EntTable[Key].KeyValues.limitview}
 			end
 			
 			Arg = EntTable[ Key ]
