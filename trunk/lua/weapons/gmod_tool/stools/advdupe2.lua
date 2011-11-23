@@ -57,7 +57,7 @@ end
 //Thanks to Donovan for fixing the table
 //Turns a table into a numerically indexed table
 local function CollapseTableToArray( t )
-
+	
 	local array = {}
 	local q = {}
 	local min, max = 0, 0
@@ -72,6 +72,7 @@ local function CollapseTableToArray( t )
 			array[#array+1] = t[i]
 		end
 	end
+
 	return array
 end
 
@@ -119,7 +120,12 @@ end
 //Remove player's ghosts and tell the client to stop updating ghosts
 function TOOL:RemoveGhosts(ply)
 
-	if(IsValid(ply) && ply.AdvDupe2)then ply.AdvDupe2.Ghosting = false end
+	if(IsValid(ply) && ply.AdvDupe2)then 
+		if(ply.AdvDupe2.Ghosting && !ply.AdvDupe2.Downloading)then
+			AdvDupe2.RemoveProgressBar(ply)
+		end
+		ply.AdvDupe2.Ghosting = false 
+	end
 	
 	if(self.GhostEntities)then
 		for k,v in pairs(self.GhostEntities)do
@@ -234,7 +240,7 @@ function TOOL:RightClick( trace )
 			AdvDupe2.duplicator.Copy( trace.Entity, ply.AdvDupe2.Entities, ply.AdvDupe2.Constraints, ply.AdvDupe2.HeadEnt.Pos)  
 
 			ply.AdvDupe2.Constraints = CollapseTableToArray(ply.AdvDupe2.Constraints)
-				
+			
 			umsg.Start("AdvDupe2_SetDupeInfo", ply)
 				umsg.String("")
 				umsg.String("")

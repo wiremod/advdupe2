@@ -262,7 +262,7 @@ local function AdvDupe2_RecieveFile(ply, cmd, args)
 		ply.AdvDupe2.Downloading = false
 		ply.AdvDupe2.Uploading = false
 		
-		umsg.Start("AdvDupe2_UploadRejected")
+		umsg.Start("AdvDupe2_UploadRejected", ply)
 			umsg.Bool(true)
 		umsg.End()
 		AdvDupe2.Notify(ply,"Upload Rejected!",NOTIFY_GENERIC,5)
@@ -295,7 +295,7 @@ local function AdvDupe2_RecieveFile(ply, cmd, args)
 			AdvDupe2.StartGhosting(ply)
 		end
 		
-		umsg.Start("AdvDupe2_UploadRejected")
+		umsg.Start("AdvDupe2_UploadRejected", ply)
 			umsg.Bool(false)
 		umsg.End()
 		AdvDupe2.Notify(ply,"File successfully uploaded!",NOTIFY_GENERIC,5)
