@@ -305,7 +305,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -390,7 +390,6 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 
 		for i=1, 4 do 
-		--	if(!ValidEntity(Constraint.Entity[i])) then Player:ChatPrint("DUPLICATOR: ERROR, Invalid constraints, maybe wrong file version.")return end
 			if ( Constraint.Entity and Constraint.Entity[ i ] ) then
 				if Key == "Ent"..i or Key == "Ent" then
 					if ( Constraint.Entity[ i ].World ) then
@@ -1004,9 +1003,6 @@ local function AdvDupe2_Spawn()
 			Ent.EntityMods = table.Copy( v.EntityMods )
 			Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
 
-			ApplyEntityModifiers( Queue.Player, Ent )
-			ApplyBoneModifiers( Queue.Player, Ent )
-
 			local Phys = Ent:GetPhysicsObject()
 			if(IsValid(Phys))then Phys:EnableMotion(false) end
 			if(!Queue.DisableProtection)then Ent:SetNotSolid(true) end
@@ -1024,6 +1020,21 @@ local function AdvDupe2_Spawn()
 		AdvDupe2.UpdateProgressBar(Queue.Player, math.floor((Queue.Percent*Queue.Current)*100))
 		Queue.Current = Queue.Current+1
 		if(Queue.Current>#Queue.SortedEntities)then
+			
+			for _,Ent in pairs(Queue.CreatedEntities)do
+				
+				ApplyEntityModifiers( Queue.Player, Ent )
+				ApplyBoneModifiers( Queue.Player, Ent )
+			
+				--If the entity has a PostEntityPaste function tell it to use it now
+				if Ent.PostEntityPaste then
+					local status, valid = pcall(Ent.PostEntityPaste, Ent, Queue.Player, Ent, Queue.CreatedEntities)
+					if(!status)then
+						print("AD2 PostEntityPaste Error: "..tostring(valid))
+					end
+				end
+			end
+		
 			Queue.Entity = false
 			Queue.Constraint = true
 			Queue.Current = 1
@@ -1100,14 +1111,6 @@ local function AdvDupe2_Spawn()
 						end
 					else
 						edit=false
-					end
-
-					--If the entity has a PostEntityPaste function tell it to use it now
-					if v.PostEntityPaste then
-						local status, valid = pcall(v.PostEntityPaste, v, Queue.Player, v, Queue.CreatedEntities)
-						if(!status)then
-							print("AD2 PostEntityPaste Error: "..tostring(valid))
-						end
 					end
 
 					if(unfreeze)then
