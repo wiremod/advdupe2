@@ -10,86 +10,74 @@
 
 local PANEL = {}
 local ClientFolderCount = 1
-local NextSearch = 0
-local CurUpdate = 0
-function PANEL:PopulateUpload(Search, Folders, Files, parent, OnUpdate)
-	//Search = string.Left(Search,#Search-1)
 
-	if(OnUpdate!=CurUpdate)then return end
-	local NodeP
-	if(parent==0)then
-		NodeP = self.ClientBrw
-	else
-		NodeP = self.CNodes[parent]
-	end
-	
-	local Folder
-	for k,v in pairs(Folders)do
-		Folder = NodeP:AddNode(v)
-		self.CNodes[ClientFolderCount] = Folder
+local CacheFolders, CacheFiles, CacheParent, ToSearch
+local FolderPos, FilePos, ToSearchPos = 1, 1, 1
+local FolderTotal, FileTotal, ToSearchTotal = 0, 0, 0
+local CurSearch = ""
+
+function AddFilesToBrowser()
+
+	if(FolderTotal!=0 && FolderTotal>=FolderPos)then
+		local Name = CacheFolders[FolderPos]
+		local Folder = CacheParent:AddNode(Name)
+		PANEL.Panel.CNodes[ClientFolderCount]=Folder
 		Folder.IsFile = false
-		Folder.Name = v
-		Folder.SortName = "A"..string.lower(v)
+		Folder.Name = Name
+		Folder.SortName = "A"..string.lower(Name)
 		Folder.ID = ClientFolderCount
+		table.insert(ToSearch, {CurSearch..Name.."/", ClientFolderCount})
 		ClientFolderCount = ClientFolderCount + 1
-		for k,v in pairs(file.Find(Search..v.."/*.txt"))do
-			name = string.sub(v, 1, -5)
-			File = Folder:AddNode(name)
-			File.IsFile = true
-			File.Name = name
-			File.SortName = "B"..string.lower(name)
-			File.Icon:SetImage("vgui/spawnmenu/file")
+		FolderPos = FolderPos + 1
+	elseif(FileTotal!=0 && FileTotal>=FilePos)then
+		local Name = string.sub(CacheFiles[FilePos], 1, -5)
+		local File = CacheParent:AddNode(Name)
+		File.IsFile = true
+		File.Name = Name
+		File.SortName = "B"..string.lower(Name)
+		File.Icon:SetImage("vgui/spawnmenu/file")
+		FilePos = FilePos + 1
+	elseif(ToSearchTotal!=0 && ToSearchTotal>=ToSearchPos)then
+		local Search = ToSearch[ToSearchPos][1].."*"
+		CurSearch = ToSearch[ToSearchPos][1]
+		CacheFiles = file.Find(Search..".txt")
+		CacheFolders = file.FindDir(Search)
+		FolderPos = 1
+		FolderTotal = #CacheFolders
+		FileTotal = #CacheFiles
+		FilePos = 1
+		if(ToSearch[ToSearchPos][2])then
+			CacheParent = PANEL.Panel.CNodes[ToSearch[ToSearchPos][2]]
+		else
+			CacheParent = PANEL.Panel.ClientBrw
 		end
-		NextSearch = NextSearch + 0.2
-		//self:PopulateUpload(Search..v.."/", file.FindDir(Search..v.."/*"), nil, Folder.ID)
-		timer.Simple(NextSearch, self.PopulateUpload, self, Search..v.."/", file.FindDir(Search..v.."/*"), nil, Folder.ID, OnUpdate)
-		//file.TFind(Search..v.."/*", function(Search2, Folders2, Files2) self:PopulateUpload(Search2, Folders2, Files2, Folder.ID) end)
+		ToSearchPos = ToSearchPos + 1
+		ToSearchTotal = #ToSearch
+	else
+		FilePos, FolderPos, ToSearchPos = 1, 1, 1
+		FileTotal, FolderTotal, ToSearchTotal = 0, 0, 0
+		CacheFolders, CacheFiles, CacheParent, ToSearch = nil, nil, nil, nil
+		hook.Remove("Tick", "AD2_BrowserUpdate")
 	end
-
 end
 
 function PANEL:UpdateClientFiles()
-	ClientFolderCount = 2
 	local Folder = self.ClientBrw:AddNode("=Adv Duplicator=")
 	self.CNodes[1] = Folder
 	Folder.IsFile = false
 	Folder.Name = "=Adv Duplicator="
 	Folder.SortName = "A=adv duplicator="
 	Folder.ID = 1
+	ClientFolderCount = 2
 	
-	CurUpdate = CurUpdate+1
-	NextSearch = 0
-	local name = ""
-	local File
-	self:PopulateUpload("adv_duplicator/", file.FindDir("adv_duplicator/*"), nil, 1, CurUpdate)
-	for k,v in pairs(file.Find("adv_duplicator/*.txt"))do
-		name = string.sub(v, 1, -5)
-		File = Folder:AddNode(name)
-		File.IsFile = true
-		File.Name = name
-		File.SortName = "B"..string.lower(name)
-		File.Icon:SetImage("vgui/spawnmenu/file")
-	end
+	FilePos, FolderPos, ToSearchPos = 1, 1, 1
+	FileTotal, FolderTotal = 0, 0
+	CacheFolders, CacheFiles, CacheParent, ToSearch = nil, nil, nil, nil
+	hook.Remove("Tick", "AD2_BrowserUpdate")
 
-	NextSearch = NextSearch + 0.2
-	timer.Simple(NextSearch, 
-		function()
-			local name = ""
-			local File
-			self:PopulateUpload(AdvDupe2.DataFolder.."/", file.FindDir(AdvDupe2.DataFolder.."/*"), nil, 0, CurUpdate)
-			for k,v in pairs(file.Find(AdvDupe2.DataFolder.."/*.txt"))do
-				name = string.sub(v, 1, -5)
-				File = self.ClientBrw:AddNode(name)
-				File.IsFile = true
-				File.Name = name
-				File.SortName = "B"..string.lower(name)
-				File.Icon:SetImage("vgui/spawnmenu/file")
-			end
-		end)
-	NextSearch = NextSearch + 0.2
-	
-	//file.TFind("Data/adv_duplicator/*", function(Search, Folders, Files) self:PopulateUpload(Search, Folders, Files, 1) end)
-	//file.TFind("Data/"..AdvDupe2.DataFolder.."/*", function(Search, Folders, Files) self:PopulateUpload(Search, Folders, Files, 0) end)
+	ToSearch = {{"adv_duplicator/", 1},  {"advdupe2/"}}
+	ToSearchTotal = 2
+	hook.Add("Tick", "AD2_BrowserUpdate", AddFilesToBrowser)
 end
 
 local function SortChildren(NodeP)
