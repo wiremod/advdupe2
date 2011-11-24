@@ -928,6 +928,11 @@ if SERVER then
 		elseif(area==1)then
 			if(SinglePlayer())then path = "=Public=/"..path end
 			data = AdvDupe2.ReadFile(nil, path)
+			if(data==nil)then
+				AdvDupe2.Notify(ply, "File does not exist!", NOTIFY_ERROR)
+			elseif(data==false)then
+				AdvDupe2.Notify(ply,"File size is greater than "..GetConVarString("AdvDupe2_MaxFileSize"), NOTIFY_ERROR)
+			end
 		else
 			data = AdvDupe2.ReadFile(ply, path, "adv_duplicator")
 		end

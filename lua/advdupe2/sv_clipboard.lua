@@ -35,7 +35,10 @@ local function CopyEntTable( Ent, Offset )
 	local Tab = {}
 
 	if Ent.PreEntityCopy then
-		Ent:PreEntityCopy()
+		local status, valid = pcall(Ent.PreEntityCopy, Ent)
+		if(!status)then
+			print("AD2 PreEntityCopy Error: "..tostring(valid))
+		end
 	end
 
 	local EntityClass = duplicator.FindEntityClass( Ent:GetClass() )
@@ -65,7 +68,10 @@ local function CopyEntTable( Ent, Offset )
 	end
 
 	if Ent.PostEntityCopy then
-		Ent:PostEntityCopy()
+		local status, valid = pcall(Ent.PostEntityCopy, Ent)
+		if(!status)then
+			print("AD2 PostEntityCopy Error: "..tostring(valid))
+		end
 	end
 
 	Tab.Pos 			= Ent:GetPos()
@@ -138,7 +144,10 @@ local function CopyEntTable( Ent, Offset )
 	// Make this function on your SENT if you want to modify the
 	//  returned table specifically for your entity.
 	if Ent.OnEntityCopyTableFinish then
-		Ent:OnEntityCopyTableFinish( Tab )
+		local status, valid = pcall(Ent.PostEntityCopy, Ent, Tab)
+		if(!status)then
+			print("AD2 OnEntityCopyTableFinish Error: "..tostring(valid))
+		end
 	end
 
 	return Tab
@@ -493,8 +502,8 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 	end
 
-	local Ent 
-	local status = pcall( function() Ent = Factory.Func( unpack(Args) ) end )
+	local status, Ent = pcall( Factory.Func, unpack(Args))
+
 	if not status or not Ent then 
 		if(Player)then
 			AdvDupe2.Notify(ply, "ERROR, Failed to create "..Constraint.Type.." Constraint!", NOTIFY_ERROR)
@@ -738,7 +747,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			if ( Key == "pos" || Key == "position" ) then Key = "Pos" end
 			if ( Key == "ang" || Key == "Ang" || Key == "angle" ) then Key = "Angle" end
 			if ( Key == "model" ) then Key = "Model" end
-			if ( Key == "VehicleTable" && EntTable[Key].KeyValues)then
+			if ( Key == "VehicleTable" && EntTable[Key] && EntTable[Key].KeyValues)then
 				EntTable[Key].KeyValues = {vehiclescript=EntTable[Key].KeyValues.vehiclescript, limitview=EntTable[Key].KeyValues.limitview}
 			end
 
@@ -887,7 +896,10 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			for _,v in pairs( CreatedEntities ) do
 				--If the entity has a PostEntityPaste function tell it to use it now
 				if v.PostEntityPaste then
-					v:PostEntityPaste( Player, v, CreatedEntities )
+					local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
+					if(!status)then
+						print("AD2 PostEntityPaste Error: "..tostring(valid))
+					end
 				end
 				v:GetPhysicsObject():EnableMotion(false)
 
@@ -906,7 +918,10 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 		for _,v in pairs( CreatedEntities ) do
 				--If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
-				v:PostEntityPaste( Player, v, CreatedEntities )
+				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
+				if(!status)then
+					print("AD2 PostEntityPaste Error: "..tostring(valid))
+				end
 			end
 			v:GetPhysicsObject():EnableMotion(false)
 
@@ -1089,7 +1104,10 @@ local function AdvDupe2_Spawn()
 
 					--If the entity has a PostEntityPaste function tell it to use it now
 					if v.PostEntityPaste then
-						v:PostEntityPaste( Queue.Player, v, Queue.CreatedEntities )
+						local status, valid = pcall(v.PostEntityPaste, v, Queue.Player, v, Queue.CreatedEntities)
+						if(!status)then
+							print("AD2 PostEntityPaste Error: "..tostring(valid))
+						end
 					end
 
 					if(unfreeze)then
