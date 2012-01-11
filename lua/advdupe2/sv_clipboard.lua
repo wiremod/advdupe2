@@ -1177,26 +1177,44 @@ local function ErrorCatchSpawning()
 	local status, error = pcall(AdvDupe2_Spawn)
 	if(!status)then
 		//PUT ERROR LOGGING HERE
-
-		local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 		
-		local undos = undo.GetTable()[Queue.Player:UniqueID()]
-		local str = "AdvDupe2_"..Queue.Player:UniqueID()
-		for i=#undos, 1, -1 do
-			if(undos[i] && undos[i].Name == str)then
-				undos[i] = nil
-				umsg.Start( "Undone", Queue.Player )
-					umsg.Long( i )
-				umsg.End()
-				break
+		if(!AdvDupe2.JobManager.Queue)then
+			print("[AdvDupe2Notify]\t"..error)
+			AdvDupe2.JobManager.Queue = {}
+			return
+		end
+		
+		local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
+		if(!Queue)then
+			print("[AdvDupe2Notify]\t"..error)
+			return
+		end
+		
+		if(IsValid(Queue.Player))then
+			AdvDupe2.Notify(Queue.Player, error)
+			
+			local undos = undo.GetTable()[Queue.Player:UniqueID()]
+			local str = "AdvDupe2_"..Queue.Player:UniqueID()
+			for i=#undos, 1, -1 do
+				if(undos[i] && undos[i].Name == str)then
+					undos[i] = nil
+					umsg.Start( "Undone", Queue.Player )
+						umsg.Long( i )
+					umsg.End()
+					break
+				end
 			end
+		else
+			print("[AdvDupe2Notify]\t"..error)
 		end
 
 		for k,v in pairs(Queue.CreatedEntities)do
 			if(IsValid(v))then v:Remove() end
 		end
-		Queue.Player:ChatPrint([[Error spawning your contraptions, "]]..error..[["]])
-		AdvDupe2.FinishPasting(Queue.Player, true)
+
+		if(IsValid(Queue.Player))then
+			AdvDupe2.FinishPasting(Queue.Player, true)
+		end
 
 		table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
 
@@ -1247,6 +1265,8 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		table.insert(Queue.SortedEntities, k)
 	end
 
+	print("[AdvDupe2NotifyPaste]\t".." Player: "..Player:Nick().." Pasted, "..#Queue.SortedEntities.." Entities and "..#Player.AdvDupe2.Constraints.." Constraints.")
+	
 	Queue.Current = 1
 	Queue.Name = Player.AdvDupe2.Name
 	Queue.Entity = true
