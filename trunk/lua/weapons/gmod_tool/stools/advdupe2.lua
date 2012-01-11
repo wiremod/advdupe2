@@ -750,12 +750,32 @@ function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, Constraint
 		spawner:GetPhysicsObject():EnableMotion(false)
 	end
 
-	if !SinglePlayer() and delay < 0.2 then
-		delay = 0.2
+	if(!delay)then
+		delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+	else
+		if(!SinglePlayer())then
+			if (delay < tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))) then
+				delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+			elseif(delay > tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")))then
+				delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay"))
+			end
+		elseif(delay<0)then
+			delay = 0
+		end
 	end
 	
-	if !SinglePlayer() and (undo_delay <=0 or undo_delay>60) then
-		undo_delay = 15
+	if(!undo_delay)then
+		undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+	else
+		if(!SinglePlayer())then
+			if(undo_delay <tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))) then
+				undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+			elseif(undo_delay>tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))then
+				undo_delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay"))
+			end
+		elseif(undo_delay < 0)then
+			undo_delay = 0
+		end
 	end
 		
 	// Set options
@@ -793,27 +813,68 @@ function TOOL:Reload( trace )
 
 	//If a contraption spawner was clicked then update it with the current settings
 	if(trace.Entity:GetClass()=="gmod_contr_spawner")then
-		local delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")) or .33
-		local undo_delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")) or 15
-		if(!SinglePlayer())then
-			if(delay<0.2)then
-				delay = 0.2
+		local delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_delay"))
+		local undo_delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay"))
+		if(!delay)then
+			delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+		else
+			if(!SinglePlayer())then
+				if (delay < tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))) then
+					delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+				elseif(delay > tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")))then
+					delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay"))
+				end
+			elseif(delay<0)then
+				delay = 0
 			end
-			if(undo_delay<=0 || undo_delay>60)then
-				undo_delay = 15
+		end
+		
+		if(!undo_delay)then
+			undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+		else
+			if(!SinglePlayer())then
+				if(undo_delay <tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))) then
+					undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+				elseif(undo_delay>tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))then
+					undo_delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay"))
+				end
+			elseif(undo_delay < 0)then
+				undo_delay = 0
 			end
 		end
 		trace.Entity:GetTable():SetOptions(ply, delay, undo_delay, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
 		return true
 	end
 
-	//Create a contration spawner
+	//Create a contraption spawner
 	if ply.AdvDupe2 and ply.AdvDupe2.Entities then
 
 		local headent = ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index]
 		local ghostent = self.GhostEntities[ply.AdvDupe2.HeadEnt.Index]
-		if(headent.Class=="gmod_contr_spawner") then return false end
-		local spawner = MakeContraptionSpawner( ply, ghostent:GetPos(), ghostent:GetAngles(), ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")) or .33,tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")) or 0, headent.Model, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),  tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
+		local ang
+		local pos
+		if(self.GhostEntities && IsValid(self.GhostEntities[ply.AdvDupe2.HeadEnt.Index]))then
+			pos = self.GhostEntities[ply.AdvDupe2.HeadEnt.Index]:GetPos()
+			ang = self.GhostEntities[ply.AdvDupe2.HeadEnt.Index]:GetAngles()
+		elseif(headent)then
+			local trace = util.TraceLine(util.GetPlayerTrace(ply, ply:GetCursorAimVector()))
+			if (!trace.Hit) then return end
+			local EntAngle = self:GetNetworkedAngle("HeadAngle", Angle(0,0,0))
+			if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
+			trace.HitPos.Z = trace.HitPos.Z + math.Clamp((self:GetNetworkedFloat("HeadZPos", 0) + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0), -16000, 16000)
+			pos, ang = LocalToWorld(self:GetNetworkedVector("HeadOffset", Vector(0,0,0)), EntAngle, trace.HitPos, Angle(math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_roll")) or 0,-180,180))) 
+		else
+			AdvDupe2.Notify(ply, "Invalid head entity to spawn contraption spawner.")
+			return
+		end
+		
+		if(headent.Class=="gmod_contr_spawner") then 
+			AdvDupe2.Notify(ply, "Cannot make a contraption spawner from a contraption spawner.")
+			return false 
+		end
+	
+		
+		local spawner = MakeContraptionSpawner( ply, ghostent:GetPos(), ghostent:GetAngles(), ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")), headent.Model, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),  tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
 		ply:AddCleanup( "AdvDupe2", spawner )
 		undo.Create("gmod_contr_spawner")
 			undo.AddEntity( spawner )
@@ -1702,12 +1763,14 @@ if CLIENT then
 			if(SinglePlayer())then
 				NumSlider:SetMin( 0 )
 			else
-				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<0.2)then
-					RunConsoleCommand("advdupe2_contr_spawner_delay", "0.2")
+				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")))then
+					RunConsoleCommand("advdupe2_contr_spawner_delay", GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+				elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))>tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")))then
+					RunConsoleCommand("advdupe2_contr_spawner_delay", GetConVarString("AdvDupe2_MaxContraptionSpawnDelay"))
 				end
-				NumSlider:SetMin( 0.2 )
+				NumSlider:SetMin( tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) )
 			end
-			NumSlider:SetMax( 10 )
+			NumSlider:SetMax( tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")) )
 			NumSlider:SetDecimals( 1 )
 			NumSlider:SetConVar("advdupe2_contr_spawner_delay")
 			CategoryContent3:AddItem(NumSlider)
@@ -1718,13 +1781,15 @@ if CLIENT then
 				NumSlider:SetMin( 0 )
 				NumSlider:SetMax( 256 )
 			else
-				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < 1 || tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > 60)then
-					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", "1")
+				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")))then
+					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+				elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))then
+					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))
 				end
-				NumSlider:SetMin( 1 )
-				NumSlider:SetMax( 60 )
+				NumSlider:SetMin( tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) )
+				NumSlider:SetMax( tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) )
 			end
-			NumSlider:SetDecimals( 0 )
+			NumSlider:SetDecimals( 1 )
 			NumSlider:SetConVar("advdupe2_contr_spawner_undo_delay")
 			CategoryContent3:AddItem(NumSlider)
 					

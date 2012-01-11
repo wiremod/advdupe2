@@ -28,7 +28,7 @@ function AdvDupe2.Notify(ply,msg,typ,dur)
 		umsg.Char(typ or NOTIFY_GENERIC)
 		umsg.Char(dur or 5)
 	umsg.End()
-	print("[AdvDupe2Notify]",msg)
+	print("[AdvDupe2Notify]\t"..msg)
 end
 
 local function RemovePlayersFiles(ply)
@@ -57,6 +57,10 @@ CreateConVar("AdvDupe2_AllowPublicFolder", "true", {FCVAR_ARCHIVE})
 
 CreateConVar("AdvDupe2_MaxContraptionEntities", "10", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxContraptionConstraints", "15", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_MinContraptionSpawnDelay", "0.2", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_MaxContraptionSpawnDelay", "120", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_MinContraptionUndoDelay", "0.1", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_MaxContraptionUndoDelay", "60", {FCVAR_ARCHIVE})
 
 CreateConVar("AdvDupe2_MaxAreaCopySize", "2500", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_RemoveFilesOnDisconnect", "false", {FCVAR_ARCHIVE})
