@@ -750,14 +750,15 @@ function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, Constraint
 		spawner:GetPhysicsObject():EnableMotion(false)
 	end
 
+	local min
+	local max
 	if(!delay)then
-		delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+		delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
 	else
 		if(!SinglePlayer())then
-			if (delay < tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))) then
-				delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
-			elseif(delay > tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")))then
-				delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay"))
+			min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+			if (delay < min) then
+				delay = min
 			end
 		elseif(delay<0)then
 			delay = 0
@@ -768,10 +769,12 @@ function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, Constraint
 		undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
 	else
 		if(!SinglePlayer())then
-			if(undo_delay <tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))) then
-				undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
-			elseif(undo_delay>tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))then
-				undo_delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay"))
+			min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
+			max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+			if(undo_delay < min) then
+				undo_delay = min
+			elseif(undo_delay > max)then
+				undo_delay = max
 			end
 		elseif(undo_delay < 0)then
 			undo_delay = 0
@@ -815,14 +818,15 @@ function TOOL:Reload( trace )
 	if(trace.Entity:GetClass()=="gmod_contr_spawner")then
 		local delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_delay"))
 		local undo_delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay"))
+		local min
+		local max
 		if(!delay)then
-			delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
+			delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
 		else
 			if(!SinglePlayer())then
-				if (delay < tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))) then
-					delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
-				elseif(delay > tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")))then
-					delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay"))
+				min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+				if (delay < min) then
+					delay = min
 				end
 			elseif(delay<0)then
 				delay = 0
@@ -833,10 +837,12 @@ function TOOL:Reload( trace )
 			undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
 		else
 			if(!SinglePlayer())then
-				if(undo_delay <tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))) then
-					undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
-				elseif(undo_delay>tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))then
-					undo_delay = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay"))
+				min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
+				max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+				if(undo_delay < min) then
+					undo_delay = min
+				elseif(undo_delay > max)then
+					undo_delay = max
 				end
 			elseif(undo_delay < 0)then
 				undo_delay = 0
@@ -1763,14 +1769,13 @@ if CLIENT then
 			if(SinglePlayer())then
 				NumSlider:SetMin( 0 )
 			else
+				local min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
 				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")))then
-					RunConsoleCommand("advdupe2_contr_spawner_delay", GetConVarString("AdvDupe2_MinContraptionSpawnDelay"))
-				elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))>tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")))then
-					RunConsoleCommand("advdupe2_contr_spawner_delay", GetConVarString("AdvDupe2_MaxContraptionSpawnDelay"))
+					RunConsoleCommand("advdupe2_contr_spawner_delay", tostring(min))
 				end
-				NumSlider:SetMin( tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) )
+				NumSlider:SetMin( min )
 			end
-			NumSlider:SetMax( tonumber(GetConVarString("AdvDupe2_MaxContraptionSpawnDelay")) )
+			NumSlider:SetMax(60)
 			NumSlider:SetDecimals( 1 )
 			NumSlider:SetConVar("advdupe2_contr_spawner_delay")
 			CategoryContent3:AddItem(NumSlider)
@@ -1779,15 +1784,17 @@ if CLIENT then
 			NumSlider:SetText( "Undo Delay" )
 			if(SinglePlayer())then 
 				NumSlider:SetMin( 0 )
-				NumSlider:SetMax( 256 )
+				NumSlider:SetMax( 60 )
 			else
-				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")))then
-					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
-				elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))then
-					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")))
+				local min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
+				local max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < min)then
+					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(min))
+				elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > max)then
+					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(max))
 				end
-				NumSlider:SetMin( tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) )
-				NumSlider:SetMax( tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) )
+				NumSlider:SetMin( min )
+				NumSlider:SetMax( max )
 			end
 			NumSlider:SetDecimals( 1 )
 			NumSlider:SetConVar("advdupe2_contr_spawner_undo_delay")

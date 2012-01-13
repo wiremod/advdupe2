@@ -58,7 +58,6 @@ CreateConVar("AdvDupe2_AllowPublicFolder", "true", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxContraptionEntities", "10", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxContraptionConstraints", "15", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MinContraptionSpawnDelay", "0.2", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_MaxContraptionSpawnDelay", "120", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MinContraptionUndoDelay", "0.1", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxContraptionUndoDelay", "60", {FCVAR_ARCHIVE})
 
