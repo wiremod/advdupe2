@@ -1770,7 +1770,7 @@ if CLIENT then
 				NumSlider:SetMin( 0 )
 			else
 				local min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
-				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")))then
+				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<min)then
 					RunConsoleCommand("advdupe2_contr_spawner_delay", tostring(min))
 				end
 				NumSlider:SetMin( min )
