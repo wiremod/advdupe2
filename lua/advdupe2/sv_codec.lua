@@ -641,8 +641,12 @@ local function getInfo(str)
 	for k,v in ss:gmatch("(.-)\1(.-)\1") do
 		info[k] = v
 	end
-	if not info.check or info.check ~= "\r\n\t\n" then
-		error("attempt to read AD2 file with malformed info block")
+	if info.check ~= "\r\n\t\n" then
+		if info.check == "\10\9\10" then
+			error("detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)")
+		else
+			error("attempt to read AD2 file with malformed info block")
+		end
 	end
 	return info, str:sub(last+2)
 end
