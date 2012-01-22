@@ -305,7 +305,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -1105,6 +1105,7 @@ local function AdvDupe2_Spawn()
 							end
 						end
 						if(edit && IsValid(v:GetPhysicsObject()))then
+							v:PhysicsInitShadow(false, false)
 							v:SetCollisionGroup(COLLISION_GROUP_WORLD)
 							v:GetPhysicsObject():EnableMotion(false)
 							v:GetPhysicsObject():Sleep()
