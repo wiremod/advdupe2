@@ -1091,6 +1091,7 @@ local function AdvDupe2_Spawn()
 			undo.Create "AdvDupe2"
 				local phys
 				local edit
+				local mass
 				for _,v in pairs( Queue.CreatedEntities ) do
 					if(!IsValid(v))then v = nil continue end
 					edit = true
@@ -1105,10 +1106,12 @@ local function AdvDupe2_Spawn()
 							end
 						end
 						if(edit && IsValid(v:GetPhysicsObject()))then
+							mass = v:GetPhysicsObject():GetMass()
 							v:PhysicsInitShadow(false, false)
 							v:SetCollisionGroup(COLLISION_GROUP_WORLD)
 							v:GetPhysicsObject():EnableMotion(false)
 							v:GetPhysicsObject():Sleep()
+							v:GetPhysicsObject():SetMass(mass)
 						end
 					else
 						edit=false
