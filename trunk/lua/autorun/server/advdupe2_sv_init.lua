@@ -1,6 +1,6 @@
 AdvDupe2 = {
 	Version = "1.0.5",
-	Revision = 36
+	Revision = 43
 }
 
 AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
@@ -48,6 +48,7 @@ local function RemovePlayersFiles(ply)
 	file.TFind("Data/"..ply:GetAdvDupe2Folder().."/*", TFind)
 end
 
+CreateConVar("AdvDupe2_SpawnRate", "1", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxFileSize", "200", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxEntities", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxConstraints", "0", {FCVAR_ARCHIVE})
@@ -75,6 +76,8 @@ CreateConVar("AdvDupe2_ClientSendRate", "0.15", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_ServerDataChunks", "4", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_ClientDataChunks", "4", {FCVAR_ARCHIVE})
 
+
+
 cvars.AddChangeCallback("AdvDupe2_RemoveFilesOnDisconnect",
 	function(cvar, preval, newval)
 		if(tobool(newval))then
@@ -83,8 +86,25 @@ cvars.AddChangeCallback("AdvDupe2_RemoveFilesOnDisconnect",
 			hook.Remove("PlayerDisconnected", "AdvDupe2_RemovePlayersFiles")
 		end
 	end)
+	
+cvars.AddChangeCallback("AdvDupe2_SpawnRate",
+	function(cvar, preval, newval)
+		newval = tonumber(newval)
+		if(newval!=nil && newval<=1 && newval>0)then
+			AdvDupe2.SpawnRate = newval
+		else
+			print("[AdvDupe2Notify]\tINVALID SPAWN RATE")
+		end
+	end)
+	
 hook.Add("Initialize", "AdvDupe2_CheckServerSettings",
 	function()
+		AdvDupe2.SpawnRate = tonumber(GetConVarString("AdvDupe2_SpawnRate"))
+		if(!AdvDupe2.SpawnRate || AdvDupe2.SpawnRate<=0 || AdvDupe2.SpawnRate>1)then
+			AdvDupe2.SpawnRate = 1
+			print("[AdvDupe2Notify]\tINVALID SPAWN RATE DEFAULTING VALUE")
+		end
+		
 		if(tobool(GetConVarString("AdvDupe2_RemoveFilesOnDisconnect")))then
 			hook.Add("PlayerDisconnected", "AdvDupe2_RemovePlayersFiles", RemovePlayersFiles)
 		end

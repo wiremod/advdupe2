@@ -305,7 +305,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -935,9 +935,17 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 	return CreatedEntities, CreatedConstraints
 end
 
-
+local ticktotal = 0
 local function AdvDupe2_Spawn()
-
+	
+	ticktotal = ticktotal + AdvDupe2.SpawnRate
+	if(ticktotal<1)then
+		return
+	end
+	
+	ticktotal = ticktotal - 1
+		
+	
 	local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 
 	if(!IsValid(Queue.Player))then
