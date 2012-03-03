@@ -120,6 +120,7 @@ end
 //Remove player's ghosts and tell the client to stop updating ghosts
 function TOOL:RemoveGhosts(ply)
 
+	
 	if(IsValid(ply) && ply.AdvDupe2)then 
 		if(ply.AdvDupe2.Ghosting && !ply.AdvDupe2.Downloading)then
 			AdvDupe2.RemoveProgressBar(ply)
@@ -338,13 +339,15 @@ function AdvDupe2.FinishPasting(Player, Paste)
 	if(Paste)then AdvDupe2.Notify(Player,"Finished Pasting!") end
 
 	local tool = Player:GetTool()
-	if(tool && Player:GetActiveWeapon():GetClass()=="gmod_tool" && tool.Mode=="advdupe2")then
-		if(Player.AdvDupe2.Ghosting)then AdvDupe2.InitProgressBar(Player, "Ghosting: ") end
-		umsg.Start("AdvDupe2_Ghosting", Player)
-		umsg.End()
-		return
-	else
-		Player:GetTool("advdupe2"):RemoveGhosts(Player)
+	if(tool)then
+		if(Player:GetActiveWeapon():GetClass()=="gmod_tool" && tool.Mode=="advdupe2")then
+			if(Player.AdvDupe2.Ghosting)then AdvDupe2.InitProgressBar(Player, "Ghosting: ") end
+			umsg.Start("AdvDupe2_Ghosting", Player)
+			umsg.End()
+			return
+		else
+			Player:GetTool("advdupe2"):RemoveGhosts(Player)
+		end
 	end
 
 end
@@ -505,7 +508,6 @@ function TOOL:Think()
 	local ply = self:GetOwner()
 	
 	if(SERVER && ply.AdvDupe2)then
-		
 		if(self.GhostEntities && !ply.AdvDupe2.Pasting)then
 			UpdateGhost(ply, self.Weapon)
 		end
@@ -675,7 +677,6 @@ end
 function TOOL:Deploy()
 	if ( CLIENT ) then return end
 	local ply = self:GetOwner()
-	self.GhostEntities = nil
 	
 	if ( !ply.AdvDupe2 ) then ply.AdvDupe2={} end
 	
@@ -688,12 +689,15 @@ function TOOL:Deploy()
 	if(ply.AdvDupe2.Pasting)then
 		AdvDupe2.InitProgressBar(ply, "Pasting: ")
 		return
-	elseif(ply.AdvDupe2.Uploading)then
-		AdvDupe2.InitProgressBar(ply, "Uploading: ")
-		return
-	elseif(ply.AdvDupe2.Downloading)then
-		AdvDupe2.InitProgressBar(ply, "Downloading: ")
-		return
+	else
+		self.GhostEntities = nil
+		if(ply.AdvDupe2.Uploading)then
+			AdvDupe2.InitProgressBar(ply, "Uploading: ")
+			return
+		elseif(ply.AdvDupe2.Downloading)then
+			AdvDupe2.InitProgressBar(ply, "Downloading: ")
+			return
+		end
 	end
 
 	AdvDupe2.StartGhosting(ply)
@@ -898,7 +902,7 @@ if SERVER then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
 	function AdvDupe2.StartGhosting(ply)
-		
+
 		if(!ply.AdvDupe2.Entities)then return end
 		local tool = ply:GetTool()
 		if(!tool || ply:GetActiveWeapon():GetClass()!="gmod_tool" || tool.Mode!="advdupe2")then return end
