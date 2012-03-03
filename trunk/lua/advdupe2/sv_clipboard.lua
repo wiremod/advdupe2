@@ -305,7 +305,7 @@ local function LoadSents()
 		AdvDupe2.duplicator.WhiteList[_] = true
 	end
 end
-concommand.Add("advdupe2_reloadwhitelist", LoadSents)
+//concommand.Add("advdupe2_reloadwhitelist", LoadSents)
 hook.Add( "InitPostEntity", "LoadDuplicatingEntities", LoadSents)
 
 --[[
@@ -597,8 +597,8 @@ local function DoGenericPhysics( Entity, data, Player )
 		if ( IsValid(Phys) ) then	
 			Phys:SetPos( Args.Pos )
 			Phys:SetAngle( Args.Angle )
-			//Phys:EnableMotion( false ) 	
-			//Player:AddFrozenPhysicsObject( Entity, Phys )
+			Phys:EnableMotion( false ) 	
+			Player:AddFrozenPhysicsObject( Entity, Phys )
 		end	
 	end
 end
@@ -793,8 +793,6 @@ local function CreateEntityFromTable(EntTable, Player)
 			for Bone = 0, iNumPhysObjects-1 do 
 				PhysObj = valid:GetPhysicsObjectNum( Bone )
 				if IsValid(PhysObj) then
-					PhysObj:Sleep()
-					PhysObj:Wake()
 					PhysObj:EnableMotion(false)
 					Player:AddFrozenPhysicsObject( valid, PhysObj )
 				end
@@ -1017,7 +1015,6 @@ local function AdvDupe2_Spawn()
 			Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
 
 			local Phys = Ent:GetPhysicsObject()
-			Phys:Wake()
 			if(IsValid(Phys))then Phys:EnableMotion(false) end
 			if(!Queue.DisableProtection)then Ent:SetNotSolid(true) end
 		elseif(Ent==false)then
