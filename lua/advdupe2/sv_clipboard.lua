@@ -726,6 +726,8 @@ local function CreateEntityFromTable(EntTable, Player)
 		if(sent==false)then
 			print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 			return nil
+		else
+			sent = true
 		end
 
 		if( SinglePlayer() || AdvDupe2.duplicator.WhiteList[EntTable.Class]  || (EntTable.BuildDupeInfo.IsNPC && (tobool(GetConVarString("AdvDupe2_AllowNPCPasting")) && string.sub(EntTable.Class, 1, 4)=="npc_")))then
@@ -776,6 +778,8 @@ local function CreateEntityFromTable(EntTable, Player)
 			if(sent==false)then
 				print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 				return nil
+			else
+				sent = true
 			end			
 
 			status,valid = pcall(  EntityClass.Func, Player, unpack(ArgList) )
