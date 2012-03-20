@@ -183,6 +183,8 @@ local function CopyConstraintTable( Const, Offset )
 		Constraint.Entity[ 1 ] = {}
 		Constraint.Entity[ 1 ].Index = Const["Ent"]:EntIndex()
 		if(!Const["Ent"]:IsWorld())then table.insert( Entities, Const["Ent"] ) end
+		Constraint.Type = Const.Type
+		if(Const.BuildDupeInfo)then Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo) end
 	else
 		local ent
 		for i=1,4 do
