@@ -361,7 +361,7 @@ local function UpdateGhost(ply, toolWep)
 	local GhostEnt = toolWep:GetNetworkedEntity("GhostEntity", nil)
 	
 	if(!IsValid(GhostEnt) || !IsValid(ply))then
-		if SERVER then toolWep:RemoveGhosts(ply) end
+		if SERVER then toolWep.Tool.advdupe2:RemoveGhosts(ply) end
 		return 
 	end
 
@@ -377,7 +377,7 @@ local function UpdateGhost(ply, toolWep)
 		else
 			local EntAngle = toolWep:GetNetworkedAngle("HeadAngle", Angle(0,0,0))
 			if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
-			trace.HitPos.Z = trace.HitPos.Z + math.Clamp((toolWep:GetNetworkedFloat("HeadZPos", 0) + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0), -16000, 16000)
+			trace.HitPos.Z = trace.HitPos.Z + math.Clamp((toolWep:GetNetworkedFloat("HeadZPos", 0) or 0 + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0), -16000, 16000)
 			local Pos, Angle = LocalToWorld(toolWep:GetNetworkedVector("HeadOffset", Vector(0,0,0)), EntAngle, trace.HitPos, Angle(math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_roll")) or 0,-180,180))) 
 			PhysObj:SetPos(Pos)
 			PhysObj:SetAngle(Angle)
@@ -441,9 +441,10 @@ local function MakeGhostsFromTable( toolWep, gParent, EntTable, Player)
 	else
 		GhostEntity = ents.Create( "gmod_ghost" )
 	end
+	
 	// If there are too many entities we might not spawn..
 	if !IsValid(GhostEntity) then 
-		toolWep:RemoveGhosts(Player)
+		toolWep.Tool.advdupe2:RemoveGhosts(Player)
 		AdvDupe2.RemoveProgressBar(Player)
 		AdvDupe2.Notify(Player, "To many entities to spawn ghosts", NOTIFY_ERROR)
 		return 
