@@ -178,6 +178,7 @@ function ENT:DoSpawn( ply )
 				if(self.DisableGravity==1)then phys:EnableGravity(false) end
 				if(self.DisableDrag==1)then phys:EnableDrag(false) end
 				phys:EnableMotion(true)
+				if(ent.SetForce)then ent.SetForce(ent, ent.force, ent.mul) end
 				if(self.AddVelocity==1)then 
 					phys:SetVelocity( self:GetVelocity() ) 
 					phys:AddAngleVelocity( self:GetPhysicsObject():GetAngleVelocity() ) 
