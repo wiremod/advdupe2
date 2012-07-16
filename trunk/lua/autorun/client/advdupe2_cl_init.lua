@@ -1,6 +1,6 @@
 AdvDupe2 = {
-	Version = "1.0.4",
-	Revision = 15
+	Version = "1.1.0",
+	Revision = 51
 }
 
 AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
@@ -29,7 +29,7 @@ function AdvDupe2.ShowSplash()
 	end
 
 	local splash = vgui.Create("DFrame")
-	splash:SetSize(512, 316) // Make it 1/4 the users screen size
+	splash:SetSize(512, 316) --Make it 1/4 the users screen size
 	splash:SetPos((ScrW()/2) - splash:GetWide()/2, (ScrH()/2) - splash:GetTall()/2)
 	splash:SetVisible( true )
 	splash:SetTitle("")
@@ -47,9 +47,9 @@ function AdvDupe2.ShowSplash()
 	logo:LoadTGAImage(("addons/%s/materials/gui/ad2logo.tga"):format(ad2folder),"LOL it doesn't actually have to be 'MOD'")
 	
 	local version = vgui.Create("DLabel", splash)
-	version:SetPos(512 - (512-446)/2 - 85,140) // Position
-	version:SetColor(Color(0,0,0,255)) // Color
-	version:SetText(("v%s (rev. %u)"):format(AdvDupe2.Version, AdvDupe2.Revision)) // Text
+	version:SetPos(512 - (512-446)/2 - 85,140) --Position
+	version:SetColor(Color(0,0,0,255)) --Color
+	version:SetText(("v%s (rev. %u)"):format(AdvDupe2.Version, AdvDupe2.Revision)) --Text
 	version:SizeToContents()
 	
 	local credit = vgui.Create("DLabel", splash)
