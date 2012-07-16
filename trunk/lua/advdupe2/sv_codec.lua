@@ -5,10 +5,12 @@
 
 	Author: emspike
 
-	Version: 1.0
+	Version: 1.1
 ]]
 
-local REVISION = 1
+local REVISION = 2
+
+include "sv_codec_legacy.lua"
 
 local pairs = pairs
 local type = type
@@ -60,7 +62,7 @@ end
 
 local AD2FF = "AD2F%s\n%s\n%s"
 
-local period = CreateConVar("advdupe2_codec_pipeperiod",1,"Every this many ticks, the codec pipeline processor will run.",FCVAR_ARCHIVE,FCVAR_DONTRECORD)
+local period = CreateConVar("advdupe2_codec_pipeperiod", 1, "Every this many ticks, the codec pipeline processor will run.", FCVAR_ARCHIVE, FCVAR_DONTRECORD)
 local clock = 1
 local pipelines = {}
 local function addPipeline(pipeline)
@@ -72,7 +74,7 @@ local function pipeproc()
 		for idx,pipeline in pairs(pipelines) do
 			local i = pipeline.idx + 1
 			pipeline.idx = i
-			if i == pipeline.cbk then
+			if not pipeline[i+1] then
 				done[#done+1] = idx
 				pipeline.info.size = #pipeline.eax
 				local success, err = pcall(pipeline[i], AD2FF:format(char(pipeline.REVISION), makeInfo(pipeline.info), pipeline.eax), unpack(pipeline.args))
@@ -99,8 +101,10 @@ end
 hook.Add("Tick","AD2CodecPipelineProc",pipeproc)
 
 local encode_types, decode_types
+local tables
+local tblcount = 0
 local str,pos
-local a,b,c,m,n,w
+local a,b,c,m,n,w,tblref
 
 local function write(data)
 	local t = encode_types[type(data)]
@@ -112,6 +116,15 @@ end
 
 encode_types = {
 	table = {2, function(o)
+		local tableid = tables[o]
+		if tableid then
+			return tableid.."\1", 10
+		else
+			tblcount = tblcount + 1
+			tables[o] = tblcount
+			tableid = tblcount
+		end
+		
 		local is_array = true
 		m = 0
 		for k in pairs(o) do
@@ -121,14 +134,16 @@ encode_types = {
 				break
 			end
 		end
+		
 		local u = {}
 		if is_array then
 			for g = 1,#o do
 				u[g] = write(o[g])
 			end
-			return concat(u).."\1", 3
+			return concat{tableid,"\1",concat(u),"\1"}, 3
 		else
-			local i = 0
+			u = {tableid,"\1"}
+			local i = 2
 			for k,v in pairs(o) do
 				w = write(v)
 				if w then
@@ -158,29 +173,40 @@ encode_types = {
 }
 
 local function read()
-	local t = byte(str,pos+1)
+	local t = byte(str, pos+1)
 	if t then
 		local dt = decode_types[t]
 		if dt then
 			pos = pos + 1
 			return dt()
 		else
-			error(format("encountered invalid data type (%u)",t))
+			error(format("encountered invalid data type (%u)\n",t))
 		end
 	else
-		error("expected value, got EOF")
+		error("expected value, got EOF\n")
 	end
 end
 
 decode_types = {
 	[1	] = function()
-		error("expected value, got terminator")
+		error("expected value, got terminator\n")
 	end,
 	[2	] = function() -- table
+		
+		m = find(str, "\1", pos)
+		if m then
+			w = sub(str, pos+1, m-1)
+			pos = m
+		else
+			error("expected table identifier, got EOF\n")
+		end
+		
 		local t = {}
+		tables[w] = t
+		
 		while true do
-			if byte(str,pos+1) == 1 then
-				pos = pos+1
+			if byte(str, pos+1) == 1 then
+				pos = pos + 1
 				return t
 			else
 				t[read()] = read()
@@ -188,7 +214,19 @@ decode_types = {
 		end
 	end,
 	[3	] = function() -- array
+		
+		m = find(str, "\1", pos)
+		if m then
+			w = sub(str, pos+1, m-1)
+			pos = m
+		else
+			error("expected table identifier, got EOF\n")
+		end
+		
 		local t, i = {}, 1
+		
+		tables[w] = t
+		
 		while true do
 			if byte(str,pos+1) == 1 then
 				pos = pos+1
@@ -206,52 +244,72 @@ decode_types = {
 		return true
 	end,
 	[6	] = function() -- number
-		m = find(str,"\1",pos)
+		m = find(str, "\1", pos)
 		if m then
-			a = tonumber(sub(str,pos+1,m-1)) or 0
+			a = tonumber(sub(str, pos+1, m-1)) or 0
 			pos = m
 			return a
 		else
-			error("expected number, got EOF")
+			error("expected number, got EOF\n")
 		end
 	end,
 	[7	] = function() -- string
 		m = find(str,"\1",pos)
 		if m then
-			w = sub(str,pos+1,m-1)
+			w = sub(str, pos+1, m-1)
 			pos = m
 			return w
 		else
-			error("expected string, got EOF")
+			error("expected string, got EOF\n")
 		end
 	end,
 	[8	] = function() -- Vector
-		m,n = find(str,".-\1.-\1.-\1",pos)
+		m,n = find(str,".-\1.-\1.-\1", pos)
 		if m then
 			a,b,c = match(str,"^(.-)\1(.-)\1(.-)\1",pos+1)
 			pos = n
 			return Vector(tonumber(a), tonumber(b), tonumber(c))
 		else
-			error("expected vector, got EOF")
+			error("expected vector, got EOF\n")
 		end
 	end,
 	[9	] = function() -- Angle
-		m,n = find(str,".-\1.-\1.-\1",pos)
+		m,n = find(str, ".-\1.-\1.-\1", pos)
 		if m then
-			a,b,c = match(str,"^(.-)\1(.-)\1(.-)\1",pos+1)
+			a,b,c = match(str, "^(.-)\1(.-)\1(.-)\1",pos+1)
 			pos = n
 			return Angle(tonumber(a), tonumber(b), tonumber(c))
 		else
-			error("expected angle, got EOF")
+			error("expected angle, got EOF\n")
 		end
+	end,
+	[10	] = function() -- Table Reference
+		m = find(str,"\1",pos)
+		if m then
+			w = sub(str,pos+1,m-1)
+			pos = m
+		else
+			error("expected table identifier, got EOF\n")
+		end
+		tblref = tables[w]
+		
+		if tblref then
+			return tblref
+		else
+			error(format("table identifier %s points to nil\n", w))
+		end
+		
 	end
 }
+
 local function deserialize(data)
 	str = data
 	pos = 0
+	tables = {}
 	return read()
 end
 local function serialize(data)
+	tables = {}
 	return write(data)
 end
 
@@ -264,8 +322,8 @@ local function encodeIndex(index)
 	local buffer = {}
 	local buffer_len = 0
 	local temp
-	while index>0 do
-		temp = index>>8
+	while index > 0 do
+		temp = index >> 8
 		buffer_len = buffer_len + 1
 		buffer[buffer_len] = index - (temp << 8)
 		index = temp
@@ -388,7 +446,7 @@ local function huffmanEncode(raw)
 		code = codes[byte(raw,i)]
 		buffer = buffer + (code[1] << buffer_length)
 		buffer_length = buffer_length + code[2]
-		while buffer_length>=8 do
+		while buffer_length >= 8 do
 			encoded_length = encoded_length + 1
 			encoded[encoded_length] = char(buffer & 0xff)
 			buffer = buffer >> 8
@@ -455,7 +513,6 @@ local function huffmanDecode(encoded)
 	return concat(decoded)
 end
 
---escape sequences can't be palindromes
 local escseq = {
 	"bbq",
 	"wtf",
@@ -495,115 +552,6 @@ local function invEscapeSub(str)
 	return gsub(body,escseq,"\26")
 end
 
-local dictionary
-local subtables
-
-local function deserializeChunk(chunk)
-	
-	local ctype,val = byte(chunk),sub(chunk,3)
-	
-	if     ctype == 89 then return dictionary[ val ]
-	elseif ctype == 86 then
-		local a,b,c = match(val,"^(.-),(.-),(.+)$")
-		return Vector( tonumber(a), tonumber(b), tonumber(c) )
-	elseif ctype == 65 then
-		local a,b,c = match(val,"^(.-),(.-),(.+)$")
-		return Angle( tonumber(a), tonumber(b), tonumber(c) )
-	elseif ctype == 84 then 
-		local t = {}
-		local tv = subtables[val]
-		if not tv then
-			tv = {}
-			subtables[ val ] = tv
-		end
-		tv[#tv+1] = t
-		return t
-	elseif ctype == 78 then return tonumber(val)
-	elseif ctype == 83 then return gsub(sub(val,2,-2),"»",";")
-	elseif ctype == 66 then return val == "t"
-	elseif ctype == 80 then return 1
-	end
-	
-	error(format("AD1 deserialization failed: invalid chunk (%u:%s)",ctype,val))
-	
-end
-
-local function deserializeAD1(dupestring)
-	
-	local header, extraHeader, dupeBlock, dictBlock = dupestring:match("%[Info%]\n(.+)\n%[More Information%]\n(.+)\n%[Save%]\n(.+)\n%[Dict%]\n(.+)")
-	
-	if not header then
-		error("unknown duplication format")
-	end
-	
-	local info = {}
-	for k,v in header:gmatch("([^\n:]+):([^\n]+)") do
-		info[k] = v
-	end
-		
-	local moreinfo = {}
-	for k,v in extraHeader:gmatch("([^\n:]+):([^\n]+)") do
-		moreinfo[k] = v
-	end
-	
-	dictionary = {}
-	for k,v in dictBlock:gmatch("([^\n]+):\"(.-)\"") do
-		dictionary[k] = v
-	end
-
-	local dupe = {}
-	for key,block in dupeBlock:gmatch("([^\n:]+):([^\n]+)") do
-		
-		local tables = {}
-		subtables = {}
-		local head
-		
-		for id,chunk in block:gmatch('(%w+){(.-)}') do
-			
-			--check if this table is the trunk
-			if byte(id) == 72 then
-				id = sub(id,2)
-				head = id
-			end
-			
-			tables[id] = {}
-			
-			for kv in gmatch(chunk,'[^;]+') do
-				
-				local k,v = match(kv,'(.-)=(.+)')
-				
-				if k then
-					k = deserializeChunk( k )
-					v = deserializeChunk( v )
-					
-					tables[id][k] = v
-				else
-					v = deserializeChunk( kv )
-					local tid = tables[id]
-					tid[#tid+1]=v
-				end
-				
-			end
-		end
-		
-		--Restore table references
-		for id,tbls in pairs( subtables ) do
-			for _,tbl in pairs( tbls ) do
-				if not tables[id] then error("attempt to reference a nonexistent table") end
-				for k,v in pairs(tables[id]) do
-					tbl[k] = v
-				end
-			end
-		end
-		
-		dupe[key] = tables[ head ]
-		
-	end
-	
-	return dupe, info, moreinfo
-	
-end
-
 --[[
 	Name:	Encode
 	Desc:	Generates the string for a dupe file with the given data.
@@ -624,8 +572,7 @@ function AdvDupe2.Encode(dupe, info, callback, ...)
 		REVISION = REVISION,
 		info = info,
 		args = {...},
-		idx = 0,
-		cbk = 5
+		idx = 0
 	}
 	
 end
@@ -652,9 +599,11 @@ local function getInfo(str)
 end
 
 --decoders for individual versions go here
-versions = {}
+local versions = {}
 
-versions[1] = function(encodedDupe)
+versions[1] = AdvDupe2.LegacyDecoders[1]
+
+versions[2] = function(encodedDupe)
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize(
 				lzwDecode(
@@ -683,7 +632,7 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 	
 	if sig ~= "AD2F" then
 		if sig == "[Inf" then --legacy support, ENGAGE (AD1 dupe detected)
-			local success, tbl, info, moreinfo = pcall(deserializeAD1, encodedDupe)
+			local success, tbl, info, moreinfo = pcall(AdvDupe2.LegacyDecoders[0], encodedDupe)
 
 			if success then
 				info.size = #encodedDupe
@@ -699,8 +648,8 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 		end
 	elseif rev > REVISION then
 		error(format("this install lacks the codec version to parse the dupe (have rev %u, need rev %u)",REVISION,rev))
-	elseif rev == 0 then
-		error("attempt to use an invalid format revision (rev 0)")
+	elseif rev < 1 then
+		error(format("attempt to use an invalid format revision (rev %d)", rev))
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
 		
