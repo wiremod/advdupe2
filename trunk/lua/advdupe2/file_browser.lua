@@ -1087,14 +1087,14 @@ function PANEL:Init()
 	self.Submit:SetTooltip("Confirm Action")
 	self.Submit.DoClick = 	function()
 								self.Expanding=true 
-								panel:Slide(false)
+								AdvDupe2.FileBrowser:Slide(false)
 							end
 	
 	self.Cancel = vgui.Create("DImageButton", self)
 	self.Cancel:SetMaterial( "icon16/cross.png" )
 	self.Cancel:SizeToContents()
 	self.Cancel:SetTooltip("Cancel Action")
-	self.Cancel.DoClick = function() self.Expanding=true panel:Slide(false) end
+	self.Cancel.DoClick = function() self.Expanding=true AdvDupe2.FileBrowser:Slide(false) end
 
 	self.FileName = vgui.Create("DTextEntry", self)
 	self.FileName:SetAllowNonAsciiCharacters( true )
@@ -1261,20 +1261,20 @@ end
 if(game.SinglePlayer())then
 	usermessage.Hook("AdvDupe2_AddFile", function(um) 
 		if(um:ReadBool())then
-			if(IsValid(panel.AutoSaveNode))then
+			if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
 				local name = um:ReadString()
-				for i=1, #panel.AutoSaveNode.Files do
-					if(name==panel.AutoSaveNode.Files[i])then
+				for i=1, #AdvDupe2.FileBrowser.AutoSaveNode.Files do
+					if(name==AdvDupe2.FileBrowser.AutoSaveNode.Files[i])then
 						return
 					end
 				end
 				
-				panel.AutoSaveNode:AddFile(name)
-				panel.AutoSaveNode.Control:Sort(panel.AutoSaveNode)
+				AdvDupe2.FileBrowser.AutoSaveNode:AddFile(name)
+				AdvDupe2.FileBrowser.AutoSaveNode.Control:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
 			end
 		else
-			panel.Browser.pnlCanvas.ActionNode:AddFile(um:ReadString())
-			panel.Browser.pnlCanvas.ActionNode.Control:Sort(panel.Browser.pnlCanvas.ActionNode)		
+			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(um:ReadString())
+			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode.Control:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)		
 		end
 	end)
 end
