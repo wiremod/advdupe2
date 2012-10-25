@@ -162,8 +162,4 @@ hook.Add("Initialize", "AdvDupe2_CheckServerSettings",
 			AdvDupe2.SpawnRate = 1
 			print("[AdvDupe2Notify]\tINVALID SPAWN RATE DEFAULTING VALUE")
 		end
-		
-		if(tobool(GetConVarString("AdvDupe2_RemoveFilesOnDisconnect")))then
-			hook.Add("PlayerDisconnected", "AdvDupe2_RemovePlayersFiles", RemovePlayersFiles)
-		end
 	end)
