@@ -10,7 +10,7 @@
 
 local REVISION = 3
 
-if(not system.IsLinux())then
+if(system.IsWindows())then
 	require("ad2filestream")
 end
 
@@ -93,7 +93,7 @@ end
 
 local len
 local tables,tablesLookup
-if(system.IsLinux())then
+if(not system.IsWindows())then
 	enc[TYPE_TABLE] = function(obj) --table
 		tables = tables + 1
 		if not tablesLookup[obj] then
@@ -330,7 +330,7 @@ for i=1,246 do dec[i] = vsr end
 local function serialize(tbl)
 	tables = 0
 	tablesLookup = {}
-	if(system.IsLinux())then
+	if(not system.IsWindows())then
 		buff = file.Open("ad2temp.txt", "wb", "DATA")
 		write(tbl)
 		buff:Close()
