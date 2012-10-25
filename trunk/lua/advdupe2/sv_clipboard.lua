@@ -392,7 +392,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 			if ( Constraint.Entity and Constraint.Entity[ i ] ) then
 				if Key == "Ent"..i or Key == "Ent" then
 					if ( Constraint.Entity[ i ].World ) then
-						Val = GetWorldEntity()
+						Val = game.GetWorld()
 					else				
 						Val = EntityList[ Constraint.Entity[ i ].Index ]
 
