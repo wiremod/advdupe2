@@ -1008,13 +1008,18 @@ end
 
 local function PurgeFiles(path, curParent)
 	local files, directories = file.Find(path.."*", "DATA")
-	for k,v in pairs(directories)do
-		curParent = curParent:AddFolder(v)
-		PurgeFiles(path..v.."/", curParent)
-		curParent = curParent.ParentNode
+	if(directories)then
+		for k,v in pairs(directories)do
+			curParent = curParent:AddFolder(v)
+			PurgeFiles(path..v.."/", curParent)
+			curParent = curParent.ParentNode
+		end
 	end
-	for k,v in pairs(files)do
-		curParent:AddFile(string.sub(v, 1, #v-4))
+	
+	if(files)then
+		for k,v in pairs(files)do
+			curParent:AddFile(string.sub(v, 1, #v-4))
+		end
 	end
 end
 
@@ -1058,7 +1063,7 @@ function PANEL:Init()
 	self:SetBackgroundColor(Color(125,125,125))
 	
 	self.Browser = vgui.Create("advdupe2_browser_panel", self)
-	timer.Simple(0.25, UpdateClientFiles)
+	UpdateClientFiles()
 	self.Refresh = vgui.Create("DImageButton", self)
 	self.Refresh:SetMaterial( "icon16/arrow_refresh.png" )
 	self.Refresh:SizeToContents()
