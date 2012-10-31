@@ -17,6 +17,18 @@ AdvDupe2.JobManager.Queue = {}
 
 local constraints = {Weld=true,  Axis=true, Ballsocket=true, Elastic=true, Hydraulic=true, Motor=true, Muscle=true, Pulley=true, Rope=true, Slider=true, Winch=true}
 
+local function FilterEntityTable(tab)
+	local varType
+	for k,v in pairs(tab)do
+		varType=TypeID(v)
+		if(varType==5)then
+			tab[k] = FilterEntityTable(tab[k])
+		elseif(varType==6 or varType==9)then
+			tab[k]=nil
+		end
+	end
+	return tab
+end
 
 --[[
 	Name: CopyEntTable
@@ -42,25 +54,29 @@ local function CopyEntTable( Ent, Offset )
 	end
 
 	local EntityClass = duplicator.FindEntityClass( Ent:GetClass() )
-
+	
 	local EntTable = table.Copy(Ent:GetTable())
+	
 	if EntityClass then
-
-		local Arg
+		local varType
 		for iNumber, Key in pairs( EntityClass.Args ) do
 			-- Translate keys from old system
-			if(Key~="Pos" or Key~="Model")then
-				if ( Key == "Angle" or Key == "ang" or Key == "Ang" or Key == "angle") then continue end
-				if ( Key == "pos" or Key == "position" ) then Key = "Pos" end
-				if ( Key == "model" ) then Key = "Model" end
+			if(Key=="Pos" or Key=="Model" or Key=="Ang" or Key=="Angle" or Key=="ang" or Key=="angle" or Key=="pos" or Key=="position" or Key=="model")then
+				continue
+			end
+			
+			varType=TypeID(EntTable[Key])
+			if(varType==5)then
+				Tab[ Key ] = FilterEntityTable(EntTable[Key])
+				continue
+			elseif(varType==9 || varType==6)then
+				continue
 			end
 
-			Arg = EntTable[ Key ]
-			
-			Tab[ Key ] = Arg
+			Tab[ Key ] = EntTable[ Key ]
 		end
 		
-	end	
+	end	 
 
 	Tab.BoneMods = table.Copy( Ent.BoneMods )
 	if(Ent.EntityMods)then
