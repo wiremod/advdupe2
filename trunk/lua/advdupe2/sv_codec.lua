@@ -9,9 +9,12 @@
 ]]
 
 local REVISION = 3
-
+local hasModule = false
 if(system.IsWindows())then
-	require("ad2filestream")
+	hasModule = file.Exists("lua/bin/gmsv_ad2filestream_win32.dll", "GAME")
+	if(!hasModule)then
+		print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. YOU WILL NOT BE ABLE TO SAVE.")
+	end
 end
 
 include "sv_codec_legacy.lua"
@@ -335,6 +338,7 @@ local function serialize(tbl)
 		write(tbl)
 		buff:Close()
 	else
+		if(not AdvDupe2_OpenStream)then print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. YOU WILL NOT BE ABLE TO SAVE.") return "" end
 		if(not AdvDupe2_OpenStream())then error("Filestream could not be opened.") return "" end
 		write(tbl)
 		AdvDupe2_CloseStream()
