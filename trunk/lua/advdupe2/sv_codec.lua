@@ -14,6 +14,8 @@ if(system.IsWindows())then
 	hasModule = file.Exists("lua/bin/gmsv_ad2filestream_win32.dll", "GAME")
 	if(!hasModule)then
 		print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. YOU WILL NOT BE ABLE TO SAVE.")
+	else
+		require("ad2filestream")
 	end
 end
 
