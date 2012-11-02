@@ -13,7 +13,7 @@ local hasModule = false
 if(system.IsWindows())then
 	hasModule = file.Exists("lua/bin/gmsv_ad2filestream_win32.dll", "GAME")
 	if(!hasModule)then
-		print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. YOU WILL NOT BE ABLE TO SAVE.")
+		print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. SAVING WILL BE SLOW.")
 	else
 		require("ad2filestream")
 	end
@@ -98,7 +98,7 @@ end
 
 local len
 local tables,tablesLookup
-if(not system.IsWindows())then
+if(not system.IsWindows() or not hasModule)then
 	enc[TYPE_TABLE] = function(obj) --table
 		tables = tables + 1
 		if not tablesLookup[obj] then
@@ -335,7 +335,7 @@ for i=1,246 do dec[i] = vsr end
 local function serialize(tbl)
 	tables = 0
 	tablesLookup = {}
-	if(not system.IsWindows())then
+	if(not system.IsWindows() or not hasModule)then
 		buff = file.Open("ad2temp.txt", "wb", "DATA")
 		write(tbl)
 		buff:Close()
