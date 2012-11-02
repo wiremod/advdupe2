@@ -85,12 +85,10 @@ local function isArray(tbl)
 	return ret
 end
 
-local function error_noserializer(obj)
-	error(format("couldn't find serializer for type {typeid:%d, typestring:%s}", TypeID(obj), type(obj)))
-end
+local function noserializer() end
 
 local enc = {}
-for i=1,255 do enc[i] = error_noserializer end
+for i=1,255 do enc[i] = noserializer end
 
 local function write(obj)
 	enc[TypeID(obj)](obj)
