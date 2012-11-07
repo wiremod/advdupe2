@@ -130,7 +130,7 @@ local function CopyEntTable( Ent, Offset )
 	if( IsValid(Ent:GetParent()) ) then
 		if(not Tab.BuildDupeInfo)then Tab.BuildDupeInfo = {} end
 		Tab.PhysicsObjects[ 0 ].Angle = Ent:GetAngles()
-		Tab.BuildDupeInfo.DupeParentID = Ent.Entity:GetParent():EntIndex()
+		Tab.BuildDupeInfo.DupeParentID = Ent:GetParent():EntIndex()
 	end
 
 	-- Flexes
