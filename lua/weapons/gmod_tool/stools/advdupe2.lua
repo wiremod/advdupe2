@@ -1071,7 +1071,7 @@ if(CLIENT)then
 	
 	//Experimental
 	CreateClientConVar("advdupe2_paste_disparents", 0, false, true)
-	CreateClientConVar("advdupe2_paste_protectoveride", 0, false, true)
+	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	
 	local function BuildCPanel()
 		local CPanel = controlpanel.Get("advdupe2")
