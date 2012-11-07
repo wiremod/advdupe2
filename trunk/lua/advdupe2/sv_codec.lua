@@ -333,6 +333,7 @@ for i=1,246 do dec[i] = vsr end
 local function serialize(tbl)
 	tables = 0
 	tablesLookup = {}
+
 	if(not system.IsWindows() or not hasModule)then
 		buff = file.Open("ad2temp.txt", "wb", "DATA")
 		write(tbl)
@@ -343,7 +344,7 @@ local function serialize(tbl)
 		write(tbl)
 		AdvDupe2_CloseStream()
 	end
-	
+
 	buff = file.Open("ad2temp.txt","rb","DATA")
 	local ret = buff:Read(buff:Size())
 	buff:Close()
@@ -359,8 +360,10 @@ local function deserialize(str)
 	buff:Close()
 	
 	buff = file.Open("ad2temp.txt","rb", "DATA")
+	local tbl = read()
+	buff:Close()
 	
-	return read()
+	return tbl
 end
 
 --[[
