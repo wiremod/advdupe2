@@ -1564,7 +1564,7 @@ if(CLIENT)then
 			Check:SetText( "Disable Dupe Spawn Protection" )
 			Check:SetTextColor(Color(0,0,0,255))
 			Check:SetConVar( "advdupe2_paste_protectoveride" ) 
-			Check:SetValue( 0 )
+			Check:SetValue( 1 )
 			Check:SetToolTip("Check this if you things don't look right after pasting.")
 			CategoryContent5:AddItem(Check)
 			
@@ -1667,8 +1667,8 @@ if(CLIENT)then
 		
 		local Phys = EntTable.PhysicsObjects[0]
 		
-		GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )
-		GhostEntity:SetColor( Color(255, 255, 255, 150) )
+		//GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	//Was broken, making ghosts invisible
+		//GhostEntity:SetColor( Color(255, 255, 255, 150) )
 
 		// If we're a ragdoll send our bone positions
 		/*if (EntTable.R) then
