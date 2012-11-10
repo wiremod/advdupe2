@@ -70,13 +70,18 @@ local AD2FF = "AD2F%s\n%s\n%s"
 local tables
 local buff
 
+local function noserializer() end
+
+local enc = {}
+for i=1,255 do enc[i] = noserializer end
+
 local function isArray(tbl)
 	local ret = true
 	local m = 0
 	
-	for k in pairs(tbl) do
+	for k, v in pairs(tbl) do
 		m = m + 1
-		if k ~= m then
+		if k ~= m or enc[TypeID(v)]==noserializer then
 			ret = false
 			break
 		end
@@ -84,11 +89,6 @@ local function isArray(tbl)
 
 	return ret
 end
-
-local function noserializer() end
-
-local enc = {}
-for i=1,255 do enc[i] = noserializer end
 
 local function write(obj)
 	enc[TypeID(obj)](obj)
@@ -115,8 +115,10 @@ if(not system.IsWindows() or not hasModule)then
 		else
 			buff:WriteByte(255)
 			for k,v in pairs(obj) do
-				write(k)
-				write(v)
+				if(enc[TypeID(v)]!=noserializer)then
+					write(k)
+					write(v)
+				end
 			end
 		end
 		buff:WriteByte(0)
@@ -173,8 +175,10 @@ else
 		else
 			AdvDupe2_WriteByte(255)
 			for k,v in pairs(obj) do
-				write(k)
-				write(v)
+				if(enc[TypeID(v)]!=noserializer)then
+					write(k)
+					write(v)
+				end
 			end
 		end
 		AdvDupe2_WriteByte(0)
@@ -223,7 +227,6 @@ local dec = {}
 for i=1,255 do dec[i] = error_nodeserializer end
 
 local function read()
-	
 	local tt = buff:ReadByte()
 	
 	if not tt then
@@ -239,7 +242,6 @@ local function read()
 end
 
 dec[255] = function() --table
-	
 	local t = {}
 	local k
 
@@ -262,7 +264,6 @@ dec[255] = function() --table
 end
 
 dec[254] = function() --array
-	
 	local t = {}
 	local k,v = 0
 
@@ -298,7 +299,6 @@ dec[249] = function()
 	return Angle(buff:ReadDouble(),buff:ReadDouble(),buff:ReadDouble())
 end
 dec[248] = function() --null-terminated string
-
 	local start = buff:Tell()
 	local slen = 0
 	
