@@ -564,14 +564,22 @@ local function ApplyEntityModifiers( Player, Ent )
 		if ( Ent.EntityMods[ Type ] ) then
 			status, error = pcall(ModFunction, Player, Ent, Ent.EntityMods[ Type ] )
 			if(not status)then
-				Player:ChatPrint('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
+				if(Player)then
+					Player:ChatPrint('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
+				else
+					print('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
+				end
 			end
 		end
 	end
 	if(Ent.EntityMods["mass"] and duplicator.EntityModifiers["mass"])then
 		status, error = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"] )
 		if(not status)then
-			Player:ChatPrint('Error applying entity modifer, "mass". ERROR: '..error)
+			if(Player)then
+				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: '..error)
+			else
+				print('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
+			end
 		end
 	end
 
