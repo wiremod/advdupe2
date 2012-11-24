@@ -94,6 +94,8 @@ local function CopyEntTable( Ent, Offset )
 	Tab.Class 			= Ent:GetClass()
 	Tab.Model 			= Ent:GetModel()
 	Tab.Skin 			= Ent:GetSkin()
+	Tab.CollisionGroup = Ent:GetCollisionGroup()
+
 	if(Tab.Skin==0)then	Tab.Skin = nil end
 
 	if(Tab.Class == "gmod_cameraprop")then
@@ -150,11 +152,6 @@ local function CopyEntTable( Ent, Offset )
 		Tab.FlexScale = Ent:GetFlexScale()
 	else
 		Tab.Flex = nil
-	end
-
-	if( EntTable.CollisionGroup )then
-		if ( not Tab.EntityMods ) then Tab.EntityMods = {} end
-		Tab.EntityMods.CollisionGroupMod = EntTable.CollisionGroup
 	end
 
 	// Make this function on your SENT if you want to modify the
@@ -558,7 +555,6 @@ end
 
 local function ApplyEntityModifiers( Player, Ent )
 	if(not Ent.EntityMods)then return end
-	if(Ent.EntityMods["CollisionGroupMod"])then Ent:SetCollisionGroup(Ent.EntityMods["CollisionGroupMod"]) end
 	local status, error
 	for Type, ModFunction in pairs( duplicator.EntityModifiers ) do
 		if ( Ent.EntityMods[ Type ] ) then
@@ -1064,6 +1060,7 @@ local function AdvDupe2_Spawn()
 			local Phys = Ent:GetPhysicsObject()
 			if(IsValid(Phys))then Phys:EnableMotion(false) end
 			if(not Queue.DisableProtection)then Ent:SetNotSolid(true) end
+			if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
 		elseif(Ent==false)then
 			Ent = nil
 			Queue.Entity = false
@@ -1080,7 +1077,6 @@ local function AdvDupe2_Spawn()
 		if(Queue.Current>#Queue.SortedEntities)then
 			
 			for _,Ent in pairs(Queue.CreatedEntities)do
-				
 				ApplyEntityModifiers( Queue.Player, Ent )
 				ApplyBoneModifiers( Queue.Player, Ent )
 			
