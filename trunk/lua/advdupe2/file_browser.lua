@@ -1080,9 +1080,10 @@ function PANEL:Init()
 							local Menu = DermaMenu()
 							Menu:AddOption("Forum", function() gui.OpenURL("http://www.facepunch.com/threads/1136597") end)
 							Menu:AddOption("Bug Reporting", function() gui.OpenURL("http://code.google.com/p/advdupe2/issues/list") end)
-							Menu:AddOption("Controls", Incomplete)
-							Menu:AddOption("Commands", Incomplete)
-							Menu:AddOption("About", AdvDupe2.ShowSplash)
+							Menu:AddOption("Controls", function() gui.OpenURL("http://code.google.com/p/advdupe2/wiki/Controls") end)
+							Menu:AddOption("Commands", function() gui.OpenURL("http://code.google.com/p/advdupe2/wiki/ServerSettings") end)
+							//Menu:AddOption("About", AdvDupe2.ShowSplash)
+							Menu:AddOption("About", Incomplete)
 							Menu:Open()
 						end
 						

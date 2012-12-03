@@ -443,6 +443,11 @@ if(SERVER)then
 			cnt = cnt+1
 		end
 		
+		if(!head)then
+			AdvDupe2.Notify(ply, "Invalid head entity for ghosts.", NOTIFY_ERROR);
+			return
+		end
+		
 		net.Start("AdvDupe2_SendGhosts")
 			net.WriteInt(head, 16)
 			net.WriteFloat(ply.AdvDupe2.HeadEnt.Z)
@@ -1667,8 +1672,8 @@ if(CLIENT)then
 		
 		local Phys = EntTable.PhysicsObjects[0]
 		
-		//GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	//Was broken, making ghosts invisible
-		//GhostEntity:SetColor( Color(255, 255, 255, 150) )
+		GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	//Was broken, making ghosts invisible
+		GhostEntity:SetColor( Color(255, 255, 255, 150) )
 
 		// If we're a ragdoll send our bone positions
 		/*if (EntTable.R) then
