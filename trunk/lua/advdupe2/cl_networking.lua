@@ -12,6 +12,7 @@ include "nullesc.lua"
 
 AdvDupe2.NetFile = ""
 local AutoSave = false
+local uploading = false
 
 local function CheckFileNameCl(path)
 	if file.Exists(path..".txt", "DATA") then
@@ -82,6 +83,7 @@ net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
 	Returns:
 ]]			
 function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
+	if(uploading)then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
 	if(ReadArea==0)then
 		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
 	elseif(ReadArea==1)then
@@ -101,6 +103,7 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	name = name[#name]
 	name = string.sub(name, 1, #name-4)
 
+	uploading=true
 	RunConsoleCommand("AdvDupe2_InitReceiveFile", name)
 end
 
@@ -123,6 +126,7 @@ local function SendFileToServer(eof)
 	local status = false
 	if(AdvDupe2.LastPos>=AdvDupe2.Length)then
 		status=true
+		uploading = false
 		AdvDupe2.RemoveProgressBar()
 	end
 
@@ -138,6 +142,7 @@ usermessage.Hook("AdvDupe2_ReceiveNextStep",function(um)
 end)
 
 usermessage.Hook("AdvDupe2_UploadRejected",function(um)
+	uploading=false
 	AdvDupe2.File = nil
 	AdvDupe2.LastPos = nil
 	AdvDupe2.Length = nil
