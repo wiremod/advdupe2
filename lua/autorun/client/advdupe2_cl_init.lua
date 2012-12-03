@@ -22,7 +22,7 @@ function AdvDupe2.Notify(msg,typ,dur)
 end
 
 function AdvDupe2.ShowSplash()
-	local ad2folder
+	/*local ad2folder
 	for k,v in pairs(GetAddonList()) do
 		if GetAddonInfo(v).Name == "Adv. Duplicator 2" then
 			ad2folder = v
@@ -59,7 +59,7 @@ function AdvDupe2.ShowSplash()
 	credit:SetColor(Color(64,32,16,255))
 	credit:SetFont("Trebuchet24")
 	credit:SetText("Developed by: TB and emspike\n\nHosted by: Google Code")
-	credit:SizeToContents()
+	credit:SizeToContents()*/
 end
 
 usermessage.Hook("AdvDupe2Notify",function(um)
