@@ -142,7 +142,7 @@ usermessage.Hook("AdvDupe2_ReceiveNextStep",function(um)
 end)
 
 usermessage.Hook("AdvDupe2_UploadRejected",function(um)
-	uploading=false
+	if(uploading)then return end
 	AdvDupe2.File = nil
 	AdvDupe2.LastPos = nil
 	AdvDupe2.Length = nil
