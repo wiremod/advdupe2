@@ -48,6 +48,12 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		end
 		file.Write(path..".txt", AdvDupe2.Null.invesc(AdvDupe2.NetFile))
 		
+		if(!file.Exists(path..".txt", "DATA"))then
+			AdvDupe2.NetFile = ""
+			AdvDupe2.Notify("File was not saved! Unknown cause, alert TB that your size was "..#AdvDupe2.NetFile,NOTIFY_ERROR,5)
+			return
+		end
+		
 		local filename = string.Explode("/", path)
 		filename = filename[#filename]
 		if(AutoSave)then
