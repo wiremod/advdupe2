@@ -50,7 +50,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		
 		if(!file.Exists(path..".txt", "DATA"))then
 			AdvDupe2.NetFile = ""
-			AdvDupe2.Notify("File was not saved! Unknown cause, alert TB that your size was "..#AdvDupe2.NetFile,NOTIFY_ERROR,5)
+			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
 			return
 		end
 		
