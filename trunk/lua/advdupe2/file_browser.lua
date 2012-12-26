@@ -872,6 +872,7 @@ function FOLDER:AddFile(text)
 end
 
 function FOLDER:SetExpanded(bool)
+	if(!self.Expander)then return end
 	if(bool==nil)then self.m_bExpanded = not self.m_bExpanded else self.m_bExpanded = bool end
 	self.Expander:SetExpanded(self.m_bExpanded)
 	if(self.m_bExpanded)then
