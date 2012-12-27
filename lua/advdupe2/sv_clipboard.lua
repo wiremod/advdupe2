@@ -977,6 +977,8 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			v:SetNotSolid(false)
 		end
 	end
+	
+	hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=EntityList, CreatedEntities=CreatedEntities, ConstraintList=ConstraintList, CreatedConstraints=CreatedConstraints, HitPos=OrigPos or Position}}, 1)
 
 	return CreatedEntities, CreatedConstraints
 end
