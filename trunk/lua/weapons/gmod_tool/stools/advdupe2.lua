@@ -592,7 +592,7 @@ if(SERVER)then
 	
 	//Save a file to the client
 	local function SaveFile(ply, cmd, args)
-		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or ply.AdvDupe2.Entities == {})then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
+		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or table.Count(ply.AdvDupe2.Entities)==0)then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
 		if(not game.SinglePlayer() and CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
 			AdvDupe2.Notify(ply,"Cannot save at the moment. Please Wait...", NOTIFY_ERROR)
 			return
