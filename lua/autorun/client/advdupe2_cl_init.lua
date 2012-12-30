@@ -16,9 +16,9 @@ include "advdupe2/file_browser.lua"
 function AdvDupe2.Notify(msg,typ,dur)
 	surface.PlaySound(typ == 1 and "buttons/button10.wav" or "ambient/water/drip1.wav")
 	GAMEMODE:AddNotify(msg, typ or NOTIFY_GENERIC, dur or 5)
-	if not game.SinglePlayer() then
+	//if not game.SinglePlayer() then
 		print("[AdvDupe2Notify]\t"..msg)
-	end
+	//end
 end
 
 function AdvDupe2.ShowSplash()
