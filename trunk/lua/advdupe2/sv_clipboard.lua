@@ -41,7 +41,7 @@ end
 	Returns a copy of the passed entity's table
 ---------------------------------------------------------*/
 local function CopyEntTable( Ent, Offset )
-
+	
 	if(not IsValid(Ent:GetPhysicsObject()))then return nil end
 
 	local Tab = {}
@@ -143,15 +143,40 @@ local function CopyEntTable( Ent, Offset )
 	for i = 0, FlexNum do
 		weight = Ent:GetFlexWeight( i )
 		if(weight~=0)then
-			Tab.Flex[ i ] = Ent:GetFlexWeight( i )
+			Tab.Flex[ i ] = weight
 			flexes = true
 		end
 	end
-
-	if(flexes)then
+	if(flexes or Ent:GetFlexScale()~=1)then
 		Tab.FlexScale = Ent:GetFlexScale()
 	else
 		Tab.Flex = nil
+	end
+	
+	-- Bone Manipulator
+	if ( Ent:HasBoneManipulations() ) then
+	
+		Tab.BoneManip = {}
+		local t
+		local s
+		local a
+		local p
+		for i=0, Ent:GetBoneCount() do
+			t={}
+			s = Ent:GetManipulateBoneScale( i )
+			a = Ent:GetManipulateBoneAngles( i )
+			p = Ent:GetManipulateBonePosition( i )
+			
+			if ( s != Vector( 1, 1, 1 ) ) then	t[ 's' ] = s end
+			if ( a != Angle( 0, 0, 0 ) ) then	t[ 'a' ] = a end
+			if ( p != Vector( 0, 0, 0 ) ) then	t[ 'p' ] = p end
+		
+			if ( t['s'] or t['a'] or t['p'] ) then
+				Tab.BoneManip[ i ] = t
+			end
+		
+		end
+	
 	end
 
 	// Make this function on your SENT if you want to modify the
@@ -678,7 +703,6 @@ local function GenericDuplicatorFunction( data, Player )
 	DoGenericPhysics( Entity, data, Player )	
 
 	table.Add( Entity:GetTable(), data )
-
 	return Entity
 end
 
@@ -715,7 +739,7 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	Prop:Spawn()
 	Prop:Activate()
 	DoGenericPhysics( Prop, Data, Player )
-	duplicator.DoFlex( Prop, Data.Flex, Data.FlexScale )
+	if(Data.Flex)then duplicator.DoFlex( Prop, Data.Flex, Data.FlexScale ) end
 
 	return Prop
 end
@@ -739,6 +763,7 @@ local function CreateEntityFromTable(EntTable, Player)
 	local sent = false
 	local status, valid
 	local GENERIC = false
+
 	// This class is unregistered. Instead of failing try using a generic
 	// Duplication function to make a new copy.
 	if (not EntityClass) then
@@ -751,7 +776,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
 		end
 		*/
-		
+
 		sent = hook.Call("PlayerSpawnEntity", nil, Player, EntTable)
 		if(sent==false)then
 			print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
@@ -769,7 +794,7 @@ local function CreateEntityFromTable(EntTable, Player)
 	end
 
 	if(not GENERIC)then
-		
+
 		// Build the argument list for the Entitie's spawn function
 		local ArgList = {}
 		local Arg
@@ -793,6 +818,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			ArgList[ iNumber ] = Arg or false
 
 		end
+		
 		// Create and return the entity
 		if(EntTable.Class=="prop_physics")then
 			valid = MakeProp(Player, unpack(ArgList)) //Create prop_physics like this because if the model doesn't exist it will cause
@@ -810,8 +836,8 @@ local function CreateEntityFromTable(EntTable, Player)
 				return nil
 			else
 				sent = true
-			end			
-
+			end		
+			
 			status,valid = pcall(  EntityClass.Func, Player, unpack(ArgList) )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: "..EntTable.Class)
@@ -877,6 +903,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 	-- Create entities
 	--
 	local proppos
+	DisablePropCreateEffect = true
 	for k, v in pairs( EntityList ) do
 		if(not v.BuildDupeInfo)then v.BuildDupeInfo={} end
 		v.BuildDupeInfo.PhysicsObjects = table.Copy(v.PhysicsObjects)
@@ -977,9 +1004,9 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			v:SetNotSolid(false)
 		end
 	end
-	
+	DisablePropCreateEffect = nil
 	hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=EntityList, CreatedEntities=CreatedEntities, ConstraintList=ConstraintList, CreatedConstraints=CreatedConstraints, HitPos=OrigPos or Position}}, 1)
-
+	
 	return CreatedEntities, CreatedConstraints
 end
 
@@ -1000,6 +1027,7 @@ local function AdvDupe2_Spawn()
 		table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
 		if(#AdvDupe2.JobManager.Queue==0)then 
 			hook.Remove("Tick", "AdvDupe2_Spawning")
+			DisablePropCreateEffect = nil
 			AdvDupe2.JobManager.PastingHook = false
 		end
 		return
@@ -1073,7 +1101,7 @@ local function AdvDupe2_Spawn()
 			Ent = nil
 		end
 		Queue.CreatedEntities[ k ] = Ent
-
+		
 		AdvDupe2.UpdateProgressBar(Queue.Player, math.floor((Queue.Percent*Queue.Current)*100))
 		Queue.Current = Queue.Current+1
 		if(Queue.Current>#Queue.SortedEntities)then
@@ -1106,6 +1134,7 @@ local function AdvDupe2_Spawn()
 
 			if(#AdvDupe2.JobManager.Queue==0)then 
 				hook.Remove("Tick", "AdvDupe2_Spawning")
+				DisablePropCreateEffect = nil
 				AdvDupe2.JobManager.PastingHook = false
 			end
 			if(not Queue.ConstraintList[Queue.Current])then Queue.Current = Queue.Current+1 return end
@@ -1114,7 +1143,7 @@ local function AdvDupe2_Spawn()
 			if IsValid(Entity) then
 				table.insert( Queue.CreatedConstraints, Entity )
 			end
-		elseif(Queue.ConstraintList and Queue.ConstraintList~={})then
+		elseif(table.Count(Queue.ConstraintList)>0)then
 			local tbl = {}
 			for k,v in pairs(Queue.ConstraintList)do
 				table.insert(tbl, v)
@@ -1224,6 +1253,7 @@ local function AdvDupe2_Spawn()
 			table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
 			if(#AdvDupe2.JobManager.Queue==0)then
 				hook.Remove("Tick", "AdvDupe2_Spawning")
+				DisablePropCreateEffect = nil
 				AdvDupe2.JobManager.PastingHook = false
 			end
 		end
@@ -1238,6 +1268,7 @@ end
 local function ErrorCatchSpawning()
 
 	local status, error = pcall(AdvDupe2_Spawn)
+
 	if(not status)then
 		//PUT ERROR LOGGING HERE
 		
@@ -1283,6 +1314,7 @@ local function ErrorCatchSpawning()
 
 		if(#AdvDupe2.JobManager.Queue==0)then 
 			hook.Remove("Tick", "AdvDupe2_Spawning")
+			DisablePropCreateEffect = nil
 			AdvDupe2.JobManager.PastingHook = false
 		else
 			if(#Queue<AdvDupe2.JobManager.CurrentPlayer)then    
@@ -1306,12 +1338,13 @@ local function RemoveSpawnedEntities(tbl, i)
 	table.remove(AdvDupe2.JobManager.Queue, i)
 	if(#AdvDupe2.JobManager.Queue==0)then
 		hook.Remove("Tick", "AdvDupe2_Spawning")
+		DisablePropCreateEffect = nil
 		AdvDupe2.JobManager.PastingHook = false
 	end
 end
 
 function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
-
+	
 	local i = #AdvDupe2.JobManager.Queue+1
 	AdvDupe2.JobManager.Queue[i] = {}
 	local Queue = AdvDupe2.JobManager.Queue[i]
@@ -1349,7 +1382,8 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 	Queue.Percent = 1/(#Queue.SortedEntities+#Queue.ConstraintList)
 	AdvDupe2.InitProgressBar(Player,"Queued:")
 	Player.AdvDupe2.Queued = true
-	if(not AdvDupe2.JobManager.PastingHook)then	
+	if(not AdvDupe2.JobManager.PastingHook)then
+		DisablePropCreateEffect = true
 		hook.Add("Tick", "AdvDupe2_Spawning", ErrorCatchSpawning)
 		AdvDupe2.JobManager.PastingHook = true
 		AdvDupe2.JobManager.CurrentPlayer = 1
