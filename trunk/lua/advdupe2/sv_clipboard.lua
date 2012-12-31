@@ -94,9 +94,11 @@ local function CopyEntTable( Ent, Offset )
 	Tab.Class 			= Ent:GetClass()
 	Tab.Model 			= Ent:GetModel()
 	Tab.Skin 			= Ent:GetSkin()
-	Tab.CollisionGroup = Ent:GetCollisionGroup()
-
+	Tab.CollisionGroup 	= Ent:GetCollisionGroup()
+	Tab.ModelScale 		= Ent:GetModelScale()
+	
 	if(Tab.Skin==0)then	Tab.Skin = nil end
+	if(Tab.ModelScale == 1)then Tab.ModelScale = nil end
 
 	if(Tab.Class == "gmod_cameraprop")then
 		Tab.key = Ent:GetNetworkedInt("key")
@@ -182,7 +184,7 @@ local function CopyEntTable( Ent, Offset )
 	// Make this function on your SENT if you want to modify the
 	//  returned table specifically for your entity.
 	if Ent.OnEntityCopyTableFinish then
-		local status, valid = pcall(Ent.PostEntityCopy, Ent, Tab)
+		local status, valid = pcall(Ent.OnEntityCopyTableFinish, Ent, Tab)
 		if(not status)then
 			print("AD2 OnEntityCopyTableFinish Error: "..tostring(valid))
 		end
