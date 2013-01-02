@@ -75,12 +75,92 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 			AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
 		end
 		AdvDupe2.NetFile = ""
-		AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC,5)
+		AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
 		return
 	end
 
 end
 net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
+
+function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
+
+	local time
+	local desc
+	local date
+	local creator
+	AdvDupe2.RemoveGhosts()
+	AdvDupe2.Ghosting = true
+	AdvDupe2.GhostToSpawn = {}
+	
+	if(info.ad1)then
+		time = moreinfo["Time"] or ""
+		desc = info["Description"] or ""
+		date = info["Date"] or ""
+		creator = info["Creator"] or ""
+
+		AdvDupe2.HeadEnt = tonumber(moreinfo.Head)
+		local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
+		AdvDupe2.HeadPos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+		local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+		AdvDupe2.HeadZPos = z
+		AdvDupe2.HeadPos.Z = AdvDupe2.HeadPos.Z + z
+		AdvDupe2.HeadOffset = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+		AdvDupe2.HeadAngle = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+		
+		local Pos
+		local Ang
+		for k,v in pairs(dupe["Entities"])do
+			
+			if(v.SavedParentIdx)then 
+				if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
+				v.BuildDupeInfo.DupeParentID = v.SavedParentIdx
+				Pos = v.LocalPos*1
+				Ang = v.LocalAngle*1
+			else
+				Pos = nil
+				Ang = nil
+			end
+			for i,p in pairs(v.PhysicsObjects)do
+				p.Pos = Pos or (p.LocalPos*1)
+				p.Pos.Z = p.Pos.Z - z
+				p.Angle = Ang or (p.LocalAngle*1)
+				p.LocalPos = nil
+				p.LocalAngle = nil
+			end
+			v.LocalPos = nil
+			v.LocalAngle = nil
+			AdvDupe2.GhostToSpawn[k] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+		end
+	
+	else
+		time = info["time"]
+		desc = dupe["Description"]
+		date = info["date"]
+		creator = info["name"]
+
+		AdvDupe2.HeadEnt = dupe["HeadEnt"].Index
+		AdvDupe2.HeadZPos = dupe["HeadEnt"].Z
+		AdvDupe2.HeadPos = dupe["HeadEnt"].Pos
+		AdvDupe2.HeadOffset = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+		AdvDupe2.HeadAngle = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+		
+		for k,v in pairs(dupe["Entities"])do
+			AdvDupe2.GhostToSpawn[k] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+		end
+	end
+	
+	AdvDupe2.Info.File:SetText("File: "..name)
+	AdvDupe2.Info.Creator:SetText("Creator: "..creator)
+	AdvDupe2.Info.Date:SetText("Date: "..date)
+	AdvDupe2.Info.Time:SetText("Time: "..time)
+	AdvDupe2.Info.Size:SetText("Size: "..string.NiceSize(tonumber(info.size) or 0))
+	AdvDupe2.Info.Desc:SetText("Desc: "..desc or "")
+	AdvDupe2.Info.Entities:SetText("Entities: "..table.Count(dupe["Entities"]))
+	AdvDupe2.Info.Constraints:SetText("Constraints: "..table.Count(dupe["Constraints"]))
+	
+	AdvDupe2.StartGhosting()
+
+end
 
 --[[
 	Name: InitializeUpload
@@ -100,17 +180,19 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	
 	if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 	
-	AdvDupe2.File = AdvDupe2.Null.esc(file.Read(ReadPath))
-	AdvDupe2.LastPos = 0
-	AdvDupe2.Length = string.len(AdvDupe2.File)
-	AdvDupe2.InitProgressBar("Opening:")
-	
+	local read = file.Read(ReadPath)
 	local name = string.Explode("/", ReadPath)
 	name = name[#name]
 	name = string.sub(name, 1, #name-4)
+	AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name) end end)
+	
+	AdvDupe2.File = AdvDupe2.Null.esc(read)
+	AdvDupe2.LastPos = 0
+	AdvDupe2.Length = string.len(AdvDupe2.File)
+	AdvDupe2.InitProgressBar("Opening:")
 
 	uploading=true
-	RunConsoleCommand("AdvDupe2_InitReceiveFile", name)
+	RunConsoleCommand("AdvDupe2_InitReceiveFile")
 end
 
 --[[

@@ -11,7 +11,7 @@ AdvDupe2.FileRenameTryLimit = 256
 include "advdupe2/cl_file.lua"
 include "advdupe2/cl_networking.lua"
 include "advdupe2/file_browser.lua"
-//include "advdupe2/sv_codec.lua"
+include "advdupe2/sh_codec.lua"
 
 function AdvDupe2.Notify(msg,typ,dur)
 	surface.PlaySound(typ == 1 and "buttons/button10.wav" or "ambient/water/drip1.wav")
