@@ -563,6 +563,7 @@ if(SERVER)then
 	if(game.SinglePlayer())then
 		//Open file in SinglePlayer
 		local function OpenFile(ply, cmd, args)
+
 			if(ply.AdvDupe2.Pasting || ply.AdvDupe2.Downloading)then
 				AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
 				return false 
@@ -585,7 +586,7 @@ if(SERVER)then
 			local name = string.Explode("/", path)
 			ply.AdvDupe2.Name = name[#name]
 
-			AdvDupe2.Decode(data, 	function(success,dupe,info,moreinfo) AdvDupe2.LoadDupe(ply, success, dupe, info, moreinfo) end)
+			AdvDupe2.Decode(data, function(success,dupe,info,moreinfo) AdvDupe2.LoadDupe(ply, success, dupe, info, moreinfo) end)
 		end
 		concommand.Add("AdvDupe2_OpenFile", OpenFile)
 	end
@@ -1638,6 +1639,23 @@ if(CLIENT)then
 		
 		if(AdvDupe2.Ghosting)then
 			hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
+			if(AdvDupe2.Preview)then
+				if(AdvDupe2.PHeadEnt)then
+					AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
+					AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
+					AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
+					AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
+					AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
+					AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
+				end
+				AdvDupe2.PHeadEnt = nil
+				AdvDupe2.PHeadZPos = nil
+				AdvDupe2.PHeadPos = nil
+				AdvDupe2.PHeadOffset = nil
+				AdvDupe2.PHeadAngle = nil
+				AdvDupe2.GhostToPreview = nil
+				AdvDupe2.Preview=false
+			end
 			AdvDupe2.Ghosting = false 
 			if(not AdvDupe2.BusyBar)then
 				AdvDupe2.RemoveProgressBar()
@@ -1732,6 +1750,15 @@ if(CLIENT)then
 	
 	net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 											AdvDupe2.RemoveGhosts()
+											if(AdvDupe2.Preview)then
+												AdvDupe2.PHeadEnt = nil
+												AdvDupe2.PHeadZPos = nil
+												AdvDupe2.PHeadPos = nil
+												AdvDupe2.PHeadOffset = nil
+												AdvDupe2.PHeadAngle = nil
+												AdvDupe2.GhostToPreview = nil
+												AdvDupe2.Preview=false
+											end
 											AdvDupe2.Ghosting = true
 											AdvDupe2.GhostToSpawn = {}
 											AdvDupe2.HeadEnt = net.ReadInt(16)
@@ -1774,12 +1801,34 @@ if(CLIENT)then
 										end)
 										
 	net.Receive("AdvDupe2_AddGhost", 	function(len, ply, len2)
+											local preview = false
+											if(AdvDupe2.Preview)then
+												if(AdvDupe2.PHeadEnt)then
+													AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
+													AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
+													AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
+													AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
+													AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
+													AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
+												end
+												AdvDupe2.PHeadEnt = nil
+												AdvDupe2.PHeadZPos = nil
+												AdvDupe2.PHeadPos = nil
+												AdvDupe2.PHeadOffset = nil
+												AdvDupe2.PHeadAngle = nil
+												AdvDupe2.GhostToPreview = nil
+												AdvDupe2.Preview=false
+												preview = true
+											end
 											local gNew = table.insert(AdvDupe2.GhostToSpawn, {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}})
 											for k=0, net.ReadInt(8) do
 												AdvDupe2.GhostToSpawn[gNew].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 											end
 											
-											if(AdvDupe2.CurrentGhost==gNew)then
+											if(preview)then
+												AdvDupe2.RemoveGhosts()
+												AdvDupe2.StartGhosting()
+											elseif(AdvDupe2.CurrentGhost==gNew)then
 												AdvDupe2.GhostEntities[gNew] = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[gNew], true)
 												AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + math.floor(gPerc)
 												gTemp = gTemp + gPerc - math.floor(gPerc)
@@ -1815,7 +1864,26 @@ if(CLIENT)then
 			AdvDupe2.Ghosting = false
 		end
 	end
-	usermessage.Hook("AdvDupe2_StartGhosting", AdvDupe2.StartGhosting)
+	usermessage.Hook("AdvDupe2_StartGhosting", function()
+													if(AdvDupe2.Preview)then
+														if(AdvDupe2.PHeadEnt)then
+															AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
+															AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
+															AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
+															AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
+															AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
+															AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
+														end
+														AdvDupe2.PHeadEnt = nil
+														AdvDupe2.PHeadZPos = nil
+														AdvDupe2.PHeadPos = nil
+														AdvDupe2.PHeadOffset = nil
+														AdvDupe2.PHeadAngle = nil
+														AdvDupe2.GhostToPreview = nil
+														AdvDupe2.Preview=false
+													end
+													AdvDupe2.StartGhosting()
+												end)
 												
 	usermessage.Hook("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
 												
@@ -1832,6 +1900,9 @@ if(CLIENT)then
 		if(not AdvDupe2)then return true end
 		
 		local text = "Ready"
+		if(AdvDupe2.Preview)then
+			text = "Preview"
+		end
 		state=0
 		if(AdvDupe2.ProgressBar.Text)then
 			state=1
