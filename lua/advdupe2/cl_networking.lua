@@ -82,15 +82,37 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 end
 net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
 
-function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
+function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 
+	AdvDupe2.RemoveGhosts()
+	AdvDupe2.Ghosting = true
+	
+	if(preview)then
+		AdvDupe2.Preview = true
+		if(AdvDupe2.HeadEnt)then
+			AdvDupe2.PHeadEnt = AdvDupe2.HeadEnt
+			AdvDupe2.PHeadZPos = AdvDupe2.HeadZPos
+			AdvDupe2.PHeadPos = AdvDupe2.HeadPos*1
+			AdvDupe2.PHeadOffset = AdvDupe2.HeadOffset*1
+			AdvDupe2.PHeadAngle = AdvDupe2.HeadAngle*1
+			AdvDupe2.GhostToPreview = table.Copy(AdvDupe2.GhostToSpawn)
+		end
+	else
+		AdvDupe2.PHeadEnt = nil
+		AdvDupe2.PHeadZPos = nil
+		AdvDupe2.PHeadPos = nil
+		AdvDupe2.PHeadOffset = nil
+		AdvDupe2.PHeadAngle = nil
+		AdvDupe2.GhostToPreview = nil
+		AdvDupe2.Preview=false
+	end
+	
+	AdvDupe2.GhostToSpawn = {}
+	
 	local time
 	local desc
 	local date
 	local creator
-	AdvDupe2.RemoveGhosts()
-	AdvDupe2.Ghosting = true
-	AdvDupe2.GhostToSpawn = {}
 	
 	if(info.ad1)then
 		time = moreinfo["Time"] or ""
@@ -149,14 +171,16 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
 		end
 	end
 	
-	AdvDupe2.Info.File:SetText("File: "..name)
-	AdvDupe2.Info.Creator:SetText("Creator: "..creator)
-	AdvDupe2.Info.Date:SetText("Date: "..date)
-	AdvDupe2.Info.Time:SetText("Time: "..time)
-	AdvDupe2.Info.Size:SetText("Size: "..string.NiceSize(tonumber(info.size) or 0))
-	AdvDupe2.Info.Desc:SetText("Desc: "..desc or "")
-	AdvDupe2.Info.Entities:SetText("Entities: "..table.Count(dupe["Entities"]))
-	AdvDupe2.Info.Constraints:SetText("Constraints: "..table.Count(dupe["Constraints"]))
+	if(not preview)then
+		AdvDupe2.Info.File:SetText("File: "..name)
+		AdvDupe2.Info.Creator:SetText("Creator: "..creator)
+		AdvDupe2.Info.Date:SetText("Date: "..date)
+		AdvDupe2.Info.Time:SetText("Time: "..time)
+		AdvDupe2.Info.Size:SetText("Size: "..string.NiceSize(tonumber(info.size) or 0))
+		AdvDupe2.Info.Desc:SetText("Desc: "..desc or "")
+		AdvDupe2.Info.Entities:SetText("Entities: "..table.Count(dupe["Entities"]))
+		AdvDupe2.Info.Constraints:SetText("Constraints: "..table.Count(dupe["Constraints"]))
+	end
 	
 	AdvDupe2.StartGhosting()
 
