@@ -197,19 +197,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 		ply.AdvDupe2.HeadEnt = dupe["HeadEnt"]
 	end
 	
-	net.Start("AdvDupe2_SetDupeInfo")
-		net.WriteString(ply.AdvDupe2.Name)
-		net.WriteString(creator)
-		net.WriteString(date)
-		net.WriteString(time)
-		net.WriteString(string.NiceSize(tonumber(info.size) or 0))
-		net.WriteString(desc or "")
-		net.WriteString(table.Count(ply.AdvDupe2.Entities))
-		net.WriteString(#ply.AdvDupe2.Constraints)
-	net.Send(ply)
-	
 	AdvDupe2.ResetOffsets(ply, true)
-	AdvDupe2.SendGhosts(ply)
 end
 
 function AdvDupe2.ReceiveNextStep(id)
@@ -240,7 +228,7 @@ local function AdvDupe2_InitReceiveFile( ply, cmd, args )
 	if(AdvDupe2.Network.ClientNetworks[id])then return false end
 	ply.AdvDupe2.Downloading = true
 	ply.AdvDupe2.Uploading = true
-	ply.AdvDupe2.Name = args[1]
+	//ply.AdvDupe2.Name = args[1]
 	
 	AdvDupe2.Network.ClientNetworks[id] = {Player = ply, Data = "", Size = 0}
 	

@@ -8,7 +8,7 @@ AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will b
 AdvDupe2.FileRenameTryLimit = 256
 
 include "advdupe2/sv_clipboard.lua"
-include "advdupe2/sv_codec.lua"
+include "advdupe2/sh_codec.lua"
 include "advdupe2/sv_file.lua"
 include "advdupe2/sv_networking.lua"
 include "advdupe2/sv_misc.lua"
@@ -17,7 +17,7 @@ AddCSLuaFile "autorun/client/advdupe2_cl_init.lua"
 AddCSLuaFile "advdupe2/cl_networking.lua"
 AddCSLuaFile "advdupe2/cl_file.lua"
 AddCSLuaFile "advdupe2/file_browser.lua"
-//AddCSLuaFile "advdupe2/sv_codec.lua"
+AddCSLuaFile "advdupe2/sh_codec.lua"
 
 resource.AddFile("materials/gui/ad2logo.tga")
 
