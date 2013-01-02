@@ -981,31 +981,30 @@ if(CLIENT)then
 	end
 
 	//Update the ghost's postion and angles based on where the player is looking and the offsets
+	local Utrace, UGhostEnt, UEntAngle, UPos, UAngle
 	local function UpdateGhost()
-		
-		local trace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
-		if (not trace.Hit) then return end
+		Utrace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
+		if (not Utrace.Hit) then return end
 
-		local GhostEnt = AdvDupe2.HeadGhost
+		UGhostEnt = AdvDupe2.HeadGhost
 		
-		if(not IsValid(GhostEnt))then
+		if(not IsValid(UGhostEnt))then
 			AdvDupe2.RemoveGhosts()
 			AdvDupe2.Notify("Invalid ghost parent.", NOTIFY_ERROR)
 			return 
 		end
 		
 		if(tobool(GetConVarNumber("advdupe2_original_origin")))then
-			GhostEnt:SetPos(AdvDupe2.HeadPos + AdvDupe2.HeadOffset)
-			GhostEnt:SetAngles(AdvDupe2.HeadAngle)
+			UGhostEnt:SetPos(AdvDupe2.HeadPos + AdvDupe2.HeadOffset)
+			UGhostEnt:SetAngles(AdvDupe2.HeadAngle)
 		else
-			local EntAngle = AdvDupe2.HeadAngle
-			if(tobool(GetConVarNumber("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
-			trace.HitPos.Z = trace.HitPos.Z + math.Clamp(AdvDupe2.HeadZPos + GetConVarNumber("advdupe2_offset_z") or 0, -16000, 16000)
-			local Pos, Angle = LocalToWorld(AdvDupe2.HeadOffset, EntAngle, trace.HitPos, Angle(math.Clamp(GetConVarNumber("advdupe2_offset_pitch") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_yaw") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_roll") or 0,-180,180))) 
-			GhostEnt:SetPos(Pos)
-			GhostEnt:SetAngles(Angle)
+			UEntAngle = AdvDupe2.HeadAngle
+			if(tobool(GetConVarNumber("advdupe2_offset_world")))then UEntAngle = Angle(0,0,0) end
+			Utrace.HitPos.Z = Utrace.HitPos.Z + math.Clamp(AdvDupe2.HeadZPos + GetConVarNumber("advdupe2_offset_z") or 0, -16000, 16000)
+			UPos, UAngle = LocalToWorld(AdvDupe2.HeadOffset, UEntAngle, Utrace.HitPos, Angle(math.Clamp(GetConVarNumber("advdupe2_offset_pitch") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_yaw") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_roll") or 0,-180,180))) 
+			UGhostEnt:SetPos(UPos)
+			UGhostEnt:SetAngles(UAngle)
 		end
-
 	end
 
 	//Checks binds to modify dupes position and angles

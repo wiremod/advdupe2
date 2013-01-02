@@ -10,16 +10,20 @@
 
 local REVISION = 3
 local hasModule = false
-if(system.IsWindows())then
-	hasModule = file.Exists("lua/bin/gmsv_ad2filestream_win32.dll", "GAME")
-	if(!hasModule)then
-		print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. SAVING WILL BE SLOW.")
-	else
-		require("ad2filestream")
+if(SERVER)then
+	if(system.IsWindows())then
+		hasModule = file.Exists("lua/bin/gmsv_ad2filestream_win32.dll", "GAME")
+		print(hasModule)
+		if(!hasModule)then
+			print("[AdvDupe2Notify]\tMODULE NOT INSTALLED CORRECTLY. SAVING WILL BE SLOW.")
+		else
+			require("ad2filestream")
+		end
 	end
 end
 
-include "sv_codec_legacy.lua"
+include "sh_codec_legacy.lua"
+AddCSLuaFile "sh_codec_legacy.lua"
 
 local pairs = pairs
 local type = type
