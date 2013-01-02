@@ -196,7 +196,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
 		ply.AdvDupe2.HeadEnt = dupe["HeadEnt"]
 	end
-	
+	if(game.SinglePlayer())then AdvDupe2.SendGhosts(ply) end
 	AdvDupe2.ResetOffsets(ply, true)
 end
 

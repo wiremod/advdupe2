@@ -395,6 +395,23 @@ function BROWSER:DoNodeRightClick(node)
 											AdvDupe2.InitializeUpload(GetNodePath(node.Ref))
 										end
 									end)
+			Menu:AddOption("Preview", 	function() 
+											local ReadPath, ReadArea = GetNodePath(node.Ref)
+											if(ReadArea==0)then
+												ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
+											elseif(ReadArea==1)then
+												ReadPath = AdvDupe2.DataFolder.."/-Public-/"..ReadPath..".txt"
+											else
+												ReadPath = "adv_duplicator/"..ReadPath..".txt"
+											end
+											if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+											
+											local read = file.Read(ReadPath)
+											local name = string.Explode("/", ReadPath)
+											name = name[#name]
+											name = string.sub(name, 1, #name-4)
+											AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true) end end)
+										end)
 		else
 			Menu:AddOption("Open", 	function() 
 										if(game.SinglePlayer())then
@@ -403,6 +420,24 @@ function BROWSER:DoNodeRightClick(node)
 											AdvDupe2.InitializeUpload(GetNodePath(node))
 										end
 									end)
+			Menu:AddOption("Preview", 	function() 
+											local ReadPath, ReadArea = GetNodePath(node)
+											if(ReadArea==0)then
+												ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
+											elseif(ReadArea==1)then
+												ReadPath = AdvDupe2.DataFolder.."/-Public-/"..ReadPath..".txt"
+											else
+												ReadPath = "adv_duplicator/"..ReadPath..".txt"
+											end
+											if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+											
+											local read = file.Read(ReadPath)
+											local name = string.Explode("/", ReadPath)
+											name = name[#name]
+											name = string.sub(name, 1, #name-4)
+											AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true) end end)
+										end)
+			Menu:AddSpacer()
 			Menu:AddOption("Rename", 	function()
 											if(parent.Expanding)then return end
 											parent.Submit:SetMaterial("icon16/page_edit.png")
@@ -599,6 +634,7 @@ function BROWSER:DoNodeRightClick(node)
 		end
 	end
 	if(not node.Control.Search)then
+		Menu:AddSpacer()
 		Menu:AddOption("Collapse Folder", function() if(node.ParentNode.ParentNode)then node.ParentNode:SetExpanded(false) end end)
 		Menu:AddOption("Collapse Root", function() CollapseParentsComplete(node) end)
 		if(parent.Expanded)then Menu:AddOption("Cancel Action", function() parent.Cancel:DoClick() end) end
