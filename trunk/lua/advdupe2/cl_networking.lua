@@ -126,9 +126,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
 		AdvDupe2.HeadZPos = z
 		AdvDupe2.HeadPos.Z = AdvDupe2.HeadPos.Z + z
-		AdvDupe2.HeadOffset = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
-		AdvDupe2.HeadAngle = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
-		
+
 		local Pos
 		local Ang
 		for k,v in pairs(dupe["Entities"])do
@@ -153,6 +151,9 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 			v.LocalAngle = nil
 			AdvDupe2.GhostToSpawn[k] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
 		end
+		
+		AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+		AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
 	
 	else
 		time = info["time"]
