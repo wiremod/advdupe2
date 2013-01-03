@@ -177,7 +177,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		AdvDupe2.Info.Date:SetText("Date: "..date)
 		AdvDupe2.Info.Time:SetText("Time: "..time)
 		AdvDupe2.Info.Size:SetText("Size: "..string.NiceSize(tonumber(info.size) or 0))
-		AdvDupe2.Info.Desc:SetText("Desc: "..desc or "")
+		AdvDupe2.Info.Desc:SetText("Desc: "..(desc or ""))
 		AdvDupe2.Info.Entities:SetText("Entities: "..table.Count(dupe["Entities"]))
 		AdvDupe2.Info.Constraints:SetText("Constraints: "..table.Count(dupe["Constraints"]))
 	end
