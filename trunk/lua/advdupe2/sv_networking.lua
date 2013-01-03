@@ -144,16 +144,8 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 	ply.AdvDupe2.Entities = {}
 	ply.AdvDupe2.Constraints = {}
 	ply.AdvDupe2.HeadEnt={}
-	local time
-	local desc
-	local date
-	local creator
 
 	if(info.ad1)then
-		time = moreinfo["Time"] or ""
-		desc = info["Description"] or ""
-		date = info["Date"] or ""
-		creator = info["Creator"] or ""
 
 		ply.AdvDupe2.HeadEnt.Index = tonumber(moreinfo.Head)
 		local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
@@ -186,12 +178,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 		ply.AdvDupe2.Entities = dupe["Entities"]
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
 		
-	else
-		time = info["time"]
-		desc = dupe["Description"]
-		date = info["date"]
-		creator = info["name"]
-		
+	else	
 		ply.AdvDupe2.Entities = dupe["Entities"]
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
 		ply.AdvDupe2.HeadEnt = dupe["HeadEnt"]
