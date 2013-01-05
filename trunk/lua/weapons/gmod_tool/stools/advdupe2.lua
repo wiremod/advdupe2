@@ -8,7 +8,7 @@
 	Version: 1.0
 ]]
 TOOL.Category = "Construction"
-TOOL.Name = "#Advanced Duplicator 2"
+TOOL.Name = "#Tool.advdupe2.name"
 cleanup.Register( "AdvDupe2" )
 require "controlpanel"
 
@@ -1163,11 +1163,11 @@ if(CLIENT)then
 		NumSlider:SetToolTip("Change the percent of ghosts to spawn")
 		//If these funcs are not here, problems occur for each
 		local func = NumSlider.Slider.OnMouseReleased
-		NumSlider.Slider.OnMouseReleased = function(self, mcode) func(self, mcode) AdvDupe2.RemoveGhosts() AdvDupe2.StartGhosting() end
+		NumSlider.Slider.OnMouseReleased = function(self, mcode) func(self, mcode) AdvDupe2.StartGhosting() end
 		local func2 = NumSlider.Slider.Knob.OnMouseReleased
-		NumSlider.Slider.Knob.OnMouseReleased = function(self, mcode) func2(self, mcode) AdvDupe2.RemoveGhosts() AdvDupe2.StartGhosting() end
+		NumSlider.Slider.Knob.OnMouseReleased = function(self, mcode) func2(self, mcode) AdvDupe2.StartGhosting() end
 		local func3 = NumSlider.Wang.Panel.OnLoseFocus
-		NumSlider.Wang.Panel.OnLoseFocus = function(txtBox) func3(txtBox) AdvDupe2.RemoveGhosts() AdvDupe2.StartGhosting() end
+		NumSlider.Wang.Panel.OnLoseFocus = function(txtBox) func3(txtBox) AdvDupe2.StartGhosting() end
 		CPanel:AddItem(NumSlider)
 		
 		NumSlider = vgui.Create( "DNumSlider" )
@@ -1635,7 +1635,6 @@ if(CLIENT)then
 	end
 	
 	function AdvDupe2.RemoveGhosts()
-		if(not AdvDupe2.GhostEntities)then return end
 		
 		if(AdvDupe2.Ghosting)then
 			hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
@@ -1661,7 +1660,7 @@ if(CLIENT)then
 				AdvDupe2.RemoveProgressBar()
 			end
 		end
-		
+
 		if(AdvDupe2.GhostEntities)then
 			for k,v in pairs(AdvDupe2.GhostEntities)do
 				if(IsValid(v))then
@@ -1669,10 +1668,13 @@ if(CLIENT)then
 				end
 			end
 		end
-		
+
+		if(IsValid(AdvDupe2.HeadGhost))then
+			AdvDupe2.HeadGhost:Remove()
+		end
 		AdvDupe2.HeadGhost = nil
-		AdvDupe2.GhostEntities = nil
 		AdvDupe2.CurrentGhost = 1
+		AdvDupe2.GhostEntities = nil
 	end
 	
 	//Creates a ghost from the given entity's table
@@ -1826,7 +1828,6 @@ if(CLIENT)then
 											end
 											
 											if(preview)then
-												AdvDupe2.RemoveGhosts()
 												AdvDupe2.StartGhosting()
 											elseif(AdvDupe2.CurrentGhost==gNew)then
 												AdvDupe2.GhostEntities[gNew] = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[gNew], true)
@@ -1840,6 +1841,7 @@ if(CLIENT)then
 										end)
 	
 	function AdvDupe2.StartGhosting()
+		AdvDupe2.RemoveGhosts()
 		if(not AdvDupe2.GhostToSpawn)then return end
 		AdvDupe2.Ghosting = true
 		AdvDupe2.GhostEntities = {}
