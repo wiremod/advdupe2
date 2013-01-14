@@ -444,8 +444,10 @@ function BROWSER:DoNodeRightClick(node)
 											parent.Submit:SetTooltip("Rename File")
 											parent.Desc:SetVisible(false)
 											parent.Info:SetVisible(false)
+											parent.FileName.FirstChar = true
+											parent.FileName.PrevText = parent.FileName:GetValue()
 											parent.FileName:SetVisible(true)
-											parent.FileName:SetValue(node.Label:GetText())
+											parent.FileName:SetText(node.Label:GetText())
 											parent.FileName:SelectAllOnFocus(true) 
 											parent.FileName:OnMousePressed()
 											parent.FileName:RequestFocus()
@@ -512,10 +514,12 @@ function BROWSER:DoNodeRightClick(node)
 										parent.Submit:SetMaterial("icon16/page_save.png")
 										parent.Submit:SetTooltip("Save Duplication")
 										if(parent.FileName:GetValue()=="Folder_Name...")then
-											parent.FileName:SetValue("File_Name...")
+											parent.FileName:SetText("File_Name...")
 										end
 										parent.Desc:SetVisible(true)
 										parent.Info:SetVisible(false)
+										parent.FileName.FirstChar = true
+										parent.FileName.PrevText = parent.FileName:GetValue()
 										parent.FileName:SetVisible(true)
 										parent.FileName:SelectAllOnFocus(true) 
 										parent.FileName:OnMousePressed()
@@ -557,10 +561,12 @@ function BROWSER:DoNodeRightClick(node)
 											parent.Submit:SetMaterial("icon16/folder_add.png")
 											parent.Submit:SetTooltip("Add new folder")
 											if(parent.FileName:GetValue()=="File_Name...")then
-												parent.FileName:SetValue("Folder_Name...")
+												parent.FileName:SetText("Folder_Name...")
 											end
 											parent.Desc:SetVisible(false)
 											parent.Info:SetVisible(false)
+											parent.FileName.FirstChar = true
+											parent.FileName.PrevText = parent.FileName:GetValue()
 											parent.FileName:SetVisible(true)
 											parent.FileName:SelectAllOnFocus(true) 
 											parent.FileName:OnMousePressed()
@@ -574,10 +580,12 @@ function BROWSER:DoNodeRightClick(node)
 										parent.Submit:SetMaterial("icon16/find.png")
 										parent.Submit:SetTooltip("Search Files")
 										if(parent.FileName:GetValue()=="Folder_Name...")then
-											parent.FileName:SetValue("File_Name...")
+											parent.FileName:SetText("File_Name...")
 										end
 										parent.Desc:SetVisible(false)
 										parent.Info:SetVisible(false)
+										parent.FileName.FirstChar = true
+										parent.FileName.PrevText = parent.FileName:GetValue()
 										parent.FileName:SetVisible(true)
 										parent.FileName:SelectAllOnFocus(true) 
 										parent.FileName:OnMousePressed()
@@ -1141,7 +1149,7 @@ function PANEL:Init()
 
 	self.FileName = vgui.Create("DTextEntry", self)
 	self.FileName:SetAllowNonAsciiCharacters( true )
-	self.FileName:SetValue("File_Name...")
+	self.FileName:SetText("File_Name...")
 	self.FileName.Last = 0
 	self.FileName.OnEnter = function()
 								self.FileName:KillFocus()
@@ -1157,9 +1165,21 @@ function PANEL:Init()
 									end
 	self.FileName:SetUpdateOnType(true)
 	self.FileName.OnTextChanged = 	function() 
-										local new, changed = self.FileName:GetValue():gsub("[?.:\"*<>|]","")
+	
+										if(self.FileName.FirstChar)then
+											if(string.lower(self.FileName:GetValue()[1]) == string.lower(input.LookupBinding( "menu" )))then
+												self.FileName:SetText(self.FileName.PrevText)
+												self.FileName:SelectAll()
+												self.FileName.FirstChar = false
+											else
+												self.FileName.FirstChar = false
+											end
+										end
+										
+										local new, changed = self.FileName:GetValue():gsub("[^%w_ ]","")
 										if changed > 0 then
-											self.FileName:SetValue(new)
+											self.FileName:SetText(new)
+											self.FileName:SetCaretPos(#new)
 										end
 										if(#self.FileName:GetValue()>0)then
 											NarrowHistory(self.FileName:GetValue(), self.FileName.Last)
@@ -1243,16 +1263,17 @@ function PANEL:Init()
 									end
 	self.FileName.OnValueChange = 	function()
 										if(self.FileName:GetValue()~="File_Name..." and self.FileName:GetValue()~="Folder_Name...")then
-											local new,changed = self.FileName:GetValue():gsub("[?.:\"*<>|]","")
+											local new,changed = self.FileName:GetValue():gsub("[^%w_ ]","")
 											if changed > 0 then
-												self.FileName:SetValue(new)
+												self.FileName:SetText(new)
+												self.FileName:SetCaretPos(#new)
 											end
 										end
 									end
 	
 	self.Desc = vgui.Create("DTextEntry", self)
 	self.Desc.OnEnter = self.Submit.DoClick
-	self.Desc:SetValue("Description...")
+	self.Desc:SetText("Description...")
 	self.Desc.OnMousePressed = 	function() 					
 									self.Desc:OnGetFocus()
 									if(self.Desc:GetValue()=="Description...")then 
