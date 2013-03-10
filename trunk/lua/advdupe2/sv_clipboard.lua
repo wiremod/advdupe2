@@ -155,6 +155,18 @@ local function CopyEntTable( Ent, Offset )
 		Tab.Flex = nil
 	end
 	
+	-- Body Groups
+	Tab.BodyG = {}
+	for k, v in pairs(Ent:GetBodyGroups()) do
+		if ( Ent:GetBodygroup( v.id ) > 0 ) then
+			Tab.BodyG[ v.id ] = Ent:GetBodygroup( v.id )
+		end
+	end
+	
+	if(table.Count(Tab.BodyG)==0)then
+		Tab.BodyG = nil
+	end
+	
 	-- Bone Manipulator
 	if ( Ent:HasBoneManipulations() ) then
 	
