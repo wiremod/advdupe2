@@ -758,6 +758,12 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	return Prop
 end
 
+local function RestoreBodyGroups( ent, BodyG )
+	for k, v in pairs( BodyG ) do
+		ent:SetBodygroup( k, v )
+	end
+end
+
 --[[
 	Name: CreateEntityFromTable
 	Desc: Creates an entity from a given table
@@ -881,6 +887,7 @@ local function CreateEntityFromTable(EntTable, Player)
 				end
 			end
 			if(EntTable.Skin)then valid:SetSkin(EntTable.Skin) end
+			if ( EntTable.BodyG ) then RestoreBodyGroups( valid, EntTable.BodyG ) end
 			/*if(Player)then
 				if(not valid:IsVehicle() and EntTable.Class~="prop_ragdoll" and not valid:IsNPC())then	//These three get called automatically
 					if(EntTable.Class=="prop_effect")then
