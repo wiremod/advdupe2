@@ -634,7 +634,7 @@ if(SERVER)then
 																		if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
 																			if(not file.Exists("advdupe2/"..path..".txt", "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
 																			local read = file.Read("advdupe2/"..path..".txt")
-																			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) AdvDupe2.Notify(ply, "File successfully opened!") end)
+																			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") end)
 																		end
 																	else
 																		if(not IsValid(ply))then return end
