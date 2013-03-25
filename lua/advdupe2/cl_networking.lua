@@ -57,7 +57,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
 			if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 			local read = file.Read(path..".txt")
-			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) AdvDupe2.Notify("File successfully opened!") end)
+			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.") end)
 		end
 		
 		local filename = string.Explode("/", path)
