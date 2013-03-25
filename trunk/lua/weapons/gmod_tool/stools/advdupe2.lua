@@ -631,6 +631,11 @@ if(SERVER)then
 																			umsg.Bool(false)
 																			umsg.String(name)
 																		umsg.End()
+																		if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
+																			if(not file.Exists("advdupe2/"..path..".txt", "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
+																			local read = file.Read("advdupe2/"..path..".txt")
+																			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) AdvDupe2.Notify(ply, "File successfully opened!") end)
+																		end
 																	else
 																		if(not IsValid(ply))then return end
 																		ply:ConCommand("AdvDupe2_SaveType 0")
@@ -1077,6 +1082,7 @@ if(CLIENT)then
 	//Experimental
 	CreateClientConVar("advdupe2_paste_disparents", 0, false, true)
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
+	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
 	
 	local function BuildCPanel()
 		local CPanel = controlpanel.Get("advdupe2")
@@ -1574,6 +1580,14 @@ if(CLIENT)then
 			Check:SetConVar( "advdupe2_paste_protectoveride" ) 
 			Check:SetValue( 1 )
 			Check:SetToolTip("Check this if you things don't look right after pasting.")
+			CategoryContent5:AddItem(Check)
+			
+			Check = vgui.Create("DCheckBoxLabel")
+			Check:SetText( "Open file after Saving" )
+			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetConVar( "advdupe2_debug_openfile" ) 
+			Check:SetValue( 1 )
+			Check:SetToolTip("Check this if you want your files to be opened after saving them.")
 			CategoryContent5:AddItem(Check)
 			
 		--[[Save Map]]--
