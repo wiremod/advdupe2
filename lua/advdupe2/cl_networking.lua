@@ -54,6 +54,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 			return
 		end
 		
+		local errored = false
 		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
 			if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 			local read = file.Read(path..".txt")
@@ -62,6 +63,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 										AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
 									else
 										AdvDupe2.Notify("DEBUG CHECK: File contains EOF errors.", NOTIFY_ERROR)
+										errored = true
 									end
 										end)
 		end
@@ -87,7 +89,9 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 			AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
 		end
 		AdvDupe2.NetFile = ""
-		AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
+		if(!errored)then
+			AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
+		end
 		return
 	end
 
