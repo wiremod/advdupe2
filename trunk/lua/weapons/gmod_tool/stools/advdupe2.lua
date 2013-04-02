@@ -634,7 +634,13 @@ if(SERVER)then
 																		if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
 																			if(not file.Exists("advdupe2/"..path..".txt", "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
 																			local read = file.Read("advdupe2/"..path..".txt")
-																			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") end)
+																			AdvDupe2.Decode(read, 	function(success,dupe,info,moreinfo) 
+																										if(success)then
+																											AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 
+																										else
+																											AdvDupe2.Notify(ply, "DEBUG CHECK: File contains EOF errors.", NOTIFY_ERROR)
+																										end
+																									end)
 																		end
 																	else
 																		if(not IsValid(ply))then return end
@@ -1463,12 +1469,13 @@ if(CLIENT)then
 			txtbox:SetWide(pnl:GetWide()-100)
 			txtbox:SetPos(60, 5)
 			txtbox:SetUpdateOnType(true)
-			txtbox.OnTextChanged = 	function(self) 
+			txtbox.OnTextChanged = 	function(self)
 										self:SetValue(AdvDupe2.AutoSavePath)
 									end
 			
 			local btn = vgui.Create("DImageButton", pnl)
-			btn:SetPos(240, 7)
+			local x, y = txtbox:GetPos()
+			btn:SetPos(x + txtbox:GetWide() + 5, 7)
 			btn:SetMaterial("icon16/folder_explore.png")
 			btn:SizeToContents()
 			btn:SetToolTip("Browse")
@@ -1529,7 +1536,7 @@ if(CLIENT)then
 					
 			btn = vgui.Create("DButton", pnl)
 			btn:SetSize(50, 35)
-			btn:SetPos(75, 30)
+			btn:SetPos(pnl:GetWide()/4-10, 30)
 			btn:SetText("Show")
 			btn.DoClick = 	function()
 								if(AdvDupe2.AutoSavePos)then
@@ -1542,7 +1549,7 @@ if(CLIENT)then
 					
 			btn = vgui.Create("DButton", pnl)
 			btn:SetSize(50, 35)
-			btn:SetPos(150, 30)
+			btn:SetPos((pnl:GetWide()/4)*3-40, 30)
 			btn:SetText("Turn Off")
 			btn:SetDisabled(true)
 			btn.DoClick = 	function(self)
@@ -1618,9 +1625,17 @@ if(CLIENT)then
 				label:SetPos(5,7)
 				
 				AdvDupe2.AutoSavePath = ""
-				local txtbox2
+				
+				local txtbox2 = vgui.Create("DTextEntry", pnl)
+				txtbox2:SetWide(pnl:GetWide()-100)
+				txtbox2:SetPos(60, 5)
+				txtbox2.OnEnter =	function()
+										btn2:DoClick()	
+									end
+									
 				local btn2 = vgui.Create("DImageButton", pnl)
-				btn2:SetPos(240, 7)
+				x, y = txtbox2:GetPos()
+				btn2:SetPos(x + txtbox2:GetWide() + 5, 7)
 				btn2:SetMaterial("icon16/disk.png")
 				btn2:SizeToContents()
 				btn2:SetToolTip("Save Map")
@@ -1628,13 +1643,6 @@ if(CLIENT)then
 									if(txtbox2:GetValue()=="")then return end
 									RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
 								end
-								
-				txtbox2 = vgui.Create("DTextEntry", pnl)
-				txtbox2:SetWide(pnl:GetWide()-100)
-				txtbox2:SetPos(60, 5)
-				txtbox2.OnEnter =	function()
-										btn2:DoClick()	
-									end
 			end
 			
 	end
