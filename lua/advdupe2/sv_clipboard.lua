@@ -556,7 +556,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 	if not status or not Ent then 
 		if(Player)then
-			AdvDupe2.Notify(ply, "ERROR, Failed to create "..Constraint.Type.." Constraint!", NOTIFY_ERROR)
+			AdvDupe2.Notify(Player, "ERROR, Failed to create "..Constraint.Type.." Constraint!", NOTIFY_ERROR)
 		else
 			print("DUPLICATOR: ERROR, Failed to create "..Constraint.Type.." Constraint!")
 		end
