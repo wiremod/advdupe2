@@ -11,6 +11,7 @@
 require "duplicator"
 
 AdvDupe2.duplicator = {} 
+
 AdvDupe2.JobManager = {}
 AdvDupe2.JobManager.PastingHook = false
 AdvDupe2.JobManager.Queue = {}
@@ -1416,3 +1417,6 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		undo.AddFunction(RemoveSpawnedEntities, i)
 	undo.Finish()
 end
+
+--make sure we have ent lists when reloading
+LoadSents()
