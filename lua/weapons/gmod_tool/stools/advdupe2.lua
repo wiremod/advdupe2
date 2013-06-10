@@ -632,8 +632,10 @@ if(SERVER)then
 																			umsg.String(name)
 																		umsg.End()
 																		if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
-																			if(not file.Exists("advdupe2/"..path..".txt", "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
-																			local read = file.Read("advdupe2/"..path..".txt")
+																			if(not file.Exists(dir, "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
+																			local buff = file.Open(dir, "rb", "DATA")
+																			local read = buff:Read(buff:Size())
+																			buff:Close()
 																			AdvDupe2.Decode(read, 	function(success,dupe,info,moreinfo) 
 																										if(success)then
 																											AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 

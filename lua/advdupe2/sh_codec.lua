@@ -8,7 +8,7 @@
 	Version: 2.0
 ]]
 
-local REVISION = 3
+local REVISION = 4
 local hasModule = false
 if(SERVER)then
 	if(system.IsWindows())then
@@ -357,6 +357,12 @@ end
 
 
 local function deserialize(str)
+	
+	if(str==nil)then
+		error("File could not be decompressed.")
+		return {}
+	end
+	
 	tables = {}
 	buff = file.Open("ad2temp.txt","wb","DATA")
 	buff:Write(str)
@@ -379,7 +385,6 @@ end
 function AdvDupe2.Encode(dupe, info, callback, ...)
 	
 	local encodedTable = compress(serialize(dupe))
-	
 	info.check = "\r\n\t\n"
 	info.size = #encodedTable
 	
@@ -398,6 +403,7 @@ local function getInfo(str)
 	for k,v in ss:gmatch("(.-)\1(.-)\1") do
 		info[k] = v
 	end
+	
 	if info.check ~= "\r\n\t\n" then
 		if info.check == "\10\9\10" then
 			error("detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)")
@@ -415,6 +421,14 @@ versions[1] = AdvDupe2.LegacyDecoders[1]
 versions[2] = AdvDupe2.LegacyDecoders[2]
 
 versions[3] = function(encodedDupe)
+	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:Replace("\r\n", "\n")
+	encodedDupe = encodedDupe:Replace("\t\t\t\t", "\r\n\t\n")
+	return versions[4](encodedDupe)
+end
+
+versions[4] = function(encodedDupe)
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize(
 				decompress(dupestring)
