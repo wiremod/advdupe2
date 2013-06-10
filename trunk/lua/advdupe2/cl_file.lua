@@ -55,6 +55,9 @@ end
 function AdvDupe2.ReadFile(name, dirOverride)
 	
 	--infinitely simpler than WriteAdvDupe2 :3
-	return file.Read(string.format("%q/%q.txt", dirOverride or AdvDupe2.DataFolder, name))
+	local buff = file.Open(string.format("%q/%q.txt", dirOverride or AdvDupe2.DataFolder, name), "rb", "DATA")
+	local read = buff:Read(buff:Size())
+	buff:Close()
+	return read
 	
 end
