@@ -65,14 +65,16 @@ end
 	Return:	<string> contents
 ]]
 function AdvDupe2.ReadFile(ply, name, dirOverride)
-
 	if game.SinglePlayer() then
 		local path = string.format("%s/%s.txt", dirOverride or AdvDupe2.DataFolder, name)
 		if(!file.Exists(path, "DATA"))then
 			if(ply)then AdvDupe2.Notify(ply, "File does not exist!", NOTIFY_ERROR) end
 			return nil
 		else
-			return file.Read(path)
+			local buff = file.Open(path, "rb", "DATA")
+			local read = buff:Read(buff:Size())
+			buff:Close()
+			return read
 		end
 	else
 		local path = string.format("%s/%s/%s.txt", dirOverride or AdvDupe2.DataFolder, ply and ply:SteamIDSafe() or "=Public=", name)
@@ -83,7 +85,10 @@ function AdvDupe2.ReadFile(ply, name, dirOverride)
 			if(ply)then AdvDupe2.Notify(ply,"File size is greater than "..GetConVarString("AdvDupe2_MaxFileSize"), NOTIFY_ERROR) end
 			return false
 		else
-			return file.Read(path)
+			local buff = file.Open(path, "rb", "DATA")
+			local read = buff:Read(buff:Size())
+			buff:Close()
+			return read
 		end
 	end
 	

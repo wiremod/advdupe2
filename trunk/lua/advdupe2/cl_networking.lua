@@ -38,7 +38,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 	AdvDupe2.NetFile=AdvDupe2.NetFile..net.ReadString()
 
 	if(status==2)then
-		local path = AdvDupe2.AutoSavePath
+		local path = ""
 		if(AutoSave)then
 			if(LocalPlayer():GetInfo("advdupe2_auto_save_overwrite")~="1")then
 				path = CheckFileNameCl(AdvDupe2.AutoSavePath)
@@ -57,7 +57,9 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		local errored = false
 		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
 			if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
-			local read = file.Read(path..".txt")
+			local buff = file.Open(path..".txt", "rb", "DATA")
+			local read = buff:Read(buff:Size())
+			buff:Close()
 			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) 
 									if(success)then
 										AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")

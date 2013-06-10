@@ -254,7 +254,7 @@ end
 local function GetFullPath(node)
 	local path, area = GetNodePath(node)
 	if(area==0)then
-		path = AdvDupe2.DataFolder.."/"..path.."/"
+		path = AdvDupe2.DataFolder..path.."/"
 	elseif(area==1)then
 	
 	else
@@ -285,8 +285,10 @@ local function RenameFileCl(node, name)
 	elseif(area==2)then
 		tempFilePath = "adv_duplicator/"..path
 	end
-
-	File = file.Read(tempFilePath..".txt", "DATA")
+	
+	local buff = file.Open(tempFilePath..".txt", "rb", "DATA")
+	File = buff:Read(buff:Size())
+	buff:Close()
 	FilePath = CheckFileNameCl(string.sub(tempFilePath, 1, #tempFilePath-#node.Label:GetText())..name)
 
 	if(not FilePath)then AdvDupe2.Notify("Rename limit exceeded, could not rename.", NOTIFY_ERROR) return end
@@ -320,7 +322,9 @@ local function MoveFileClient(node)
 
 	local savepath = CheckFileNameCl(base.."/"..path2.."/"..node2.Label:GetText())
 	local OldFile = base.."/"..path..".txt"
-	local ReFile = file.Read(OldFile, "DATA")
+	local buff = file.Open(OldFile, "rb", "DATA")
+	local ReFile = buff:Read(buff:Size())
+	buff:Close()
 	file.Write(savepath, ReFile)
 	file.Delete(OldFile)
 	local name2 = string.Explode("/", savepath)
@@ -406,7 +410,9 @@ function BROWSER:DoNodeRightClick(node)
 											end
 											if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 											
-											local read = file.Read(ReadPath)
+											local buff = file.Open(ReadPath, "rb", "DATA")
+											local read = buff:Read(buff:Size())
+											buff:Close()
 											local name = string.Explode("/", ReadPath)
 											name = name[#name]
 											name = string.sub(name, 1, #name-4)
@@ -431,7 +437,9 @@ function BROWSER:DoNodeRightClick(node)
 											end
 											if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 											
-											local read = file.Read(ReadPath)
+											local buff = file.Open(ReadPath, "rb", "DATA")
+											local read = buff:Read(buff:Size())
+											buff:Close()
 											local name = string.Explode("/", ReadPath)
 											name = name[#name]
 											name = string.sub(name, 1, #name-4)
