@@ -71,10 +71,7 @@ function AdvDupe2.ReadFile(ply, name, dirOverride)
 			if(ply)then AdvDupe2.Notify(ply, "File does not exist!", NOTIFY_ERROR) end
 			return nil
 		else
-			local buff = file.Open(path, "rb", "DATA")
-			local read = buff:Read(buff:Size())
-			buff:Close()
-			return read
+			return file.Read(path)
 		end
 	else
 		local path = string.format("%s/%s/%s.txt", dirOverride or AdvDupe2.DataFolder, ply and ply:SteamIDSafe() or "=Public=", name)
@@ -85,10 +82,7 @@ function AdvDupe2.ReadFile(ply, name, dirOverride)
 			if(ply)then AdvDupe2.Notify(ply,"File size is greater than "..GetConVarString("AdvDupe2_MaxFileSize"), NOTIFY_ERROR) end
 			return false
 		else
-			local buff = file.Open(path, "rb", "DATA")
-			local read = buff:Read(buff:Size())
-			buff:Close()
-			return read
+			return file.Read(path)
 		end
 	end
 	
