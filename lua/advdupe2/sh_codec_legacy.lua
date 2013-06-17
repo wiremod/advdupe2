@@ -504,7 +504,7 @@ end
 local function getInfo(str)
 	local last = str:find("\2")
 	if not last then
-		error("attempt to read AD2 file with malformed info block")
+		error("attempt to read AD2 file with malformed info block error 1")
 	end
 	local info = {}
 	local ss = str:sub(1,last-1)
@@ -515,7 +515,7 @@ local function getInfo(str)
 		if info.check == "\10\9\10" then
 			error("detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)")
 		else
-			error("attempt to read AD2 file with malformed info block")
+			error("attempt to read AD2 file with malformed info block error 2")
 		end
 	end
 	return info, str:sub(last+2)
@@ -525,6 +525,10 @@ end
 local versions = {}
 
 versions[2] = function(encodedDupe)
+	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:Replace("\r\n", "\n")
+	encodedDupe = encodedDupe:Replace("\t\t\t\t", "\r\n\t\n")
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize_v2(
 				lzwDecode(
@@ -536,6 +540,10 @@ versions[2] = function(encodedDupe)
 end
 
 versions[1] = function(encodedDupe)
+	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:Replace("\r\n", "\n")
+	encodedDupe = encodedDupe:Replace("\t\t\t\t", "\r\n\t\n")
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize_v1(
 				lzwDecode(
