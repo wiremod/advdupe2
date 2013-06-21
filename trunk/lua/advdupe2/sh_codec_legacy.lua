@@ -426,6 +426,7 @@ end
 
 local function deserializeAD1(dupestring)
 	
+	dupestring = dupestring:Replace("\r\n", "\n")
 	local header, extraHeader, dupeBlock, dictBlock = dupestring:match("%[Info%]\n(.+)\n%[More Information%]\n(.+)\n%[Save%]\n(.+)\n%[Dict%]\n(.+)")
 	
 	if not header then
