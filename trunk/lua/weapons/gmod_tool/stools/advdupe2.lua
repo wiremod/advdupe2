@@ -1769,7 +1769,7 @@ if(CLIENT)then
 		end
 		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g, true)
 		if(not AdvDupe2.BusyBar)then
-			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/#AdvDupe2.GhostToSpawn*100
+			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
 		end
 	end
 	
@@ -1806,12 +1806,13 @@ if(CLIENT)then
 											AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
 											AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost	
 											AdvDupe2.CurrentGhost = 0
+											AdvDupe2.TotalGhosts = table.Count(AdvDupe2.GhostToSpawn)
 											
-											if(#AdvDupe2.GhostToSpawn>1)then
+											if(AdvDupe2.TotalGhosts>1)then
 												gTemp = 0
-												gPerc = #AdvDupe2.GhostToSpawn*(GetConVarNumber("advdupe2_limit_ghost")*0.01)
+												gPerc = AdvDupe2.TotalGhosts*(GetConVarNumber("advdupe2_limit_ghost")*0.01)
 												if(gPerc>0)then
-													gPerc = #AdvDupe2.GhostToSpawn / gPerc
+													gPerc = AdvDupe2.TotalGhosts / gPerc
 													if(not AdvDupe2.BusyBar)then
 														AdvDupe2.InitProgressBar("Ghosting: ")
 														AdvDupe2.BusyBar = false
@@ -1864,6 +1865,7 @@ if(CLIENT)then
 										end)
 	
 	function AdvDupe2.StartGhosting()
+	
 		AdvDupe2.RemoveGhosts()
 		if(not AdvDupe2.GhostToSpawn)then return end
 		AdvDupe2.Ghosting = true
@@ -1871,12 +1873,13 @@ if(CLIENT)then
 		AdvDupe2.HeadGhost = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
 		AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
 		AdvDupe2.CurrentGhost = 0
+		AdvDupe2.TotalGhosts = #AdvDupe2.GhostToSpawn
 		
-		if(#AdvDupe2.GhostToSpawn>1)then
+		if(AdvDupe2.TotalGhosts  > 1)then
 			gTemp = 0
-			gPerc = #AdvDupe2.GhostToSpawn*(GetConVarNumber("advdupe2_limit_ghost")*0.01) - 1
+			gPerc = AdvDupe2.TotalGhosts*(GetConVarNumber("advdupe2_limit_ghost")*0.01) - 1
 			if(gPerc>0)then
-				gPerc = #AdvDupe2.GhostToSpawn / gPerc
+				gPerc = AdvDupe2.TotalGhosts / gPerc
 				if(not AdvDupe2.BusyBar)then
 					AdvDupe2.InitProgressBar("Ghosting: ")
 					AdvDupe2.BusyBar = false
@@ -2115,7 +2118,7 @@ if(CLIENT)then
 		if(AdvDupe2.Ghosting)then
 			AdvDupe2.InitProgressBar("Ghosting: ")
 			AdvDupe2.BusyBar = false
-			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/#AdvDupe2.GhostToSpawn*100
+			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
 		end
 	end
 	usermessage.Hook("AdvDupe2_RemoveProgressBar",function(um)
