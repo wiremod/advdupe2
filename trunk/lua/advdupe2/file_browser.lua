@@ -254,7 +254,7 @@ end
 local function GetFullPath(node)
 	local path, area = GetNodePath(node)
 	if(area==0)then
-		path = AdvDupe2.DataFolder..path.."/"
+		path = AdvDupe2.DataFolder.."/"..path.."/"
 	elseif(area==1)then
 	
 	else

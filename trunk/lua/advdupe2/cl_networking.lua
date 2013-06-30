@@ -125,6 +125,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 	end
 	
 	AdvDupe2.GhostToSpawn = {}
+	local count = 0
 	
 	local time
 	local desc
@@ -166,7 +167,11 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 			end
 			v.LocalPos = nil
 			v.LocalAngle = nil
-			AdvDupe2.GhostToSpawn[k] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+			AdvDupe2.GhostToSpawn[count] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+			if(AdvDupe2.HeadEnt == k)then
+				AdvDupe2.HeadEnt = count
+			end
+			count = count + 1
 		end
 		
 		AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
@@ -185,7 +190,11 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		AdvDupe2.HeadAngle = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
 		
 		for k,v in pairs(dupe["Entities"])do
-			AdvDupe2.GhostToSpawn[k] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+			AdvDupe2.GhostToSpawn[count] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+			if(AdvDupe2.HeadEnt == k)then
+				AdvDupe2.HeadEnt = count
+			end
+			count = count + 1
 		end
 	end
 	
@@ -226,15 +235,23 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	local name = string.Explode("/", ReadPath)
 	name = name[#name]
 	name = string.sub(name, 1, #name-4)
-	AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name) end end)
 	
-	AdvDupe2.File = AdvDupe2.Null.esc(read)
-	AdvDupe2.LastPos = 0
-	AdvDupe2.Length = string.len(AdvDupe2.File)
-	AdvDupe2.InitProgressBar("Opening:")
-
-	uploading=true
-	RunConsoleCommand("AdvDupe2_InitReceiveFile")
+	uploading = true
+	
+	AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) 
+								if(success)then 
+									AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
+									
+									AdvDupe2.File = AdvDupe2.Null.esc(read)
+									AdvDupe2.LastPos = 0
+									AdvDupe2.Length = string.len(AdvDupe2.File)
+									AdvDupe2.InitProgressBar("Opening:")
+									RunConsoleCommand("AdvDupe2_InitReceiveFile")
+								else
+									uploading = false
+									AdvDupe2.Notify("File could not be decoded. Upload Canceled.", NOTIFY_ERROR)
+								end 
+						  end)
 end
 
 --[[
