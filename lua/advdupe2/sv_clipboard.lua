@@ -703,7 +703,7 @@ local function GenericDuplicatorFunction( data, Player )
 		return nil
 	end
 
-	if( not util.IsValidModel(data.Model) )then
+	if( not util.IsValidModel(data.Model) and not file.Exists( data.Model, "GAME" ) )then
 		if(Player)then
 			reportmodel(Player,data.Model)
 		else
@@ -729,7 +729,7 @@ end
 ]]
 local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 
-	if( not util.IsValidModel(Model) )then
+	if( not util.IsValidModel(Model) and not file.Exists( Data.Model, "GAME" ) )then
 		if(Player)then
 			reportmodel(Player,Data.Model)
 		else
