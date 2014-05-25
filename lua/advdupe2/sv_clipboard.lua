@@ -194,6 +194,10 @@ local function CopyEntTable( Ent, Offset )
 	
 	end
 
+	if Ent.GetNetworkVars then
+		Tab.DT = Ent:GetNetworkVars()
+	end
+
 	// Make this function on your SENT if you want to modify the
 	//  returned table specifically for your entity.
 	if Ent.OnEntityCopyTableFinish then
@@ -889,6 +893,11 @@ local function CreateEntityFromTable(EntTable, Player)
 			end
 			if(EntTable.Skin)then valid:SetSkin(EntTable.Skin) end
 			if ( EntTable.BodyG ) then RestoreBodyGroups( valid, EntTable.BodyG ) end
+
+			if valid.RestoreNetworkVars then
+				valid:RestoreNetworkVars(EntTable.DT)
+			end
+
 			/*if(Player)then
 				if(not valid:IsVehicle() and EntTable.Class~="prop_ragdoll" and not valid:IsNPC())then	//These three get called automatically
 					if(EntTable.Class=="prop_effect")then
