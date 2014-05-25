@@ -194,10 +194,6 @@ local function CopyEntTable( Ent, Offset )
 	
 	end
 
-	if Ent.GetNetworkVars then
-		Tab.DT = Ent:GetNetworkVars()
-	end
-
 	// Make this function on your SENT if you want to modify the
 	//  returned table specifically for your entity.
 	if Ent.OnEntityCopyTableFinish then
@@ -338,31 +334,6 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 	return EntTable, ConstraintTable
 end
 AdvDupe2.duplicator.Copy = Copy
-
---[[
-	Name: LoadSents
-	Desc: Loads the entities list and the whitelist for spawning props
-	Params:
-	Returns:
-]]
-local function LoadSents()
-	AdvDupe2.duplicator.EntityList = {prop_physics=true, prop_ragdoll=true, prop_vehicle_prisoner_pod=true, prop_vehicle_airboat=true, prop_vehicle_jeep=true, prop_vehicle_jeep_old=true, phys_magnet=true, prop_effect=true}
-	AdvDupe2.duplicator.WhiteList = {prop_physics=true, prop_ragdoll=true, prop_vehicle_prisoner_pod=true, prop_vehicle_airboat=true, prop_vehicle_jeep=true, prop_vehicle_jeep_old=true, phys_magnet=true, prop_effect=true}
-	local exclusion = {player=true, prop_effect=true, gmod_player_start=true, gmod_ghost=true, lua_run=true, gmod_wire_hologram=true, env_skypaint=true, widget_axis=true, info_player_axis=true, info_player_terrorist=true, info_player_counterterrorist=true, base_point=true, widget_bone=true, widget_base=true, widget_bones=true, widget_arrow=true, info_player_allies=true, gmod_player_start=true, widget_disc=true, base_ai=true, widget_bonemanip_rotate=true, widget_bonemanip_scale=true, widget_bonemanip_move=true}
-	local sub
-	for _,v in pairs(scripted_ents.GetList( )) do
-		sub = _:sub(1,4)
-		if sub ~= "base" and sub ~= "info" and sub ~= "func" and not exclusion[_] then
-			if v.t.AdminSpawnable and not v.t.Spawnable then
-				AdvDupe2.duplicator.EntityList[_] = false
-			else
-				AdvDupe2.duplicator.EntityList[_] = true
-			end
-			AdvDupe2.duplicator.WhiteList[_] = true
-		end
-	end
-end
-hook.Add( "InitPostEntity", "AdvDupe2_LoadDuplicatingEntities", LoadSents)
 
 --[[
 	Name: AreaCopy
@@ -810,7 +781,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			sent = true
 		end
 
-		if( game.SinglePlayer() or AdvDupe2.duplicator.WhiteList[EntTable.Class]  or (EntTable.BuildDupeInfo.IsNPC and (tobool(GetConVarString("AdvDupe2_AllowNPCPasting")) and string.sub(EntTable.Class, 1, 4)=="npc_")))then
+		if duplicator.IsAllowed(EntTable.Class) then
 			status, valid = pcall(GenericDuplicatorFunction, EntTable, Player )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: "..EntTable.Class)
@@ -847,7 +818,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		// Create and return the entity
 		if(EntTable.Class=="prop_physics")then
 			valid = MakeProp(Player, unpack(ArgList)) //Create prop_physics like this because if the model doesn't exist it will cause
-		elseif( game.SinglePlayer() or AdvDupe2.duplicator.WhiteList[EntTable.Class] or (EntTable.BuildDupeInfo.IsNPC and (tobool(GetConVarString("AdvDupe2_AllowNPCPasting")) and string.sub(EntTable.Class, 1, 4)=="npc_")))then
+		elseif duplicator.IsAllowed(EntTable.Class) then
 			//Create sents using their spawn function with the arguments we stored earlier
 			sent = true
 
@@ -893,11 +864,6 @@ local function CreateEntityFromTable(EntTable, Player)
 			end
 			if(EntTable.Skin)then valid:SetSkin(EntTable.Skin) end
 			if ( EntTable.BodyG ) then RestoreBodyGroups( valid, EntTable.BodyG ) end
-
-			if valid.RestoreNetworkVars then
-				valid:RestoreNetworkVars(EntTable.DT)
-			end
-
 			/*if(Player)then
 				if(not valid:IsVehicle() and EntTable.Class~="prop_ragdoll" and not valid:IsNPC())then	//These three get called automatically
 					if(EntTable.Class=="prop_effect")then
