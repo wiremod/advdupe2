@@ -52,7 +52,6 @@ CreateConVar("AdvDupe2_MaxAreaCopySize", "2500", {FCVAR_ARCHIVE})
 
 CreateConVar("AdvDupe2_FileModificationDelay", "5", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_UpdateFilesDelay", "10", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_AllowNPCPasting", "false", {FCVAR_ARCHIVE})
 
 CreateConVar("AdvDupe2_MaxDownloadBytes2", "10000", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxUploadBytes2", "10000", {FCVAR_ARCHIVE})
