@@ -754,7 +754,7 @@ local function CreateEntityFromTable(EntTable, Player)
 
 	local EntityClass = duplicator.FindEntityClass( EntTable.Class )
 	if ( Player and not Player:IsAdmin( ) and not Player:IsSuperAdmin() and not game.SinglePlayer())then
-		if(not AdvDupe2.duplicator.EntityList[EntTable.Class])then 
+		if not duplicator.IsAllowed(EntTable.Class) then 
 			Player:ChatPrint([[Entity Class Black listed, "]]..EntTable.Class..[["]]) 
 			return nil 
 		end
