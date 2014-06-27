@@ -1401,6 +1401,3 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		undo.AddFunction(RemoveSpawnedEntities, i)
 	undo.Finish()
 end
-
---make sure we have ent lists when reloading
-LoadSents()
