@@ -45,7 +45,7 @@ if(SERVER)then
 		local pos
 		for _,ent in pairs(Entities) do
 			pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and (AdvDupe2.duplicator.EntityList[ent:GetClass()] ~= nil) then
+			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and duplicator.IsAllowed(ent:GetClass()) then
 				if CPPI then
 					if ent:CPPICanTool(ply, "advdupe2") then
 						EntTable[ent:EntIndex()] = ent
@@ -834,7 +834,7 @@ if(SERVER)then
 		
 		local Entities = ents.GetAll()
 		for k,v in pairs(Entities) do
-			if(v:CreatedByMap() || AdvDupe2.duplicator.EntityList[v:GetClass()] == nil)then
+			if v:CreatedByMap() or not duplicator.IsAllowed(v:GetClass()) then
 				Entities[k]=nil
 			end
 		end
