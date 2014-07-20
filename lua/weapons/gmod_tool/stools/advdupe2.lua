@@ -46,11 +46,8 @@ if(SERVER)then
 		for _,ent in pairs(Entities) do
 			pos = ent:GetPos()
 			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and duplicator.IsAllowed(ent:GetClass()) then
-				if CPPI then
-					if ent:CPPICanTool(ply, "advdupe2") then
-						EntTable[ent:EntIndex()] = ent
-					end
-				else
+				local trace = WireLib and WireLib.DummyTrace(ent) or { Entity = ent }
+				if hook.Run( "CanTool", ply,  trace, "advdupe2" ) then
 					EntTable[ent:EntIndex()] = ent
 				end
 			end
