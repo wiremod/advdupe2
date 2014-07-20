@@ -51,7 +51,10 @@ if(SERVER)then
 						EntTable[ent:EntIndex()] = ent
 					end
 				else
-					EntTable[ent:EntIndex()] = ent
+					local tr = { Entity = ent }
+					if ( hook.Run( "CanTool", ply, tr, "advdupe2" ) ) then
+						EntTable[ent:EntIndex()] = ent
+					end
 				end
 			end
 		end
