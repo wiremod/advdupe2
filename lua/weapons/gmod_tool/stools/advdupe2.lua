@@ -44,7 +44,7 @@ if(SERVER)then
 		local EntTable = {}
 		for _,ent in pairs(Entities) do
 			if duplicator.IsAllowed(ent:GetClass()) then
-				local trace = WireLib and WireLib.DummyTrace(ent) or { Entity = ent }
+				local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 				if hook.Run( "CanTool", ply,  trace, "advdupe2" ) then
 					EntTable[ent:EntIndex()] = ent
 				end
