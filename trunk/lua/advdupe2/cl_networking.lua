@@ -59,6 +59,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 			if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 			
 			local read = file.Read(path..".txt")
+			if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
 			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) 
 									if(success)then
 										AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
