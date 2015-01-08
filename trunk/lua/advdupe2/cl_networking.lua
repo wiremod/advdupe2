@@ -233,6 +233,7 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 	
 	local read = file.Read(ReadPath)
+	if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
 	local name = string.Explode("/", ReadPath)
 	name = name[#name]
 	name = string.sub(name, 1, #name-4)
