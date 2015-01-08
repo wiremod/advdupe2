@@ -454,7 +454,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 				end
 
-				if Key == "Bone"..i or Key == "Bone" then Val = Constraint.Entity[ i ].Bone end
+				if Key == "Bone"..i or Key == "Bone" then Val = Constraint.Entity[ i ].Bone or 0 end
 
 				if Key == "LPos"..i then
 					if (Constraint.Entity[i].World and Constraint.Entity[i].LPos)then
