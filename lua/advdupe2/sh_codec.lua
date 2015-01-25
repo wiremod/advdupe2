@@ -257,9 +257,7 @@ dec[255] = function() --table
 		
 		k = read()
 		
-		if k == nil then
-			return t
-		else
+		if k ~= nil then
 			t[k] = read()
 		end
 		
@@ -433,11 +431,7 @@ versions[3] = function(encodedDupe)
 end
 
 versions[4] = function(encodedDupe)
-	/*
-	encodedDupe = decompress(encodedDupe)
-	-- correct the dupe string so table references can be loaded properly
-	encodedDupe = compress(dupestring)
-	*/
+	-- TODO: correct the dupe string that table references are loaded properly
 	return versions[5](encodedDupe)
 end
 
