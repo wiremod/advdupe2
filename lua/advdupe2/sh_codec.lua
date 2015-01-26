@@ -228,6 +228,7 @@ local function error_nodeserializer()
 end
 
 local dec = {}
+local reference = 0
 for i=1,255 do dec[i] = error_nodeserializer end
 
 local function read()
@@ -248,20 +249,20 @@ end
 dec[255] = function() --table
 	local t = {}
 	local k
+	reference = reference + 1
+	local ref = reference
 
 	repeat
 		
 		k = read()
 		
-		if k == nil then
-			return t
-		else
+		if k ~= nil then
 			t[k] = read()
 		end
 		
 	until (k == nil)
 	
-	tables[#tables+1] = t
+	tables[ref] = t
 	
 	return t
 	
@@ -270,7 +271,9 @@ end
 dec[254] = function() --array
 	local t = {}
 	local k,v = 0
-
+	reference = reference + 1
+	local ref = reference
+	
 	repeat
 		k = k + 1
 		v = read()
@@ -281,7 +284,7 @@ dec[254] = function() --array
 		
 	until (v == nil)
 	
-	tables[#tables+1] = t
+	tables[ref] = t
 	
 	return t
 	
@@ -319,6 +322,7 @@ dec[248] = function() --null-terminated string
 	return retv
 end
 dec[247] = function() --table reference
+	reference = reference + 1
 	return tables[buff:ReadShort()]
 end
 
@@ -364,6 +368,7 @@ local function deserialize(str)
 	end
 	
 	tables = {}
+	reference = 0
 	buff = file.Open("ad2temp.txt","wb","DATA")
 	buff:Write(str)
 	buff:Flush()
