@@ -444,7 +444,7 @@ local function deserializeAD1(dupestring)
 	end
 	
 	dictionary = {}
-	for k,v in dictBlock:gmatch("([^\n]+):\"(.-)\"") do
+	for k,v in dictBlock:gmatch("(.-):\"(.-)\"\n") do
 		dictionary[k] = v
 	end
 
