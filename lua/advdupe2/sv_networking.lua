@@ -170,6 +170,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 				p.Angle = Ang or (p.LocalAngle*1)
 				p.LocalPos = nil
 				p.LocalAngle = nil
+				p.Frozen = not p.Frozen -- adv dupe 2 does this wrong way 
 			end
 			v.LocalPos = nil
 			v.LocalAngle = nil
