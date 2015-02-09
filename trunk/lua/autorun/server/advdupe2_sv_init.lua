@@ -32,6 +32,7 @@ function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	end
 end
 
+AdvDupe2.SpawnRate = AdvDupe2.SpawnRate or 1
 CreateConVar("AdvDupe2_SpawnRate", "1", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxFileSize", "200", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxEntities", "0", {FCVAR_ARCHIVE})
@@ -60,7 +61,7 @@ CreateConVar("AdvDupe2_ClientSendRate", "1", {FCVAR_ARCHIVE})
 
 CreateConVar("AdvDupe2_LoadMap", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MapFileName", "", {FCVAR_ARCHIVE})
-	
+
 cvars.AddChangeCallback("AdvDupe2_SpawnRate",
 	function(cvar, preval, newval)
 		newval = tonumber(newval)
@@ -132,6 +133,24 @@ local function PasteMap()
 	
 	
 end
+
+util.AddNetworkString("AdvDupe2_AddFile")
+util.AddNetworkString("AdvDupe2_AddFolder")
+util.AddNetworkString("AdvDupe2_RenameFile")
+util.AddNetworkString("AdvDupe2_MoveFile")
+util.AddNetworkString("AdvDupe2_DeleteNode")
+util.AddNetworkString("AdvDupe2_SendFiles")
+util.AddNetworkString("AdvDupe2_SetDupeInfo")
+util.AddNetworkString("AdvDupe2_RecieveFile")
+util.AddNetworkString("AdvDupe2_InitRecieveFile")
+util.AddNetworkString("AdvDupe2_RecieveFile")
+util.AddNetworkString("AdvDupe2_DownloadFile")
+util.AddNetworkString("AdvDupe2_ReceiveFile")
+util.AddNetworkString("AdvDupe2_SendGhosts")
+util.AddNetworkString("AdvDupe2_AddGhost")
+util.AddNetworkString("AdvDupe2_CanAutoSave")
+util.AddNetworkString("AdvDupe2_SendContraptionGhost")
+
 	
 hook.Add("Initialize", "AdvDupe2_CheckServerSettings",
 	function()
@@ -139,23 +158,6 @@ hook.Add("Initialize", "AdvDupe2_CheckServerSettings",
 			hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
 		end
 	
-		util.AddNetworkString("AdvDupe2_AddFile")
-		util.AddNetworkString("AdvDupe2_AddFolder")
-		util.AddNetworkString("AdvDupe2_RenameFile")
-		util.AddNetworkString("AdvDupe2_MoveFile")
-		util.AddNetworkString("AdvDupe2_DeleteNode")
-		util.AddNetworkString("AdvDupe2_SendFiles")
-		util.AddNetworkString("AdvDupe2_SetDupeInfo")
-		util.AddNetworkString("AdvDupe2_RecieveFile")
-		util.AddNetworkString("AdvDupe2_InitRecieveFile")
-		util.AddNetworkString("AdvDupe2_RecieveFile")
-		util.AddNetworkString("AdvDupe2_DownloadFile")
-		util.AddNetworkString("AdvDupe2_ReceiveFile")
-		util.AddNetworkString("AdvDupe2_SendGhosts")
-		util.AddNetworkString("AdvDupe2_AddGhost")
-		util.AddNetworkString("AdvDupe2_CanAutoSave")
-		util.AddNetworkString("AdvDupe2_SendContraptionGhost")
-		
 		AdvDupe2.SpawnRate = tonumber(GetConVarString("AdvDupe2_SpawnRate"))
 		if(not AdvDupe2.SpawnRate or AdvDupe2.SpawnRate<=0 or AdvDupe2.SpawnRate>1)then
 			AdvDupe2.SpawnRate = 1
