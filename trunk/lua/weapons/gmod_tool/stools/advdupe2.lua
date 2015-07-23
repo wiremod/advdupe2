@@ -164,6 +164,11 @@ if(SERVER)then
 				end
 				return false 
 			end
+			
+			-- Filter duplicator blocked entities out.
+			if trace.Entity.DoNotDuplicate then
+				return false
+			end
 
 			//If Alt is being held, add a prop to the dupe
 			if(self:GetStage()==0 and ply:KeyDown(IN_WALK) and ply.AdvDupe2.Entities~=nil and table.Count(ply.AdvDupe2.Entities)>0)then 
