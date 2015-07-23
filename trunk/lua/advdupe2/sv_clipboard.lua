@@ -42,7 +42,9 @@ end
 	Returns a copy of the passed entity's table
 ---------------------------------------------------------*/
 local function CopyEntTable( Ent, Offset )
-	
+	-- Filter duplicator blocked entities out.
+	if Ent.DoNotDuplicate then return nil end
+
 	if(not IsValid(Ent:GetPhysicsObject()))then return nil end
 
 	local Tab = {}
@@ -219,8 +221,11 @@ end
 	Returns: <table> Constraints, <table> Entities
 ]]
 local function CopyConstraintTable( Const, Offset )
-
 	if(Const==nil)then return nil, {} end
+
+	-- Filter duplicator blocked constraints out.
+	if Const.DoNotDuplicate then return nil, {} end
+
 	local Type = duplicator.ConstraintType[ Const.Type ]
 	if(not Type)then return nil, {} end
 	local Constraint = {}
@@ -349,7 +354,7 @@ function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 	local Constraints, EntTable, ConstraintTable = {}, {}, {}
 	local index, add, AddEnts, AddConstrs, ConstTable, EntTab
 	
-	for _,Ent in pairs(Entities)do
+	for _,Ent in pairs(Entities) do
 
 		index = Ent:EntIndex()
 		EntTable[index] = CopyEntTable(Ent, Offset)
@@ -361,7 +366,10 @@ function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 				end
 			else
 				for k,v in pairs(Ent.Constraints)do
+					-- Filter duplicator blocked constraints out.
+					if v.DoNotDuplicate then continue end
 					index = v:GetCreationID()
+
 					if(index and not Constraints[index])then
 						v.Identity = v:GetCreationID()
 						Constraints[index] = v
@@ -498,28 +506,38 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	if(Constraint.BuildDupeInfo)then
 
 		if second ~= nil and not second:IsWorld() and Constraint.BuildDupeInfo.EntityPos ~= nil then
-			if(not DontEnable)then ReEnableSecond = second:GetPhysicsObject():IsMoveable() end
-			second:GetPhysicsObject():EnableMotion(false)
-			second:SetPos(first:GetPos()-Constraint.BuildDupeInfo.EntityPos)
-			if(Constraint.BuildDupeInfo.Bone2) then
-				Bone2Index = Constraint.BuildDupeInfo.Bone2
-				Bone2 = second:GetPhysicsObjectNum(Bone2Index)
-				Bone2:EnableMotion(false)
-				Bone2:SetPos(second:GetPos() + Constraint.BuildDupeInfo.Bone2Pos)
-				Bone2:SetAngles(Constraint.BuildDupeInfo.Bone2Angle)
+			local SecondPhys = second:GetPhysicsObject()
+			if IsValid(SecondPhys) then
+				if not DontEnable then ReEnableSecond = SecondPhys:IsMoveable() end
+				SecondPhys:EnableMotion(false)
+				second:SetPos(first:GetPos()-Constraint.BuildDupeInfo.EntityPos)
+				if(Constraint.BuildDupeInfo.Bone2) then
+					Bone2Index = Constraint.BuildDupeInfo.Bone2
+					Bone2 = second:GetPhysicsObjectNum(Bone2Index)
+					if IsValid(Bone2) then
+						Bone2:EnableMotion(false)
+						Bone2:SetPos(second:GetPos() + Constraint.BuildDupeInfo.Bone2Pos)
+						Bone2:SetAngles(Constraint.BuildDupeInfo.Bone2Angle)
+					end
+				end
 			end
 		end
 
 		if first ~= nil and Constraint.BuildDupeInfo.Ent1Ang ~= nil then
-			if(not DontEnable)then ReEnableFirst = first:GetPhysicsObject():IsMoveable() end
-			first:GetPhysicsObject():EnableMotion(false)
-			first:SetAngles(Constraint.BuildDupeInfo.Ent1Ang)
-			if(Constraint.BuildDupeInfo.Bone1) then
-				Bone1Index = Constraint.BuildDupeInfo.Bone1
-				Bone1 = first:GetPhysicsObjectNum(Bone1Index)
-				Bone1:EnableMotion(false)
-				Bone1:SetPos(first:GetPos() + Constraint.BuildDupeInfo.Bone1Pos)
-				Bone1:SetAngles(Constraint.BuildDupeInfo.Bone1Angle)
+			local FirstPhys = first:GetPhysicsObject()
+			if IsValid(FirstPhys) then
+				if not DontEnable then ReEnableFirst = FirstPhys:IsMoveable() end
+				FirstPhys:EnableMotion(false)
+				first:SetAngles(Constraint.BuildDupeInfo.Ent1Ang)
+				if(Constraint.BuildDupeInfo.Bone1) then
+					Bone1Index = Constraint.BuildDupeInfo.Bone1
+					Bone1 = first:GetPhysicsObjectNum(Bone1Index)
+					if IsValid(Bone1) then
+						Bone1:EnableMotion(false)
+						Bone1:SetPos(first:GetPos() + Constraint.BuildDupeInfo.Bone1Pos)
+						Bone1:SetAngles(Constraint.BuildDupeInfo.Bone1Angle)
+					end
+				end
 			end
 		end
 
@@ -550,20 +568,32 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		if(first~=nil)then
 			first:SetPos(EntityTable[firstindex].BuildDupeInfo.PosReset)
 			first:SetAngles(EntityTable[firstindex].BuildDupeInfo.AngleReset)
-			if(Bone1 and Bone1Index~=0)then
+			if(IsValid(Bone1) and Bone1Index~=0)then
 				Bone1:SetPos(EntityTable[firstindex].BuildDupeInfo.PosReset + EntityTable[firstindex].BuildDupeInfo.PhysicsObjects[Bone1Index].Pos)
 				Bone1:SetAngles(EntityTable[firstindex].PhysicsObjects[Bone1Index].Angle)
 			end
-			if(ReEnableFirst)then first:GetPhysicsObject():EnableMotion(true) end
+
+			local FirstPhys = first:GetPhysicsObject()
+			if IsValid(FirstPhys) then
+				if ReEnableFirst then
+					FirstPhys:EnableMotion(true)
+				end
+			end
 		end
 		if(second~=nil)then
 			second:SetPos(EntityTable[secondindex].BuildDupeInfo.PosReset)
 			second:SetAngles(EntityTable[secondindex].BuildDupeInfo.AngleReset)
-			if(Bone2 and Bone2Index~=0)then
+			if(IsValid(Bone2) and Bone2Index~=0)then
 				Bone2:SetPos(EntityTable[secondindex].BuildDupeInfo.PosReset + EntityTable[secondindex].BuildDupeInfo.PhysicsObjects[Bone2Index].Pos)
 				Bone2:SetAngles(EntityTable[secondindex].PhysicsObjects[Bone2Index].Angle)
 			end
-			if(ReEnableSecond)then second:GetPhysicsObject():EnableMotion(true) end
+
+			local SecondPhys = second:GetPhysicsObject()
+			if IsValid(SecondPhys) then
+				if ReEnableSecond then
+					SecondPhys:EnableMotion(true)
+				end
+			end
 		end
 	end
 
@@ -751,6 +781,8 @@ end
 	Returns: nil
 ]]
 local function IsAllowed(Player, Class, EntityClass)
+	if ( scripted_ents.GetMember( Class, "DoNotDuplicate" ) ) then return false end
+
 	if ( IsValid( Player ) and !Player:IsAdmin()) then
 		if !duplicator.IsAllowed(Class) then return false end
 		if ( !scripted_ents.GetMember( Class, "Spawnable" ) and not EntityClass ) then return false end
