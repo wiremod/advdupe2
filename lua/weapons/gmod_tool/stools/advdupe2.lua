@@ -857,10 +857,10 @@ if(CLIENT)then
 	end
 	
 	function TOOL:RightClick(trace)
-		if(trace.Entity:GetClass()~="worldspawn" || self:GetStage()==1)then
-			return true
+		if( ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK) )then
+			return false
 		end
-		return false
+		return true
 	end
 	
 	//Removes progress bar and removes ghosts when tool is put away
