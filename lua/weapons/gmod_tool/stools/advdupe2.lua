@@ -197,7 +197,7 @@ if(SERVER)then
 					end
 				end
 				if next(Entities)==nil then
-					return false
+					return true
 				end
 				
 				local Ent = Entities[next(Entities)]
