@@ -1436,7 +1436,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 
 	undo.Create("AdvDupe2_"..Player:UniqueID())
 		undo.SetPlayer(Player)
-		undo.SetCustomUndoText(string.format("Undone Advanced Duplication \"%s\"",Player.AdvDupe2.Name or ""))
+		undo.SetCustomUndoText("Undone " .. (Player.AdvDupe2.Name or ""))
 		undo.AddFunction(RemoveSpawnedEntities, i)
 	undo.Finish()
 end
