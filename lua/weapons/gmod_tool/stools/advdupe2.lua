@@ -857,7 +857,7 @@ if(CLIENT)then
 	end
 	
 	function TOOL:RightClick(trace)
-		if( ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK) )then
+		if( self:GetOwner():KeyDown(IN_SPEED) and not self:GetOwner():KeyDown(IN_WALK) )then
 			return false
 		end
 		return true
