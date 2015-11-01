@@ -660,25 +660,13 @@ local function DoGenericPhysics( Entity, data, Player )
 	if (not data) then return end
 	if (not data.PhysicsObjects) then return end
 	local Phys
-	if(Player)then
-		for Bone, Args in pairs( data.PhysicsObjects ) do
-			Phys = Entity:GetPhysicsObjectNum(Bone)
-			if ( IsValid(Phys) ) then	
-				Phys:SetPos( Args.Pos )
-				Phys:SetAngles( Args.Angle )
-				Phys:EnableMotion( false ) 	
-				Player:AddFrozenPhysicsObject( Entity, Phys )
-			end	
-		end
-	else
-		for Bone, Args in pairs( data.PhysicsObjects ) do
-			Phys = Entity:GetPhysicsObjectNum(Bone)
-			if ( IsValid(Phys) ) then	
-				Phys:SetPos( Args.Pos )
-				Phys:SetAngles( Args.Angle )
-				Phys:EnableMotion( false ) 	
-			end	
-		end
+	for Bone, Args in pairs( data.PhysicsObjects ) do
+		Phys = Entity:GetPhysicsObjectNum(Bone)
+		if ( IsValid(Phys) ) then	
+			Phys:SetPos( Args.Pos )
+			Phys:SetAngles( Args.Angle )
+			Phys:EnableMotion( false ) 	
+		end	
 	end
 end
 
@@ -889,20 +877,10 @@ local function CreateEntityFromTable(EntTable, Player)
 		if(sent)then
 			local iNumPhysObjects = valid:GetPhysicsObjectCount()
 			local PhysObj
-			if(Player)then
-				for Bone = 0, iNumPhysObjects-1 do 
-					PhysObj = valid:GetPhysicsObjectNum( Bone )
-					if IsValid(PhysObj) then
-						PhysObj:EnableMotion(false)
-						Player:AddFrozenPhysicsObject( valid, PhysObj )
-					end
-				end
-			else
-				for Bone = 0, iNumPhysObjects-1 do 
-					PhysObj = valid:GetPhysicsObjectNum( Bone )
-					if IsValid(PhysObj) then
-						PhysObj:EnableMotion(false)
-					end
+			for Bone = 0, iNumPhysObjects-1 do 
+				PhysObj = valid:GetPhysicsObjectNum( Bone )
+				if IsValid(PhysObj) then
+					PhysObj:EnableMotion(false)
 				end
 			end
 			if(EntTable.Skin)then valid:SetSkin(EntTable.Skin) end
@@ -934,6 +912,65 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 	end
 end
+
+local function ApplyPhysics( Player, ent, parent, unfreeze, preservefrozenstate, physobjs )
+	local edit = true
+	if parent then
+		ent:SetParent( parent )
+		if(ent.Constraints~=nil)then
+			for i,c in pairs(ent.Constraints)do
+				if(c and constraints[c.Type])then
+					edit=false
+					break
+				end
+			end
+		end
+		if(edit and IsValid(ent:GetPhysicsObject()))then
+			mass = ent:GetPhysicsObject():GetMass()
+			ent:PhysicsInitShadow(false, false)
+			ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
+			ent:GetPhysicsObject():EnableMotion(false)
+			ent:GetPhysicsObject():Sleep()
+			ent:GetPhysicsObject():SetMass(mass)
+		end
+	else
+		edit=false
+	end
+
+	if(not edit)then
+		if(unfreeze)then
+			for i=0, ent:GetPhysicsObjectCount() do
+				phys = ent:GetPhysicsObjectNum(i)
+				if(IsValid(phys))then
+					phys:EnableMotion(true)	//Unfreeze the entitiy and all of its objects
+					phys:Wake()
+				end
+			end
+		elseif(preservefrozenstate)then
+			for i=0, ent:GetPhysicsObjectCount() do
+				phys = ent:GetPhysicsObjectNum(i)
+				if(IsValid(phys))then
+					if(physobjs[i].Frozen)then
+						Player:AddFrozenPhysicsObject( ent, phys )
+					else
+						phys:EnableMotion(true)	//Restore the entity and all of its objects to their original frozen state
+						phys:Wake()
+					end
+				end
+			end
+		else
+			for i=0, ent:GetPhysicsObjectCount() do
+				phys = ent:GetPhysicsObjectNum(i)
+				if(IsValid(phys))then
+					Player:AddFrozenPhysicsObject( ent, phys )
+				end
+			end
+		end
+		
+		ent:SetNotSolid(false)
+	end
+end
+
 
 --[[
 	Name: Paste
@@ -1018,12 +1055,13 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 						print("AD2 PostEntityPaste Error: "..tostring(valid))
 					end
 				end
-				v:GetPhysicsObject():EnableMotion(false)
-
-				if(EntityList[_].BuildDupeInfo.DupeParentID and Parenting)then
-					v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
+				
+				local parent
+				if EntityList[_].BuildDupeInfo.DupeParentID and Parenting then
+					parent = CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID]
 				end
-				v:SetNotSolid(false)
+				ApplyPhysics( Player, v, parent, false, true )
+				
 				undo.AddEntity( v )
 			end
 			undo.SetPlayer( Player )
@@ -1040,14 +1078,15 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 					print("AD2 PostEntityPaste Error: "..tostring(valid))
 				end
 			end
-			v:GetPhysicsObject():EnableMotion(false)
-
-			if(EntityList[_].BuildDupeInfo.DupeParentID and Parenting)then
-				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
+			
+			local parent
+			if EntityList[_].BuildDupeInfo.DupeParentID and Parenting then
+				parent = CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID]
 			end
-
-			v:SetNotSolid(false)
+			ApplyPhysics( Player, v, parent, false, true )
+			
 		end
+		
 	end
 	DisablePropCreateEffect = nil
 	hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=EntityList, CreatedEntities=CreatedEntities, ConstraintList=ConstraintList, CreatedConstraints=CreatedConstraints, HitPos=OrigPos or Position}}, 1)
@@ -1223,68 +1262,12 @@ local function AdvDupe2_Spawn()
 				local edit
 				local mass
 				for _,v in pairs( Queue.CreatedEntities ) do
-					if(not IsValid(v))then 
-						v = nil
-					else
-						edit = true
+					if(IsValid(v))then
+						local parent
 						if(Queue.EntityList[_].BuildDupeInfo.DupeParentID~=nil and Queue.Parenting)then
-							v:SetParent(Queue.CreatedEntities[Queue.EntityList[_].BuildDupeInfo.DupeParentID])
-							if(v.Constraints~=nil)then
-								for i,c in pairs(v.Constraints)do
-									if(c and constraints[c.Type])then
-										edit=false
-										break
-									end
-								end
-							end
-							if(edit and IsValid(v:GetPhysicsObject()))then
-								mass = v:GetPhysicsObject():GetMass()
-								v:PhysicsInitShadow(false, false)
-								v:SetCollisionGroup(COLLISION_GROUP_WORLD)
-								v:GetPhysicsObject():EnableMotion(false)
-								v:GetPhysicsObject():Sleep()
-								v:GetPhysicsObject():SetMass(mass)
-							end
-						else
-							edit=false
+							parent = Queue.CreatedEntities[Queue.EntityList[_].BuildDupeInfo.DupeParentID]
 						end
-
-						if(unfreeze)then
-							for i=0, v:GetPhysicsObjectCount() do
-								phys = v:GetPhysicsObjectNum(i)
-								if(IsValid(phys))then
-									phys:EnableMotion(true)	//Unfreeze the entitiy and all of its objects
-									phys:Wake()
-								end
-							end
-						elseif(preservefrozenstate)then
-							for i=0, v:GetPhysicsObjectCount() do
-								phys = v:GetPhysicsObjectNum(i)
-								if(IsValid(phys))then
-									if(Queue.EntityList[_].BuildDupeInfo.PhysicsObjects[i].Frozen)then
-										phys:EnableMotion(true)	//Restore the entity and all of its objects to their original frozen state
-										phys:Wake()
-									else 
-										Queue.Player:AddFrozenPhysicsObject( v, phys ) 
-									end
-								end
-							end
-						else
-							for i=0, v:GetPhysicsObjectCount() do
-								phys = v:GetPhysicsObjectNum(i)
-								if(IsValid(phys))then
-									if(phys:IsMoveable())then
-										phys:EnableMotion(false)	//Freeze the entitiy and all of its objects
-										Queue.Player:AddFrozenPhysicsObject( v, phys )
-									end
-								end
-							end
-						end
-
-						if(not edit or not Queue.DisableParents)then 
-							v:SetNotSolid(false)
-						end
-
+						ApplyPhysics( Queue.Player, v, parent, unfreeze, preservefrozenstate, Queue.EntityList[_].BuildDupeInfo.PhysicsObjects )
 						undo.AddEntity( v )
 					end
 				end
