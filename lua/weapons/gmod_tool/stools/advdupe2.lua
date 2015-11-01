@@ -40,7 +40,7 @@ if(SERVER)then
 	//Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
 
-		local Entities = ents.GetAll()
+		local Entities = ents.GetAll() //Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
 		local pos
 		for _,ent in pairs(Entities) do
