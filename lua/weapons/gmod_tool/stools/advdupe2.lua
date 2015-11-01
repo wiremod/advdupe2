@@ -96,7 +96,6 @@ if(SERVER)then
 	]]
 	function TOOL:RightClick( trace )
 		local ply = self:GetOwner()
-		local AddOne = nil
 		
 		if(not ply.AdvDupe2)then ply.AdvDupe2 = {} end
 		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
@@ -117,127 +116,108 @@ if(SERVER)then
 			end	
 		end
 		
-		if(not trace or not trace.Hit)then return false end 
-		//If area copy is on and an ent was not right clicked, do an area copy and pick an ent
-		if( self:GetStage()==1 and not IsValid(trace.Entity) )then	
-			if( not game.SinglePlayer() and (tonumber(ply:GetInfo("advdupe2_area_copy_size"))or 50) > tonumber(GetConVarString("AdvDupe2_MaxAreaCopySize")))then
+		if(not trace or not trace.Hit)then return false end
+		
+		local Entities, Constraints, AddOne
+		local HeadEnt = {}
+		//If area copy is on
+		if(self:GetStage()==1)then
+			local area_size = tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50
+			if( not game.SinglePlayer() and area_size > tonumber(GetConVarString("AdvDupe2_MaxAreaCopySize")))then
 				AdvDupe2.Notify(ply,"Area copy size exceeds limit of "..GetConVarString("AdvDupe2_MaxAreaCopySize")..".",NOTIFY_ERROR)
 				return false 
 			end
-			local i = tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50
-			local Pos = trace.HitPos
-			local T = (Vector(i,i,i)+Pos)
-			local B = (Vector(-i,-i,-i)+Pos)
+			local Pos = trace.HitNonWorld and trace.Entity:GetPos() or trace.HitPos
+			local T = (Vector(area_size,area_size,area_size)+Pos)
+			local B = (Vector(-area_size,-area_size,-area_size)+Pos)
 			
-			local Entities = FindInBox(B,T, ply)
-			if(table.Count(Entities)==0)then
+			local Ents = FindInBox(B,T, ply)
+			if next(Ents)==nil then
 				self:SetStage(0)
 				AdvDupe2.RemoveSelectBox(ply)
 				return true
 			end
 			
-			ply.AdvDupe2.HeadEnt = {}
-			ply.AdvDupe2.Entities = {}
-			ply.AdvDupe2.Constraints = {}
+			local Ent = trace.HitNonWorld and trace.Entity or Ents[next(Ents)]
+			HeadEnt.Index = Ent:EntIndex()
+			HeadEnt.Pos = Ent:GetPos()
 			
-			ply.AdvDupe2.HeadEnt.Index = table.GetFirstKey(Entities)
-			ply.AdvDupe2.HeadEnt.Pos = Entities[ply.AdvDupe2.HeadEnt.Index]:GetPos()
+			Entities, Constraints = AdvDupe2.duplicator.AreaCopy(Ents, HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
 
-			ply.AdvDupe2.Entities, ply.AdvDupe2.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, ply.AdvDupe2.HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
-			
-			local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=ply.AdvDupe2.HeadEnt.Pos+Vector(0,0,1), endpos=ply.AdvDupe2.HeadEnt.Pos-Vector(0,0,50000)} )
-			if(WorldTrace.Hit)then ply.AdvDupe2.HeadEnt.Z = math.abs(ply.AdvDupe2.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else ply.AdvDupe2.HeadEnt.Z = 0 end
-
+			self:SetStage(0)
 			AdvDupe2.RemoveSelectBox(ply)
-		else	//Area Copy is off or the ent is valid
-		
-			//Non valid entity or clicked the world
-			if(not IsValid(trace.Entity))then 
-
-				//If shift and alt are being held, clear the dupe
-				if(ply:KeyDown(IN_WALK) and ply:KeyDown(IN_SPEED))then
-					umsg.Start("AdvDupe2_RemoveGhosts", ply)
-					umsg.End()
-					ply.AdvDupe2.Entities = nil
-					ply.AdvDupe2.Constraints = nil
-					umsg.Start("AdvDupe2_ResetDupeInfo", ply)
-					umsg.End()
-					AdvDupe2.ResetOffsets(ply)
-				end
-				return false 
-			end
-			
+		elseif trace.HitNonWorld then	//Area Copy is off
 			-- Filter duplicator blocked entities out.
-			if trace.Entity.DoNotDuplicate then
+			if not duplicator.IsAllowed( trace.Entity:GetClass() ) then
 				return false
 			end
 
 			//If Alt is being held, add a prop to the dupe
-			if(self:GetStage()==0 and ply:KeyDown(IN_WALK) and ply.AdvDupe2.Entities~=nil and table.Count(ply.AdvDupe2.Entities)>0)then 
-				AdvDupe2.duplicator.Copy( trace.Entity, ply.AdvDupe2.Entities, ply.AdvDupe2.Constraints, ply.AdvDupe2.HeadEnt.Pos)  
+			if(ply:KeyDown(IN_WALK) and ply.AdvDupe2.Entities~=nil and next(ply.AdvDupe2.Entities)~=nil)then
+				Entities = ply.AdvDupe2.Entities
+				Constraints = ply.AdvDupe2.Constraints
+				HeadEnt = ply.AdvDupe2.HeadEnt
 				
-				ply.AdvDupe2.Constraints = CollapseTableToArray(ply.AdvDupe2.Constraints)
-				
-				net.Start("AdvDupe2_SetDupeInfo")
-					net.WriteString("")
-					net.WriteString(ply:Nick())
-					net.WriteString(os.date("%d %B %Y"))
-					net.WriteString(os.date("%I:%M %p"))
-					net.WriteString("")
-					net.WriteString("")
-					net.WriteString(table.Count(ply.AdvDupe2.Entities))
-					net.WriteString(#ply.AdvDupe2.Constraints)
-				net.Send(ply)
+				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, HeadEnt.Pos)
 				
 				//Only add the one ghost
-				AddOne = ply.AdvDupe2.Entities[trace.Entity:EntIndex()]
-				if(AddOne)then
-					net.Start("AdvDupe2_AddGhost")
-						net.WriteBit(AddOne.Class=="prop_ragdoll")
-						net.WriteString(AddOne.Model)
-						net.WriteInt(#AddOne.PhysicsObjects, 8)
-						for i=0, #AddOne.PhysicsObjects do
-							net.WriteAngle(AddOne.PhysicsObjects[i].Angle)
-							net.WriteVector(AddOne.PhysicsObjects[i].Pos)
-						end
-					net.Send(ply)
-				end
+				AddOne = Entities[trace.Entity:EntIndex()]
+			else
+				Entities = {}
+				Constraints = {}
+				HeadEnt.Index = trace.Entity:EntIndex()
+				HeadEnt.Pos = trace.HitPos
+				
+				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, trace.HitPos )
+			end
+		else //Non valid entity or clicked the world
+			if ply.AdvDupe2.Entities then
+				//clear the dupe
+				umsg.Start("AdvDupe2_RemoveGhosts", ply)
+				umsg.End()
+				ply.AdvDupe2.Entities = nil
+				ply.AdvDupe2.Constraints = nil
+				umsg.Start("AdvDupe2_ResetDupeInfo", ply)
+				umsg.End()
+				AdvDupe2.ResetOffsets(ply)
 				return true
 			else
-			
-				ply.AdvDupe2.HeadEnt = {}
-				ply.AdvDupe2.HeadEnt.Index = trace.Entity:EntIndex()
-				ply.AdvDupe2.Entities = {}
-				ply.AdvDupe2.Constraints = {}
-				ply.AdvDupe2.HeadEnt.Pos = trace.HitPos
-				
-				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=ply.AdvDupe2.HeadEnt.Pos, endpos=ply.AdvDupe2.HeadEnt.Pos-Vector(0,0,50000)} )
-				if WorldTrace.Hit then ply.AdvDupe2.HeadEnt.Z = math.abs(ply.AdvDupe2.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else ply.AdvDupe2.HeadEnt.Z=0 end
-				
-				//Area Copy is off, do a regular copy
-				if(self:GetStage()==0)then
-					AdvDupe2.duplicator.Copy( trace.Entity, ply.AdvDupe2.Entities, ply.AdvDupe2.Constraints, trace.HitPos )
-				else	//Area copy is on and an ent was clicked, do an area copy
-					if( not game.SinglePlayer() and (tonumber(ply:GetInfo("advdupe2_area_copy_size"))or 50) > tonumber(GetConVarString("AdvDupe2_MaxAreaCopySize")))then
-						AdvDupe2.Notify(ply,"Area copy size exceeds limit of "..GetConVarString("AdvDupe2_MaxAreaCopySize")..".",NOTIFY_ERROR)
-						return false 
+				//select all owned props
+				Entities = {}
+				for _, ent in pairs(ents.GetAll()) do
+					if duplicator.IsAllowed(ent:GetClass()) then
+						if CPPI then
+							if ent:CPPIGetOwner()==ply then
+								Entities[ent:EntIndex()] = ent
+							end
+						else
+							local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
+							if hook.Run( "CanTool", ply,  trace, "advdupe2" ) then
+								Entities[ent:EntIndex()] = ent
+							end
+						end
 					end
-					local i = tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50
-					local Pos = ply.AdvDupe2.HeadEnt.Pos
-					local T = (Vector(i,i,i)+Pos)
-					local B = (Vector(-i,-i,-i)+Pos)
-
-					local Entities = FindInBox(B,T, ply)
-					
-					ply.AdvDupe2.Entities, ply.AdvDupe2.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Pos, ply:GetInfo("advdupe2_copy_outside")=="1")
-					
-					self:SetStage(0)
-					AdvDupe2.RemoveSelectBox(ply)
 				end
+				if next(Entities)==nil then
+					return true
+				end
+				
+				local Ent = Entities[next(Entities)]
+				HeadEnt.Index = Ent:EntIndex()
+				HeadEnt.Pos = Ent:GetPos()
+				
+				Entities, Constraints = AdvDupe2.duplicator.AreaCopy(Entities, HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
 			end
 		end
 		
-		ply.AdvDupe2.Constraints = CollapseTableToArray(ply.AdvDupe2.Constraints)
+		if not HeadEnt.Z then
+			local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=HeadEnt.Pos+Vector(0,0,1), endpos=HeadEnt.Pos-Vector(0,0,50000)} )
+			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z-WorldTrace.HitPos.Z) or 0
+		end
+		
+		ply.AdvDupe2.HeadEnt = HeadEnt
+		ply.AdvDupe2.Entities = Entities
+		ply.AdvDupe2.Constraints = CollapseTableToArray(Constraints)
 		
 		net.Start("AdvDupe2_SetDupeInfo")
 			net.WriteString("")
@@ -250,13 +230,18 @@ if(SERVER)then
 			net.WriteString(#ply.AdvDupe2.Constraints)
 		net.Send(ply)
 
-		if(not AddOne)then	
+		if AddOne then
+			net.Start("AdvDupe2_AddGhost")
+				net.WriteBit(AddOne.Class=="prop_ragdoll")
+				net.WriteString(AddOne.Model)
+				net.WriteInt(#AddOne.PhysicsObjects, 8)
+				for i=0, #AddOne.PhysicsObjects do
+					net.WriteAngle(AddOne.PhysicsObjects[i].Angle)
+					net.WriteVector(AddOne.PhysicsObjects[i].Pos)
+				end
+			net.Send(ply)
+		else
 			AdvDupe2.SendGhosts(ply) 
-		end
-		
-		if(self:GetStage()==1)then
-			self:SetStage(0)
-			AdvDupe2.RemoveSelectBox(ply)
 		end
 
 		AdvDupe2.ResetOffsets(ply)
@@ -874,10 +859,10 @@ if(CLIENT)then
 	end
 	
 	function TOOL:RightClick(trace)
-		if(trace.Entity:GetClass()~="worldspawn" || self:GetStage()==1)then
-			return true
+		if( self:GetOwner():KeyDown(IN_SPEED) and not self:GetOwner():KeyDown(IN_WALK) )then
+			return false
 		end
-		return false
+		return true
 	end
 	
 	//Removes progress bar and removes ghosts when tool is put away
@@ -1055,8 +1040,8 @@ if(CLIENT)then
 
 	language.Add( "Tool.advdupe2.name",	"Advanced Duplicator 2" )
 	language.Add( "Tool.advdupe2.desc",	"Duplicate things." )
-	language.Add( "Tool.advdupe2.0",		"Primary: Paste, Secondary: Copy." )
-	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area." )
+	language.Add( "Tool.advdupe2.0",		"Primary: Paste, Secondary: Copy, Secondary+World: Select/Deselect All, Secondary+Shift: Area copy." )
+	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area, Secondary+Shift: Cancel." )
 	language.Add( "Undone.AdvDupe2",	"Undone AdvDupe2 paste" )
 	language.Add( "Cleanup.AdvDupe2",	"Adv. Duplications" )
 	language.Add( "Cleaned.AdvDupe2",	"Cleaned up all Adv. Duplications" )
