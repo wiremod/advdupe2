@@ -816,7 +816,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 		*/
 
-		sent = hook.Call("PlayerSpawnEntity", nil, Player, EntTable)
+		sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
 		if(sent==false)then
 			print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 			return nil
@@ -869,7 +869,7 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
 			end
 			*/
-			sent = hook.Call("PlayerSpawnEntity", nil, Player, EntTable)
+			sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
 			if(sent==false)then
 				print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 				return nil
