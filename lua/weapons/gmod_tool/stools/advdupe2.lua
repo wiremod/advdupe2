@@ -40,10 +40,12 @@ if(SERVER)then
 	//Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
 
-		local Entities = ents.FindInBox(min, max)
+		local Entities = ents.GetAll()
 		local EntTable = {}
+		local pos
 		for _,ent in pairs(Entities) do
-			if duplicator.IsAllowed(ent:GetClass()) then
+			pos = ent:GetPos()
+			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and duplicator.IsAllowed(ent:GetClass()) then
 				local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 				if hook.Run( "CanTool", ply,  trace, "advdupe2" ) then
 					EntTable[ent:EntIndex()] = ent
