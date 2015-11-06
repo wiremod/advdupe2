@@ -1039,7 +1039,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 				if EntityList[_].BuildDupeInfo.DupeParentID and Parenting then
 					parent = CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID]
 				end
-				ApplyPhysics( Player, v, parent, false, true )
+				ApplyPhysics( Player, v, parent, false, true, EntityList[_].BuildDupeInfo.PhysicsObjects )
 				
 				undo.AddEntity( v )
 			end
@@ -1062,7 +1062,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			if EntityList[_].BuildDupeInfo.DupeParentID and Parenting then
 				parent = CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID]
 			end
-			ApplyPhysics( Player, v, parent, false, true )
+			ApplyPhysics( Player, v, parent, false, true, EntityList[_].BuildDupeInfo.PhysicsObjects )
 			
 		end
 		
