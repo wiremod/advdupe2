@@ -37,17 +37,27 @@ if(SERVER)then
 		return array
 	end
 
+	local function PlayerCanDupeCPPI(ply, ent)
+		return ent:CPPIGetOwner()==ply and duplicator.IsAllowed(ent:GetClass())
+	end
+	
+	local function PlayerCanDupeTool(ply, ent)
+		if not duplicator.IsAllowed(ent:GetClass()) then return false end
+		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
+		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
+	end
+	
 	//Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
-
+		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local Entities = ents.GetAll() //Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
-		local pos
-		for _,ent in pairs(Entities) do
+		local pos, ent
+		for i=1, #Entities do
+			ent = Entities[i]
 			pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and duplicator.IsAllowed(ent:GetClass()) then
-				local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
-				if hook.Run( "CanTool", ply,  trace, "advdupe2" ) then
+			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) then
+				if PPCheck( ply, ent ) then
 					EntTable[ent:EntIndex()] = ent
 				end
 			end
@@ -184,18 +194,10 @@ if(SERVER)then
 			else
 				//select all owned props
 				Entities = {}
+				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 				for _, ent in pairs(ents.GetAll()) do
-					if duplicator.IsAllowed(ent:GetClass()) then
-						if CPPI then
-							if ent:CPPIGetOwner()==ply then
-								Entities[ent:EntIndex()] = ent
-							end
-						else
-							local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
-							if hook.Run( "CanTool", ply,  trace, "advdupe2" ) then
-								Entities[ent:EntIndex()] = ent
-							end
-						end
+					if PPCheck( ply, ent ) then
+						Entities[ent:EntIndex()] = ent
 					end
 				end
 				if next(Entities)==nil then
@@ -1058,6 +1060,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_paste_unfreeze", 0, false, true)
 	CreateClientConVar("advdupe2_preserve_freeze", 0, false, true)
 	CreateClientConVar("advdupe2_copy_outside", 0, false, true)
+	CreateClientConVar("advdupe2_copy_only_mine", 1, false, true)
 	CreateClientConVar("advdupe2_limit_ghost", 100, false, true)
 	CreateClientConVar("advdupe2_area_copy_size", 300, false, true)
 	CreateClientConVar("advdupe2_auto_save_contraption", 0, false, true)
@@ -1150,6 +1153,14 @@ if(CLIENT)then
 		Check:SetTextColor(Color(0,0,0,255))
 		Check:SetConVar( "advdupe2_copy_outside" ) 
 		Check:SetValue( 0 )
+		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
+		CPanel:AddItem(Check)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "World/Area copy only your own props" )
+		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetConVar( "advdupe2_copy_only_mine" ) 
+		Check:SetValue( 1 )
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
 		CPanel:AddItem(Check)
 
