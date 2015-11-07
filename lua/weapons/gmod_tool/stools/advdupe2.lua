@@ -42,8 +42,9 @@ if(SERVER)then
 
 		local Entities = ents.GetAll() //Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
-		local pos
-		for _,ent in pairs(Entities) do
+		local pos, ent
+		for i=1, #Entities do
+			ent = Entities[i]
 			pos = ent:GetPos()
 			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and duplicator.IsAllowed(ent:GetClass()) then
 				local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
