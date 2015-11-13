@@ -240,20 +240,15 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	
 	uploading = true
 	
-	AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) 
-								if(success)then 
-									AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
-									
-									AdvDupe2.File = AdvDupe2.Null.esc(read)
-									AdvDupe2.LastPos = 0
-									AdvDupe2.Length = string.len(AdvDupe2.File)
-									AdvDupe2.InitProgressBar("Opening:")
-									RunConsoleCommand("AdvDupe2_InitReceiveFile")
-								else
-									uploading = false
-									AdvDupe2.Notify("File could not be decoded. Upload Canceled.", NOTIFY_ERROR)
-								end 
-						  end)
+	AdvDupe2.Decode(read, function(success, dupe, info, moreinfo) 
+		if(success)then
+			AdvDupe2.PendingDupe = { read, dupe, info, moreinfo, name }
+			RunConsoleCommand("AdvDupe2_InitReceiveFile")
+		else
+			uploading = false
+			AdvDupe2.Notify("File could not be decoded. Upload Canceled.", NOTIFY_ERROR)
+		end 
+	end)
 end
 
 --[[
@@ -287,14 +282,28 @@ local function SendFileToServer(eof)
 end
 
 usermessage.Hook("AdvDupe2_ReceiveNextStep",function(um)
+	if AdvDupe2.PendingDupe then
+		local read,dupe,info,moreinfo,name = unpack( AdvDupe2.PendingDupe )
+		
+		AdvDupe2.PendingDupe = nil
+		AdvDupe2.LoadGhosts(dupe, info, moreinfo, name )
+		AdvDupe2.File = AdvDupe2.Null.esc(read)
+		AdvDupe2.LastPos = 0
+		AdvDupe2.Length = string.len(AdvDupe2.File)
+		AdvDupe2.InitProgressBar("Opening:")
+	end
+	
 	SendFileToServer(um:ReadShort())
 end)
 
 usermessage.Hook("AdvDupe2_UploadRejected",function(um)
-	if(uploading)then return end
-	AdvDupe2.File = nil
-	AdvDupe2.LastPos = nil
-	AdvDupe2.Length = nil
+	if uploading then
+		uploading = false
+		AdvDupe2.PendingDupe = nil
+		AdvDupe2.File = nil
+		AdvDupe2.LastPos = nil
+		AdvDupe2.Length = nil
+	end
 	if(um:ReadBool())then AdvDupe2.RemoveProgressBar() end
 end)
 
