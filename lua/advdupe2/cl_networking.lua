@@ -293,7 +293,9 @@ usermessage.Hook("AdvDupe2_ReceiveNextStep",function(um)
 		AdvDupe2.InitProgressBar("Opening:")
 	end
 	
-	SendFileToServer(um:ReadShort())
+	if uploading then
+		SendFileToServer(um:ReadShort())
+	end
 end)
 
 usermessage.Hook("AdvDupe2_UploadRejected",function(um)
