@@ -203,7 +203,8 @@ end
 ]]
 local function AdvDupe2_InitReceiveFile( ply, cmd, args )
 	if(not IsValid(ply))then return end
-
+	if(not ply.AdvDupe2)then ply.AdvDupe2={} end
+	
 	if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
 		umsg.Start("AdvDupe2_UploadRejected", ply)
 			umsg.Bool(false)
