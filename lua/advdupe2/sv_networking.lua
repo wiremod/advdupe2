@@ -205,7 +205,8 @@ local function AdvDupe2_InitReceiveFile( ply, cmd, args )
 	if(not IsValid(ply))then return end
 	if(not ply.AdvDupe2)then ply.AdvDupe2={} end
 	
-	if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
+	local id = ply:UniqueID()
+	if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading or AdvDupe2.Network.ClientNetworks[id])then
 		umsg.Start("AdvDupe2_UploadRejected", ply)
 			umsg.Bool(false)
 		umsg.End()
@@ -213,8 +214,6 @@ local function AdvDupe2_InitReceiveFile( ply, cmd, args )
 		return
 	end
 	
-	local id = ply:UniqueID()
-	if(AdvDupe2.Network.ClientNetworks[id])then return false end
 	ply.AdvDupe2.Downloading = true
 	ply.AdvDupe2.Uploading = true
 	//ply.AdvDupe2.Name = args[1]

@@ -267,15 +267,9 @@ local function SendFileToServer(eof)
 
 	AdvDupe2.LastPos = AdvDupe2.LastPos+eof+1
 	AdvDupe2.ProgressBar.Percent = math.floor((AdvDupe2.LastPos/AdvDupe2.Length)*100)
-	local status = false
-	if(AdvDupe2.LastPos>=AdvDupe2.Length)then
-		status=true
-		uploading = false
-		AdvDupe2.RemoveProgressBar()
-	end
 
 	net.Start("AdvDupe2_ReceiveFile")
-		net.WriteBit(status)
+		net.WriteBit(AdvDupe2.LastPos>=AdvDupe2.Length)
 		net.WriteString(data)
 	net.SendToServer()
 	
