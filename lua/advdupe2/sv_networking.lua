@@ -272,7 +272,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		ply.AdvDupe2.Uploading = false
 		
 		umsg.Start("AdvDupe2_UploadRejected", ply)
-			umsg.Bool(true)
+			umsg.Bool(false)
 		umsg.End()
 		AdvDupe2.Notify(ply,"Upload Rejected!",NOTIFY_GENERIC,5)
 		return
@@ -288,7 +288,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		ply.AdvDupe2.Uploading = false
 					
 		umsg.Start("AdvDupe2_UploadRejected", ply)
-			umsg.Bool(false)
+			umsg.Bool(true)
 		umsg.End()
 		return
 	end

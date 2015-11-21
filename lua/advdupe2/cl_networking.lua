@@ -266,7 +266,7 @@ local function SendFileToServer(eof)
 	local data = string.sub(AdvDupe2.File, AdvDupe2.LastPos, AdvDupe2.LastPos+eof)
 
 	AdvDupe2.LastPos = AdvDupe2.LastPos+eof+1
-	AdvDupe2.ProgressBar.Percent = math.floor((AdvDupe2.LastPos/AdvDupe2.Length)*100)
+	AdvDupe2.ProgressBar.Percent = math.min(math.floor((AdvDupe2.LastPos/AdvDupe2.Length)*100),100)
 
 	net.Start("AdvDupe2_ReceiveFile")
 		net.WriteBit(AdvDupe2.LastPos>=AdvDupe2.Length)
