@@ -816,7 +816,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 		*/
 
-		sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+		sent = gamemode.Call("PlayerSpawnSENT", Player, EntTable.Class)
 		if(sent==false)then
 			print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 			return nil
@@ -912,6 +912,7 @@ local function CreateEntityFromTable(EntTable, Player)
 				valid:RestoreNetworkVars(EntTable.DT)
 			end
 
+			Player:AddCount("sents", valid)
 			/*if(Player)then
 				if(not valid:IsVehicle() and EntTable.Class~="prop_ragdoll" and not valid:IsNPC())then	//These three get called automatically
 					if(EntTable.Class=="prop_effect")then
