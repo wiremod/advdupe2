@@ -914,40 +914,61 @@ local function CreateEntityFromTable(EntTable, Player)
 end
 
 local function ApplyPhysics( Player, ent, parent, unfreeze, preservefrozenstate, physobjs )
+	local edit = true
 	if parent then
 		ent:SetParent( parent )
-	end
-
-	if(unfreeze)then
-		for i=0, ent:GetPhysicsObjectCount() do
-			phys = ent:GetPhysicsObjectNum(i)
-			if(IsValid(phys))then
-				phys:EnableMotion(true)	//Unfreeze the entitiy and all of its objects
-				phys:Wake()
-			end
-		end
-	elseif(preservefrozenstate)then
-		for i=0, ent:GetPhysicsObjectCount() do
-			phys = ent:GetPhysicsObjectNum(i)
-			if(IsValid(phys))then
-				if(physobjs[i].Frozen)then
-					Player:AddFrozenPhysicsObject( ent, phys )
-				else
-					phys:EnableMotion(true)	//Restore the entity and all of its objects to their original frozen state
-					phys:Wake()
+		if(ent.Constraints~=nil)then
+			for i,c in pairs(ent.Constraints)do
+				if(c and constraints[c.Type])then
+					edit=false
+					break
 				end
 			end
 		end
+		if(edit and IsValid(ent:GetPhysicsObject()))then
+			mass = ent:GetPhysicsObject():GetMass()
+			ent:PhysicsInitShadow(false, false)
+			ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
+			ent:GetPhysicsObject():EnableMotion(false)
+			ent:GetPhysicsObject():Sleep()
+			ent:GetPhysicsObject():SetMass(mass)
+		end
 	else
-		for i=0, ent:GetPhysicsObjectCount() do
-			phys = ent:GetPhysicsObjectNum(i)
-			if(IsValid(phys))then
-				Player:AddFrozenPhysicsObject( ent, phys )
+		edit=false
+	end
+
+	if(not edit)then
+		if(unfreeze)then
+			for i=0, ent:GetPhysicsObjectCount() do
+				phys = ent:GetPhysicsObjectNum(i)
+				if(IsValid(phys))then
+					phys:EnableMotion(true)	//Unfreeze the entitiy and all of its objects
+					phys:Wake()
+				end
+			end
+		elseif(preservefrozenstate)then
+			for i=0, ent:GetPhysicsObjectCount() do
+				phys = ent:GetPhysicsObjectNum(i)
+				if(IsValid(phys))then
+					if(physobjs[i].Frozen)then
+						Player:AddFrozenPhysicsObject( ent, phys )
+					else
+						phys:EnableMotion(true)	//Restore the entity and all of its objects to their original frozen state
+						phys:Wake()
+					end
+				end
+			end
+		else
+			for i=0, ent:GetPhysicsObjectCount() do
+				phys = ent:GetPhysicsObjectNum(i)
+				if(IsValid(phys))then
+					Player:AddFrozenPhysicsObject( ent, phys )
+				end
 			end
 		end
+		
+		ent:SetNotSolid(false)
 	end
-	
-	ent:SetNotSolid(false)
 end
 
 
@@ -1039,7 +1060,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 				if EntityList[_].BuildDupeInfo.DupeParentID and Parenting then
 					parent = CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID]
 				end
-				ApplyPhysics( Player, v, parent, false, true, EntityList[_].BuildDupeInfo.PhysicsObjects )
+				ApplyPhysics( Player, v, parent, false, true )
 				
 				undo.AddEntity( v )
 			end
@@ -1062,7 +1083,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			if EntityList[_].BuildDupeInfo.DupeParentID and Parenting then
 				parent = CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID]
 			end
-			ApplyPhysics( Player, v, parent, false, true, EntityList[_].BuildDupeInfo.PhysicsObjects )
+			ApplyPhysics( Player, v, parent, false, true )
 			
 		end
 		
