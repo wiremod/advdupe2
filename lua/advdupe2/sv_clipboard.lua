@@ -982,6 +982,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			Ent.EntityMods = table.Copy( v.EntityMods )
 			Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
 			if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
+			if(Ent.OnDuplicated)then Ent:OnDuplicated(v) end
 			ApplyEntityModifiers( Player, Ent )
 			ApplyBoneModifiers( Player, Ent )
 			Ent:SetNotSolid(true)
@@ -1136,6 +1137,7 @@ local function AdvDupe2_Spawn()
 			if(IsValid(Phys))then Phys:EnableMotion(false) end
 			if(not Queue.DisableProtection)then Ent:SetNotSolid(true) end
 			if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
+			if(Ent.OnDuplicated)then Ent:OnDuplicated(v) end
 		elseif(Ent==false)then
 			Ent = nil
 			Queue.Entity = false
