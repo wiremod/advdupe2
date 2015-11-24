@@ -797,14 +797,12 @@ local function CreateEntityFromTable(EntTable, Player)
 		GENERIC = true
 		sent = true
 
-		/*if(EntTable.Class=="prop_effect")then
+		if(EntTable.Class=="prop_effect")then
 			sent = gamemode.Call( "PlayerSpawnEffect", Player, EntTable.Model)
 		else
 			sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
 		end
-		*/
 
-		sent = gamemode.Call("PlayerSpawnSENT", Player, EntTable.Class)
 		if(sent==false)then
 			print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 			return nil
@@ -853,11 +851,10 @@ local function CreateEntityFromTable(EntTable, Player)
 			//Create sents using their spawn function with the arguments we stored earlier
 			sent = true
 
-			/*if(not EntTable.BuildDupeInfo.IsVehicle or not EntTable.BuildDupeInfo.IsNPC or EntTable.Class~="prop_ragdoll")then	//These three are auto done
-				sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
+			if(not EntTable.BuildDupeInfo.IsVehicle and not EntTable.BuildDupeInfo.IsNPC and EntTable.Class~="prop_ragdoll")then	//These three are auto done
+				sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
 			end
-			*/
-			sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+
 			if(sent==false)then
 				print("Advanced Duplicator 2: Creation rejected for class, : "..EntTable.Class)
 				return nil
@@ -889,17 +886,15 @@ local function CreateEntityFromTable(EntTable, Player)
 			if valid.RestoreNetworkVars then
 				valid:RestoreNetworkVars(EntTable.DT)
 			end
-
-			Player:AddCount("sents", valid)
-			/*if(Player)then
-				if(not valid:IsVehicle() and EntTable.Class~="prop_ragdoll" and not valid:IsNPC())then	//These three get called automatically
-					if(EntTable.Class=="prop_effect")then
-						gamemode.Call("PlayerSpawnedEffect", Player, valid:GetModel(), valid)
-					else
-						gamemode.Call("PlayerSpawnedSENT", Player, valid)
-					end
+			
+			if GENERIC then
+				if(EntTable.Class=="prop_effect")then
+					gamemode.Call("PlayerSpawnedEffect", Player, valid:GetModel(), valid)
+				else
+					gamemode.Call("PlayerSpawnedSENT", Player, valid)
 				end
-			end*/
+			end
+			
 		elseif(Player)then
 			gamemode.Call( "PlayerSpawnedProp", Player, valid:GetModel(), valid )
 		end
