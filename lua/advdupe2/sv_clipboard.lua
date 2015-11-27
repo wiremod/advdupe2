@@ -1051,7 +1051,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 		end
 	end
 	DisablePropCreateEffect = nil
-	hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=EntityList, CreatedEntities=CreatedEntities, ConstraintList=ConstraintList, CreatedConstraints=CreatedConstraints, HitPos=OrigPos or Position}}, 1)
+	hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=EntityList, CreatedEntities=CreatedEntities, ConstraintList=ConstraintList, CreatedConstraints=CreatedConstraints, HitPos=OrigPos or Position, Player=Player}}, 1)
 	
 	return CreatedEntities, CreatedConstraints
 end
