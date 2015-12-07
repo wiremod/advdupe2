@@ -1290,7 +1290,7 @@ local function AdvDupe2_Spawn()
 				undo.SetPlayer( Queue.Player )
 			undo.Finish()
 
-			hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=Queue.EntityList, CreatedEntities=Queue.CreatedEntities, ConstraintList=Queue.ConstraintList, CreatedConstraints=Queue.CreatedConstraints, HitPos=Queue.PositionOffset}}, 1)
+			hook.Call("AdvDupe_FinishPasting", nil, {{EntityList=Queue.EntityList, CreatedEntities=Queue.CreatedEntities, ConstraintList=Queue.ConstraintList, CreatedConstraints=Queue.CreatedConstraints, HitPos=Queue.PositionOffset, Player=Queue.Player}}, 1)
 			AdvDupe2.FinishPasting(Queue.Player, true)
 
 			table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
