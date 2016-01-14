@@ -375,10 +375,6 @@ local function Search(node, name)
 	end
 end
 
-local function Incomplete()
-	AdvDupe2.Notify("This feature is not yet complete!",NOTIFY_GENERIC,10)
-end
-
 function BROWSER:DoNodeRightClick(node)
 	self:SetSelected(node)
 	
@@ -1128,8 +1124,6 @@ function PANEL:Init()
 							Menu:AddOption("Bug Reporting", function() gui.OpenURL("http://code.google.com/p/advdupe2/issues/list") end)
 							Menu:AddOption("Controls", function() gui.OpenURL("http://code.google.com/p/advdupe2/wiki/Controls") end)
 							Menu:AddOption("Commands", function() gui.OpenURL("http://code.google.com/p/advdupe2/wiki/ServerSettings") end)
-							//Menu:AddOption("About", AdvDupe2.ShowSplash)
-							Menu:AddOption("About", Incomplete)
 							Menu:Open()
 						end
 						
