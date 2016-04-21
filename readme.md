@@ -11,7 +11,7 @@ Currently, this version of AdvDupe2 isn't available on the Steam Workshop. The b
 
 # License
 
-Copyright 2014 Wire Team
+Copyright 2014-2016 Wire Team
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
