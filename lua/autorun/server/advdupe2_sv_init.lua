@@ -19,8 +19,6 @@ AddCSLuaFile "advdupe2/cl_file.lua"
 AddCSLuaFile "advdupe2/file_browser.lua"
 AddCSLuaFile "advdupe2/sh_codec.lua"
 
-resource.AddFile("materials/gui/ad2logo.tga")
-
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	umsg.Start("AdvDupe2Notify",ply)
 		umsg.String(msg)
