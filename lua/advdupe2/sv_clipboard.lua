@@ -1209,6 +1209,7 @@ local function AdvDupe2_Spawn()
 			for i=#undos, 1, -1 do
 				if(undos[i] and undos[i].Name == str)then
 					undos[i] = nil
+					-- Undo module netmessage
 					net.Start( "Undo_Undone" )
 					net.WriteInt( i, 16 )
 					net.Send( Queue.Player )
@@ -1335,6 +1336,7 @@ local function ErrorCatchSpawning()
 			for i=#undos, 1, -1 do
 				if(undos[i] and undos[i].Name == str)then
 					undos[i] = nil
+					-- Undo module netmessage
 					net.Start( "Undo_Undone" )
 					net.WriteInt( i, 16 )
 					net.Send( Queue.Player )
