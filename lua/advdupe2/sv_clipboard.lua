@@ -1065,8 +1065,10 @@ local function AdvDupe2_Spawn()
 	
 	local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 
-	if(not IsValid(Queue.Player))then
-		table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
+	if(not Queue or not IsValid(Queue.Player))then
+		if Queue then
+			table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
+		end
 		if(#AdvDupe2.JobManager.Queue==0)then 
 			hook.Remove("Tick", "AdvDupe2_Spawning")
 			DisablePropCreateEffect = nil
