@@ -605,9 +605,10 @@ end
 local function ApplyEntityModifiers( Player, Ent )
 	if(not Ent.EntityMods)then return end
 	local status, error
-	for Type, ModFunction in pairs( duplicator.EntityModifiers ) do
-		if ( Ent.EntityMods[ Type ] ) then
-			status, error = pcall(ModFunction, Player, Ent, Ent.EntityMods[ Type ] )
+	for Type, Data in pairs( Ent.EntityMods ) do
+		local ModFunction = duplicator.EntityModifiers[ Type ]
+		if ( ModFunction ) then
+			status, error = pcall(ModFunction, Player, Ent, Data )
 			if(not status)then
 				if(Player)then
 					Player:ChatPrint('Error applying entity modifer, "'..tostring(Type)..'". ERROR: '..error)
