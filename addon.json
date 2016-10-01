@@ -1,0 +1,23 @@
+{
+	"title"		:	"Advanced Duplicator 2",
+	"type"		:	"tool",
+	"tags"		:	[ "build" ],
+	"description":	"Ground up rewrite meant to make up for some of the shortcomings of the first iteration of AdvDupe. Still considered alpha!",
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*",
+		"*.txt",
+		"*.xcf",
+		".git*",
+		".gitignore",
+		"git-hooks-pre-commit",
+		"gitrid.sh",
+		"icon.tga",
+		"license",
+		"readme.md",
+		"wiremod.fgd",
+		"wiremod.jpg"
+	]
+}
