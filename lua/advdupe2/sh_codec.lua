@@ -482,6 +482,7 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 		if success then
 			info.revision = rev
 		else
+			if buff then buff:Close() end
 			ErrorNoHalt(tbl)
 		end
 		
