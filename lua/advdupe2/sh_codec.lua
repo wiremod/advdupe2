@@ -375,7 +375,13 @@ local function deserialize(str)
 	buff:Close()
 	
 	buff = file.Open("ad2temp.txt","rb", "DATA")
-	local tbl = read()
+	
+	local success, tbl = pcall(read)
+	if not success then
+		buff:Close()
+		error(tbl)
+	end
+	
 	buff:Close()
 	
 	return tbl
@@ -482,7 +488,6 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 		if success then
 			info.revision = rev
 		else
-			if buff then buff:Close() end
 			ErrorNoHalt(tbl)
 		end
 		
