@@ -375,16 +375,14 @@ local function deserialize(str)
 	buff:Close()
 	
 	buff = file.Open("ad2temp.txt","rb", "DATA")
-	
 	local success, tbl = pcall(read)
-	if not success then
-		buff:Close()
-		error(tbl)
-	end
-	
 	buff:Close()
 	
-	return tbl
+	if success then
+		return tbl
+	else
+		error(tbl)
+	end
 end
 
 --[[
