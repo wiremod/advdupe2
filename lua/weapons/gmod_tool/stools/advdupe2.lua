@@ -84,7 +84,12 @@ if(SERVER)then
 		
 		local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -16000, 16000)
 		ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
-		ply.AdvDupe2.Angle = Angle(tonumber(ply:GetInfo("advdupe2_offset_pitch")), tonumber(ply:GetInfo("advdupe2_offset_yaw")), tonumber(ply:GetInfo("advdupe2_offset_roll")))
+		
+		local pitch = tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0
+		local yaw   = tonumber(ply:GetInfo("advdupe2_offset_yaw"))   or 0
+		local roll  = tonumber(ply:GetInfo("advdupe2_offset_roll"))  or 0
+		ply.AdvDupe2.Angle = Angle(pitch, yaw, roll)
+		
 		if(tobool(ply:GetInfo("advdupe2_offset_world")))then ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle end
 		
 		ply.AdvDupe2.Pasting = true
