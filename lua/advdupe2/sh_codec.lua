@@ -8,7 +8,7 @@
 	Version: 2.0
 ]]
 
-local REVISION = 4
+local REVISION = 5
 local hasModule = false
 if(SERVER)then
 	if(system.IsWindows())then
@@ -102,10 +102,7 @@ local len
 local tables,tablesLookup
 if(not system.IsWindows() or not hasModule)then
 	enc[TYPE_TABLE] = function(obj) --table
-		tables = tables + 1
-		if not tablesLookup[obj] then
-			tablesLookup[obj] = tables
-		else
+		if tablesLookup[obj] then
 			buff:WriteByte(247)
 			buff:WriteShort(tablesLookup[obj])
 			return
@@ -126,6 +123,11 @@ if(not system.IsWindows() or not hasModule)then
 			end
 		end
 		buff:WriteByte(0)
+		
+		tables = tables + 1
+		if not tablesLookup[obj] then
+			tablesLookup[obj] = tables
+		end
 	end
 	enc[TYPE_BOOL] = function(obj) --boolean
 		buff:WriteByte(obj and 253 or 252)
@@ -162,10 +164,7 @@ if(not system.IsWindows() or not hasModule)then
 	end
 else
 	enc[TYPE_TABLE] = function(obj) --table
-		tables = tables + 1
-		if not tablesLookup[obj] then
-			tablesLookup[obj] = tables
-		else
+		if tablesLookup[obj] then
 			AdvDupe2_WriteByte(247)
 			AdvDupe2_WriteShort(tablesLookup[obj])
 			return
@@ -186,6 +185,11 @@ else
 			end
 		end
 		AdvDupe2_WriteByte(0)
+		
+		tables = tables + 1
+		if not tablesLookup[obj] then
+			tablesLookup[obj] = tables
+		end
 	end
 	enc[TYPE_BOOL] = function(obj) --boolean
 		AdvDupe2_WriteByte(obj and 253 or 252)
@@ -438,6 +442,11 @@ versions[3] = function(encodedDupe)
 end
 
 versions[4] = function(encodedDupe)
+	-- TODO: correct the dupe string that table references are loaded properly
+	return versions[5](encodedDupe)
+end
+
+versions[5] = function(encodedDupe)
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize(
 				decompress(dupestring)
