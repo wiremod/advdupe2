@@ -12,6 +12,7 @@
 		"*.xcf",
 		".git*",
 		".gitignore",
+		"CONTRIBUTING.md",
 		"git-hooks-pre-commit",
 		"gitrid.sh",
 		"icon.tga",
