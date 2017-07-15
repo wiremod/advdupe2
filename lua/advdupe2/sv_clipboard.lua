@@ -58,7 +58,7 @@ local function CopyEntTable( Ent, Offset )
 
 	local EntityClass = duplicator.FindEntityClass( Ent:GetClass() )
 	
-	local EntTable = table.Copy(Ent:GetTable())
+	local EntTable = Ent:GetTable()
 	
 	if EntityClass then
 		local varType
@@ -70,7 +70,7 @@ local function CopyEntTable( Ent, Offset )
 			
 			varType=TypeID(EntTable[Key])
 			if(varType==5)then
-				Tab[ Key ] = FilterEntityTable(EntTable[Key])
+				Tab[ Key ] = FilterEntityTable(table.Copy(EntTable[Key]))
 				continue
 			elseif(varType==9 || varType==6)then
 				continue
