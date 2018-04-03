@@ -37,13 +37,17 @@ if(SERVER)then
 		return array
 	end
 
+	local areacopy_classblacklist = {
+		gmod_anchor = true
+	}
+
 	local function PlayerCanDupeCPPI(ply, ent)
-		if ent.DoNotDuplicate or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if ent.DoNotDuplicate or areacopy_classblacklist[ent:GetClass()] or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
 		return ent:CPPIGetOwner()==ply
 	end
-	
+
 	local function PlayerCanDupeTool(ply, ent)
-		if ent.DoNotDuplicate or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if ent.DoNotDuplicate or areacopy_classblacklist[ent:GetClass()] or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
 		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
 	end
