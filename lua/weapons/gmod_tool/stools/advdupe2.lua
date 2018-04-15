@@ -691,6 +691,9 @@ if(SERVER)then
 	
 		local desc = net.ReadString()
 		local ent = net.ReadInt(16)
+
+		ply.AdvDupe2 = ply.AdvDupe2 or {}
+
 		if(ent~=0)then
 			ply.AdvDupe2.AutoSaveEnt = ent
 			if(ply:GetInfo("advdupe2_auto_save_contraption")=="1")then
