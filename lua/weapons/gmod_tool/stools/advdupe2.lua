@@ -693,7 +693,7 @@ if(SERVER)then
 		local ent = net.ReadInt(16)
 		if(ent~=0)then
 			ply.AdvDupe2.AutoSaveEnt = ent
-			if(ply:GetInfo("advdupe2_auto_save_contraption")=="1")then
+			if(ply:GetInfo("advdupe2_auto_save_contraption")=="1" and ents.GetByIndex( ply.AdvDupe2.AutoSaveEnt ) ~= nil)then
 				ply.AdvDupe2.AutoSaveEnt = ents.GetByIndex( ply.AdvDupe2.AutoSaveEnt )
 			end
 		else
