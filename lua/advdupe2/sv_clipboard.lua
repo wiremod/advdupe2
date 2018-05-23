@@ -160,9 +160,11 @@ local function CopyEntTable( Ent, Offset )
 	
 	-- Body Groups
 	Tab.BodyG = {}
-	for k, v in pairs(Ent:GetBodyGroups()) do
-		if ( Ent:GetBodygroup( v.id ) > 0 ) then
-			Tab.BodyG[ v.id ] = Ent:GetBodygroup( v.id )
+	if ( Ent:GetBodyGroups() ) then
+		for k, v in pairs(Ent:GetBodyGroups()) do
+			if ( Ent:GetBodygroup( v.id ) > 0 ) then
+				Tab.BodyG[ v.id ] = Ent:GetBodygroup( v.id )
+			end
 		end
 	end
 	
