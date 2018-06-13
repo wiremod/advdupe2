@@ -69,6 +69,14 @@ local function makeInfo(tbl)
 	return info.."\2"
 end
 
+local function nullUnEscape(str)
+	return string.gsub( str, "\\[\\0]", {["\\\\"] = "\\", ["\\0"] = "\0"} )
+end
+
+local function nullEscape(str)
+	return string.gsub( str, "[\\\0]", {["\\"] = "\\\\", ["\0"] = "\\0"} )
+end
+
 local AD2FF = "AD2F%s\n%s\n%s"
 
 local tables
@@ -155,7 +163,7 @@ if(not system.IsWindows() or not hasModule)then
 			buff:Write(obj)
 		else
 			buff:WriteByte(248)
-			buff:Write(obj)
+			buff:Write(nullEscape(obj))
 			buff:WriteByte(0)
 		end
 		
@@ -215,7 +223,7 @@ else
 			AdvDupe2_WriteString(obj)
 		else
 			AdvDupe2_WriteByte(248)
-			AdvDupe2_WriteString(obj)
+			AdvDupe2_WriteString(nullEscape(obj))
 			AdvDupe2_WriteByte(0)
 		end
 		
@@ -319,7 +327,7 @@ dec[248] = function() --null-terminated string
 	if(not retv)then retv="" end
 	buff:ReadByte()
 
-	return retv
+	return nullUnEscape(retv)
 end
 dec[247] = function() --table reference
 	reference = reference + 1
