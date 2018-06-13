@@ -119,7 +119,7 @@ if(not system.IsWindows() or not hasModule)then
 		else
 			buff:WriteByte(255)
 			for k,v in pairs(obj) do
-				if(enc[TypeID(v)]!=noserializer)then
+				if(enc[TypeID(k)]!=noserializer and enc[TypeID(v)]!=noserializer)then
 					write(k)
 					write(v)
 				end
@@ -179,7 +179,7 @@ else
 		else
 			AdvDupe2_WriteByte(255)
 			for k,v in pairs(obj) do
-				if(enc[TypeID(v)]!=noserializer)then
+				if(enc[TypeID(k)]!=noserializer and enc[TypeID(v)]!=noserializer)then
 					write(k)
 					write(v)
 				end
