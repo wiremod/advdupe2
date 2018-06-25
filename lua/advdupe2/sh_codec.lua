@@ -240,17 +240,7 @@ do --Version 4
 		return tables[buff:ReadShort()]
 	end
 
-	local function vsr()
-		
-		buff:Seek(buff:Tell() - 1)
-		
-		slen = buff:ReadByte()
-		
-		return buff:Read(slen)
-		
-	end
-
-	for i=1,246 do dec[i] = vsr end
+	for i=1,246 do dec[i] = function() return buff:Read(i) end end
 end
 
 do --Version 5
@@ -339,17 +329,7 @@ do --Version 5
 		return tables[buff:ReadShort()]
 	end
 
-	local function vsr()
-		
-		buff:Seek(buff:Tell() - 1)
-		
-		slen = buff:ReadByte()
-		
-		return buff:Read(slen)
-		
-	end
-
-	for i=1,246 do dec[i] = vsr end
+	for i=1,246 do dec[i] = function() return buff:Read(i) end end
 end
 
 local function serialize(tbl)
