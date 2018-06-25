@@ -138,7 +138,7 @@ enc[TYPE_STRING] = function(obj) --string
 	
 	len = #obj
 	
-	if len > 0 and len < 247 then
+	if len < 247 then
 		buff:WriteByte(len)
 		buff:Write(obj)
 	else
@@ -329,6 +329,7 @@ do --Version 5
 		return tables[buff:ReadShort()]
 	end
 
+	dec[0] = function() return "" end
 	for i=1,246 do dec[i] = function() return buff:Read(i) end end
 end
 
