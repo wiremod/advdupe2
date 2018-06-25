@@ -154,14 +154,14 @@ local function error_nodeserializer()
 	error(format("couldn't find deserializer for type {typeid:%d}", buff:ReadByte()))
 end
 
-local read4, read5, read
+local read4, read5
 
 do --Version 4
 	local dec = {}
 	local reference = 0
 	for i=1,255 do dec[i] = error_nodeserializer end
 
-	function read4()
+	local function read()
 		local tt = buff:ReadByte()
 		if not tt then
 			error("expected value, got EOF")
@@ -171,6 +171,7 @@ do --Version 4
 		end
 		return dec[tt]()
 	end
+	read4 = read
 
 	dec[255] = function() --table
 		local t = {}
@@ -248,7 +249,7 @@ do --Version 5
 	local reference = 0
 	for i=1,255 do dec[i] = error_nodeserializer end
 
-	function read5()
+	local function read()
 		local tt = buff:ReadByte()
 		if not tt then
 			error("expected value, got EOF")
@@ -258,6 +259,7 @@ do --Version 5
 		end
 		return dec[tt]()
 	end
+	read5 = read
 
 	dec[255] = function() --table
 		local t = {}
@@ -348,7 +350,7 @@ local function serialize(tbl)
 end
 
 
-local function deserialize(str)
+local function deserialize(str, read)
 	
 	if(str==nil)then
 		error("File could not be decompressed.")
@@ -426,19 +428,13 @@ versions[3] = function(encodedDupe)
 end
 
 versions[4] = function(encodedDupe)
-	read = read4
 	local info, dupestring = getInfo(encodedDupe:sub(7))
-	return deserialize(
-				decompress(dupestring)
-			), info
+	return deserialize(decompress(dupestring), read4), info
 end
 
 versions[5] = function(encodedDupe)
-	read = read5
 	local info, dupestring = getInfo(encodedDupe:sub(7))
-	return deserialize(
-				decompress(dupestring)
-			), info
+	return deserialize(decompress(dupestring), read5), info
 end
 
 --[[
