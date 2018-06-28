@@ -113,7 +113,7 @@ enc[TYPE_TABLE] = function(obj) --table
 			end
 		end
 	end
-	buff:WriteByte(0)
+	buff:WriteByte(246)
 end
 enc[TYPE_BOOL] = function(obj) --boolean
 	buff:WriteByte(obj and 253 or 252)
@@ -138,7 +138,7 @@ enc[TYPE_STRING] = function(obj) --string
 	
 	len = #obj
 	
-	if len < 247 then
+	if len < 246 then
 		buff:WriteByte(len)
 		buff:Write(obj)
 	else
@@ -254,9 +254,6 @@ do --Version 5
 		if not tt then
 			error("expected value, got EOF")
 		end
-		if tt == 0 then
-			return nil
-		end
 		return dec[tt]()
 	end
 	read5 = read
@@ -330,9 +327,12 @@ do --Version 5
 		reference = reference + 1
 		return tables[buff:ReadShort()]
 	end
+	dec[246] = function() --nil
+		return
+	end
 
+	for i=1,245 do dec[i] = function() return buff:Read(i) end end
 	dec[0] = function() return "" end
-	for i=1,246 do dec[i] = function() return buff:Read(i) end end
 end
 
 local function serialize(tbl)
