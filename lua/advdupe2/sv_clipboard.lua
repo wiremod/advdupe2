@@ -505,7 +505,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local ReEnableSecond
 	if(Constraint.BuildDupeInfo)then
 
-		if second ~= nil and not second:IsWorld() and Constraint.BuildDupeInfo.EntityPos ~= nil then
+		if first ~= nil and second ~= nil and not second:IsWorld() and Constraint.BuildDupeInfo.EntityPos ~= nil then
 			local SecondPhys = second:GetPhysicsObject()
 			if IsValid(SecondPhys) then
 				if not DontEnable then ReEnableSecond = SecondPhys:IsMoveable() end
