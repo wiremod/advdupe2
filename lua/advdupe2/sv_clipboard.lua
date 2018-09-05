@@ -759,6 +759,7 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 
 	local Prop = ents.Create( "prop_physics" )
 	if not IsValid(Prop) then return false end
+	if ((Data["ModelScale"] or 1) != 1) then reportmodel(Player, Data.Model) return nil end
 
 	duplicator.DoGeneric( Prop, Data )
 	Prop:Spawn()
