@@ -71,6 +71,7 @@ cvars.AddChangeCallback("AdvDupe2_SpawnRate",
 	end)
 	
 local function PasteMap()
+	if(GetConVarString("AdvDupe2_LoadMap")=="0")then return end
 	local filename = GetConVarString("AdvDupe2_MapFileName")
 	
 	if(not filename or filename == "")then
@@ -85,51 +86,47 @@ local function PasteMap()
 	
 	local map = file.Read("advdupe2_maps/"..filename..".txt")
 	AdvDupe2.Decode(map, function(success,dupe,info,moreinfo) 
-														if not success then 
-															print("[AdvDupe2Notify]\tCould not open map save "..dupe)
-															return
-														end	
-														
-														local Tab = {Entities=dupe["Entities"], Constraints=dupe["Constraints"], HeadEnt=dupe["HeadEnt"]}
-														local Entities = AdvDupe2.duplicator.Paste(nil, table.Copy(Tab.Entities), Tab.Constraints, nil, nil, Tab.HeadEnt.Pos, true)
-														local maptype = GetConVarString("AdvDupe2_LoadMap")
-														
-														if(maptype=="1")then
-															local PhysObj
-															local valid
-															for k,v in pairs(Entities) do
-																valid = Entities[k]
-																if(IsValid(valid))then
-																	for i=0, #Tab.Entities[k].PhysicsObjects do
-																		if(Tab.Entities[k].PhysicsObjects[i].Frozen)then
-																			PhysObj = valid:GetPhysicsObjectNum( i )
-																			if IsValid(PhysObj) then
-																				PhysObj:EnableMotion(true)
-																			end
-																		end
-																	end
-																end
-															end
-														elseif(maptype=="2")then
-															local PhysObj
-															local valid
-															for k,v in pairs(Entities) do
-																valid = Entities[k]
-																if(IsValid(valid))then
-																	for i=0, #Tab.Entities[k].PhysicsObjects do
-																		PhysObj = valid:GetPhysicsObjectNum( i )
-																		if IsValid(PhysObj) then
-																			PhysObj:EnableMotion(true)
-																		end
-																	end
-																end
-															end
-														end
-														
-														print("[AdvDupe2Notify]\tMap save pasted.")
-													end)
-	
-	
+		if not success then 
+			print("[AdvDupe2Notify]\tCould not open map save "..dupe)
+			return
+		end	
+		
+		local Tab = {Entities=dupe["Entities"], Constraints=dupe["Constraints"], HeadEnt=dupe["HeadEnt"]}
+		local Entities = AdvDupe2.duplicator.Paste(nil, table.Copy(Tab.Entities), Tab.Constraints, nil, nil, Tab.HeadEnt.Pos, true)
+		local maptype = GetConVarString("AdvDupe2_LoadMap")
+		
+		if(maptype=="1")then
+			local PhysObj
+			for k,v in pairs(Entities) do
+				if(IsValid(v))then
+					for i=0, #Tab.Entities[k].PhysicsObjects do
+						if(Tab.Entities[k].PhysicsObjects[i].Frozen)then
+							PhysObj = v:GetPhysicsObjectNum( i )
+							if IsValid(PhysObj) then
+								PhysObj:EnableMotion(true)
+							end
+						end
+					end
+					if v.CPPISetOwner then v:CPPISetOwner(game.GetWorld()) end
+				end
+			end
+		elseif(maptype=="2")then
+			local PhysObj
+			for k,v in pairs(Entities) do
+				if(IsValid(v))then
+					for i=0, #Tab.Entities[k].PhysicsObjects do
+						PhysObj = v:GetPhysicsObjectNum( i )
+						if IsValid(PhysObj) then
+							PhysObj:EnableMotion(true)
+						end
+					end
+					if v.CPPISetOwner then v:CPPISetOwner(game.GetWorld()) end
+				end
+			end
+		end
+		
+		print("[AdvDupe2Notify]\tMap save pasted.")
+	end)
 end
 
 util.AddNetworkString("AdvDupe2_AddFile")
@@ -149,13 +146,11 @@ util.AddNetworkString("AdvDupe2_AddGhost")
 util.AddNetworkString("AdvDupe2_CanAutoSave")
 util.AddNetworkString("AdvDupe2_SendContraptionGhost")
 
+hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
+hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
 	
 hook.Add("Initialize", "AdvDupe2_CheckServerSettings",
-	function()
-		if(GetConVarString("AdvDupe2_LoadMap")~="0")then
-			hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
-		end
-	
+	function()	
 		AdvDupe2.SpawnRate = tonumber(GetConVarString("AdvDupe2_SpawnRate"))
 		if(not AdvDupe2.SpawnRate or AdvDupe2.SpawnRate<=0 or AdvDupe2.SpawnRate>1)then
 			AdvDupe2.SpawnRate = 1
