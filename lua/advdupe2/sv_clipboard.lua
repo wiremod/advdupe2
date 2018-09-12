@@ -1138,10 +1138,6 @@ local function AdvDupe2_Spawn()
 			if(v.CollisionGroup)then Ent:SetCollisionGroup(v.CollisionGroup) end
 		elseif(Ent==false)then
 			Ent = nil
-			--Queue.Entity = false
-			--Queue.Constraint = true
-			--Queue.Current = 1
-			--Queue.ConstraintList = {}
 		else
 			Ent = nil
 		end
