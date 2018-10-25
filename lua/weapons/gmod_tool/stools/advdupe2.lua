@@ -1286,49 +1286,49 @@ if(CLIENT)then
 			AdvDupe2.Info = {}
 			
 			local lbl = vgui.Create( "DLabel" )
-			lbl:SetText("File: ")
+			lbl:SetText(isstring(AdvDupe2.Info.File) and AdvDupe2.Info.File or "File: ")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.File = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Creator:")
+			lbl:SetText(isstring(AdvDupe2.Info.Creator) and AdvDupe2.Info.Creator or "Creator:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Creator = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Date:")
+			lbl:SetText(isstring(AdvDupe2.Info.Date) and AdvDupe2.Info.Date or "Date:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Date = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Time:")
+			lbl:SetText(isstring(AdvDupe2.Info.Time) and AdvDupe2.Info.Time or "Time:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Time = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Size:")
+			lbl:SetText(isstring(AdvDupe2.Info.Size) and AdvDupe2.Info.Size or "Size:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Size = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Desc:")
+			lbl:SetText(isstring(AdvDupe2.Info.Desc) and AdvDupe2.Info.Desc or "Desc:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Desc = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Entities:")
+			lbl:SetText(isstring(AdvDupe2.Info.Entities) and AdvDupe2.Info.Entities or "Entities:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Entities = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText("Constraints:")
+			lbl:SetText(isstring(AdvDupe2.Info.Constraints) and AdvDupe2.Info.Constraints or "Constraints:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Constraints = lbl
@@ -2174,13 +2174,45 @@ if(CLIENT)then
 	end)
 	
 	net.Receive("AdvDupe2_SetDupeInfo", function(len, ply, len2)
-		AdvDupe2.Info.File:SetText("File: "..net.ReadString())
-		AdvDupe2.Info.Creator:SetText("Creator: "..net.ReadString())
-		AdvDupe2.Info.Date:SetText("Date: "..net.ReadString())
-		AdvDupe2.Info.Time:SetText("Time: "..net.ReadString())
-		AdvDupe2.Info.Size:SetText("Size: "..net.ReadString())
-		AdvDupe2.Info.Desc:SetText("Desc: "..net.ReadString())
-		AdvDupe2.Info.Entities:SetText("Entities: "..net.ReadString())
-		AdvDupe2.Info.Constraints:SetText("Constraints: "..net.ReadString())
+		if type(AdvDupe2.Info.File)~="Panel" then
+			AdvDupe2.Info.File = net.ReadString()
+		else
+			AdvDupe2.Info.File:SetText("File: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Creator)~="Panel" then
+			AdvDupe2.Info.Creator = net.ReadString()
+		else
+			AdvDupe2.Info.Creator:SetText("Creator: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Date)~="Panel" then
+			AdvDupe2.Info.Date = net.ReadString()
+		else
+			AdvDupe2.Info.Date:SetText("Date: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Time)~="Panel" then
+			AdvDupe2.Info.Time = net.ReadString()
+		else
+			AdvDupe2.Info.Time:SetText("Time: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Size)~="Panel" then
+			AdvDupe2.Info.Size = net.ReadString()
+		else
+			AdvDupe2.Info.Size:SetText("Size: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Desc)~="Panel" then
+			AdvDupe2.Info.Desc = net.ReadString()
+		else
+			AdvDupe2.Info.Desc:SetText("Desc: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Entities)~="Panel" then
+			AdvDupe2.Info.Entities = net.ReadString()
+		else
+			AdvDupe2.Info.Entities:SetText("Entities: "..net.ReadString())
+		end
+		if type(AdvDupe2.Info.Constraints)~="Panel" then
+			AdvDupe2.Info.Constraints = net.ReadString()
+		else
+			AdvDupe2.Info.Constraints:SetText("Constraints: "..net.ReadString())
+		end
 	end)
 end
