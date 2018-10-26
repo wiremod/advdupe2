@@ -41,7 +41,7 @@ function ENT:Initialize()
 
 	if WireLib then
 		self.Inputs = Wire_CreateInputs(self.Entity, {"Spawn", "Undo"})
-		self.Outputs = WireLib.CreateSpecialOutputs(self.Entity, {"Out", "LastSpawned"}, { "NORMAL", "ENTITY" })
+		self.Outputs = WireLib.CreateSpecialOutputs(self.Entity, {"Out"}, { "NORMAL" })
 	end
 end
 
