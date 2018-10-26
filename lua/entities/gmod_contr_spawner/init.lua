@@ -50,7 +50,7 @@ end
 /*-----------------------------------------------------------------------*
  * Sets options for this spawner
  *-----------------------------------------------------------------------*/
-function ENT:SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel )
+function ENT:SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel, hideprops )
 
 	self.delay = delay
 	self.undo_delay = undo_delay
@@ -66,6 +66,7 @@ function ENT:SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag,
 	self.DisableGravity = disgrav
 	self.DisableDrag = disdrag
 	self.AddVelocity = addvel
+	self.HideProps = hideprops
 
 	self:ShowOutput()
 end
@@ -76,9 +77,9 @@ end
 
 
 function ENT:AddGhosts()
+	if self.HideProps then return end
 	local moveable = self:GetPhysicsObject():IsMoveable()
 	self:GetPhysicsObject():EnableMotion(false)
-
 	local EntTable
 	local GhostEntity
 	local Offset = self.DupeAngle - self.EntAngle
