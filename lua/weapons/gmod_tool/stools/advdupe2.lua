@@ -383,7 +383,7 @@ if(SERVER)then
 			end
 		
 			
-			local spawner = MakeContraptionSpawner( ply, Pos, Ang, ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")), headent.Model, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),  tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
+			local spawner = MakeContraptionSpawner( ply, Pos, Ang, ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")), headent.Model, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),  tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1, tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0 )
 			ply:AddCleanup( "AdvDupe2", spawner )
 			undo.Create("gmod_contr_spawner")
 				undo.AddEntity( spawner )
@@ -459,7 +459,7 @@ if(SERVER)then
 	end
 
 	//function for creating a contraption spawner
-	function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, ConstraintTable, delay, undo_delay, model, key, undo_key, disgrav, disdrag, addvel)
+	function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, ConstraintTable, delay, undo_delay, model, key, undo_key, disgrav, disdrag, addvel, hideprops)
 
 		if not ply:CheckLimit("gmod_contr_spawners") then return nil end
 		
@@ -522,7 +522,7 @@ if(SERVER)then
 			
 		// Set options
 		spawner:SetPlayer(ply)
-		spawner:GetTable():SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel)
+		spawner:GetTable():SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel, hideprops)
 
 		local tbl = {
 			ply 		= ply,
@@ -530,7 +530,8 @@ if(SERVER)then
 			undo_delay	= undo_delay,
 			disgrav		= disgrav,
 			disdrag 	= disdrag,
-			addvel		= addvel;
+			addvel		= addvel,
+			hideprops	= hideprops
 		}
 		table.Merge(spawner:GetTable(), tbl)
 		spawner:SetDupeInfo(HeadEnt, EntityTable, ConstraintTable)
@@ -540,7 +541,7 @@ if(SERVER)then
 		ply:AddCleanup("gmod_contr_spawner", spawner)
 		return spawner
 	end
-	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav", "disdrag", "addvel")
+	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 	
 	
 	
@@ -1077,6 +1078,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_contr_spawner_disgrav", 0, false, true)
 	CreateClientConVar("advdupe2_contr_spawner_disdrag", 0, false, true)
 	CreateClientConVar("advdupe2_contr_spawner_addvel", 1, false, true)
+	CreateClientConVar("advdupe2_contr_spawner_hideprops", 0, false, true)
 	
 	//Experimental
 	CreateClientConVar("advdupe2_paste_disparents", 0, false, true)
@@ -1411,6 +1413,13 @@ if(CLIENT)then
 			Check:SetTextColor(Color(0,0,0,255))
 			Check:SetConVar( "advdupe2_contr_spawner_addvel" ) 
 			Check:SetValue( 1 )
+			CategoryContent3:AddItem(Check)
+					
+			Check = vgui.Create("DCheckBoxLabel")
+			Check:SetText( "Disable drawing spawner props" )
+			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetConVar( "advdupe2_contr_spawner_hideprops" ) 
+			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
 			
 		--[[Area Auto Save]]--
