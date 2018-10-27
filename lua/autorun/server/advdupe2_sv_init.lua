@@ -63,7 +63,7 @@ CreateConVar("AdvDupe2_MapFileName", "", {FCVAR_ARCHIVE})
 cvars.AddChangeCallback("AdvDupe2_SpawnRate",
 	function(cvar, preval, newval)
 		newval = tonumber(newval)
-		if(newval~=nil and newval<=1 and newval>0)then
+		if(newval~=nil and newval>0)then
 			AdvDupe2.SpawnRate = newval
 		else
 			print("[AdvDupe2Notify]\tINVALID SPAWN RATE")
@@ -148,12 +148,11 @@ util.AddNetworkString("AdvDupe2_SendContraptionGhost")
 
 hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
 hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
-	
-hook.Add("Initialize", "AdvDupe2_CheckServerSettings",
-	function()	
-		AdvDupe2.SpawnRate = tonumber(GetConVarString("AdvDupe2_SpawnRate"))
-		if(not AdvDupe2.SpawnRate or AdvDupe2.SpawnRate<=0 or AdvDupe2.SpawnRate>1)then
-			AdvDupe2.SpawnRate = 1
-			print("[AdvDupe2Notify]\tINVALID SPAWN RATE DEFAULTING VALUE")
-		end
-	end)
+
+hook.Add("Initialize", "AdvDupe2_CheckServerSettings",function()
+	AdvDupe2.SpawnRate = tonumber(GetConVarString("AdvDupe2_SpawnRate"))
+	if not AdvDupe2.SpawnRate or AdvDupe2.SpawnRate <= 0 then
+		AdvDupe2.SpawnRate = 1
+		print("[AdvDupe2Notify]\tINVALID SPAWN RATE DEFAULTING VALUE")
+	end
+end)

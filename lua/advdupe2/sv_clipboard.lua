@@ -1053,17 +1053,8 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 	return CreatedEntities, CreatedConstraints
 end
 
-local ticktotal = 0
 local function AdvDupe2_Spawn()
-	
-	ticktotal = ticktotal + AdvDupe2.SpawnRate
-	if(ticktotal<1)then
-		return
-	end
-	
-	ticktotal = ticktotal - 1
-		
-	
+
 	local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 
 	if(not Queue or not IsValid(Queue.Player))then
@@ -1312,64 +1303,69 @@ local function AdvDupe2_Spawn()
 	end
 end
 
+local ticktotal = 0
 local function ErrorCatchSpawning()
 
-	local status, error = pcall(AdvDupe2_Spawn)
+	ticktotal = ticktotal + AdvDupe2.SpawnRate
+	while ticktotal >= 1 do
+		ticktotal = ticktotal - 1
+		local status, error = pcall(AdvDupe2_Spawn)
 
-	if(not status)then
-		//PUT ERROR LOGGING HERE
-		
-		if(not AdvDupe2.JobManager.Queue)then
-			print("[AdvDupe2Notify]\t"..error)
-			AdvDupe2.JobManager.Queue = {}
-			return
-		end
-		
-		local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
-		if(not Queue)then
-			print("[AdvDupe2Notify]\t"..error)
-			return
-		end
-		
-		if(IsValid(Queue.Player))then
-			AdvDupe2.Notify(Queue.Player, error)
+		if(not status)then
+			//PUT ERROR LOGGING HERE
 			
-			local undos = undo.GetTable()[Queue.Player:UniqueID()]
-			local str = "AdvDupe2_"..Queue.Player:UniqueID()
-			for i=#undos, 1, -1 do
-				if(undos[i] and undos[i].Name == str)then
-					undos[i] = nil
-					-- Undo module netmessage
-					net.Start( "Undo_Undone" )
-					net.WriteInt( i, 16 )
-					net.Send( Queue.Player )
-					break
+			if(not AdvDupe2.JobManager.Queue)then
+				print("[AdvDupe2Notify]\t"..error)
+				AdvDupe2.JobManager.Queue = {}
+				return
+			end
+			
+			local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
+			if(not Queue)then
+				print("[AdvDupe2Notify]\t"..error)
+				return
+			end
+			
+			if(IsValid(Queue.Player))then
+				AdvDupe2.Notify(Queue.Player, error)
+				
+				local undos = undo.GetTable()[Queue.Player:UniqueID()]
+				local str = "AdvDupe2_"..Queue.Player:UniqueID()
+				for i=#undos, 1, -1 do
+					if(undos[i] and undos[i].Name == str)then
+						undos[i] = nil
+						-- Undo module netmessage
+						net.Start( "Undo_Undone" )
+						net.WriteInt( i, 16 )
+						net.Send( Queue.Player )
+						break
+					end
+				end
+			else
+				print("[AdvDupe2Notify]\t"..error)
+			end
+
+			for k,v in pairs(Queue.CreatedEntities)do
+				if(IsValid(v))then v:Remove() end
+			end
+
+			if(IsValid(Queue.Player))then
+				AdvDupe2.FinishPasting(Queue.Player, true)
+			end
+
+			table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
+
+			if(#AdvDupe2.JobManager.Queue==0)then 
+				hook.Remove("Tick", "AdvDupe2_Spawning")
+				DisablePropCreateEffect = nil
+				AdvDupe2.JobManager.PastingHook = false
+			else
+				if(#Queue<AdvDupe2.JobManager.CurrentPlayer)then    
+					AdvDupe2.JobManager.CurrentPlayer = 1
 				end
 			end
-		else
-			print("[AdvDupe2Notify]\t"..error)
+
 		end
-
-		for k,v in pairs(Queue.CreatedEntities)do
-			if(IsValid(v))then v:Remove() end
-		end
-
-		if(IsValid(Queue.Player))then
-			AdvDupe2.FinishPasting(Queue.Player, true)
-		end
-
-		table.remove(AdvDupe2.JobManager.Queue, AdvDupe2.JobManager.CurrentPlayer)
-
-		if(#AdvDupe2.JobManager.Queue==0)then 
-			hook.Remove("Tick", "AdvDupe2_Spawning")
-			DisablePropCreateEffect = nil
-			AdvDupe2.JobManager.PastingHook = false
-		else
-			if(#Queue<AdvDupe2.JobManager.CurrentPlayer)then    
-				AdvDupe2.JobManager.CurrentPlayer = 1
-			end
-		end
-
 	end
 end
 
