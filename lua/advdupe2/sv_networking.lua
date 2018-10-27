@@ -17,6 +17,7 @@ AdvDupe2.Network.Networks = {}
 AdvDupe2.Network.ClientNetworks = {}
 AdvDupe2.Network.SvStaggerSendRate = 0
 AdvDupe2.Network.ClStaggerSendRate = 0
+AdvDupe2.Network.Timeout = 10
 
 local function CheckFileNameSv(path)
 	if file.Exists(path..".txt", "DATA") then
@@ -207,18 +208,24 @@ local function AdvDupe2_InitReceiveFile( ply, cmd, args )
 	
 	local id = ply:UniqueID()
 	if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading or AdvDupe2.Network.ClientNetworks[id])then
-		umsg.Start("AdvDupe2_UploadRejected", ply)
-			umsg.Bool(false)
-		umsg.End()
-		AdvDupe2.Notify(ply, "Duplicator is Busy!",NOTIFY_ERROR,5)
-		return
+		if AdvDupe2.Network.ClientNetworks[id] and AdvDupe2.Network.ClientNetworks[id].Timeout < CurTime() then
+			AdvDupe2.Network.ClientNetworks[id]=nil
+			ply.AdvDupe2.Downloading = false
+			ply.AdvDupe2.Uploading = false
+		else
+			umsg.Start("AdvDupe2_UploadRejected", ply)
+				umsg.Bool(false)
+			umsg.End()
+			AdvDupe2.Notify(ply, "Duplicator is Busy!",NOTIFY_ERROR,5)
+			return
+		end
 	end
 	
 	ply.AdvDupe2.Downloading = true
 	ply.AdvDupe2.Uploading = true
 	//ply.AdvDupe2.Name = args[1]
 	
-	AdvDupe2.Network.ClientNetworks[id] = {Player = ply, Data = "", Size = 0}
+	AdvDupe2.Network.ClientNetworks[id] = {Player = ply, Data = "", Size = 0, Timeout = CurTime() + AdvDupe2.Network.Timeout}
 	
 	local Cur_Time = CurTime()
 	local time = AdvDupe2.Network.ClStaggerSendRate - Cur_Time
@@ -264,6 +271,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 	local id = ply:UniqueID()
 	if(not AdvDupe2.Network.ClientNetworks[id])then return end
 	local Net = AdvDupe2.Network.ClientNetworks[id]
+	Net.Timeout = CurTime() + AdvDupe2.Network.Timeout
 	
 	//Someone tried to mess with upload commands
 	if(Net.NextSend - CurTime()>0)then
