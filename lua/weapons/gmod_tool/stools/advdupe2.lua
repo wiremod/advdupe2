@@ -1286,49 +1286,49 @@ if(CLIENT)then
 			AdvDupe2.Info = {}
 			
 			local lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.File) and AdvDupe2.Info.File or "File: ")
+			lbl:SetText(AdvDupe2.InfoText.File or "File: ")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.File = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Creator) and AdvDupe2.Info.Creator or "Creator:")
+			lbl:SetText(AdvDupe2.InfoText.Creator or "Creator:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Creator = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Date) and AdvDupe2.Info.Date or "Date:")
+			lbl:SetText(AdvDupe2.InfoText.Date or "Date:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Date = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Time) and AdvDupe2.Info.Time or "Time:")
+			lbl:SetText(AdvDupe2.InfoText.Time or "Time:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Time = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Size) and AdvDupe2.Info.Size or "Size:")
+			lbl:SetText(AdvDupe2.InfoText.Size or "Size:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Size = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Desc) and AdvDupe2.Info.Desc or "Desc:")
+			lbl:SetText(AdvDupe2.InfoText.Desc or "Desc:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Desc = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Entities) and AdvDupe2.Info.Entities or "Entities:")
+			lbl:SetText(AdvDupe2.InfoText.Entities or "Entities:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Entities = lbl
 			
 			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(isstring(AdvDupe2.Info.Constraints) and AdvDupe2.Info.Constraints or "Constraints:")
+			lbl:SetText(AdvDupe2.InfoText.Constraints or "Constraints:")
 			lbl:SetTextColor(Color(0,0,0,255))
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Constraints = lbl
@@ -2174,45 +2174,24 @@ if(CLIENT)then
 	end)
 	
 	net.Receive("AdvDupe2_SetDupeInfo", function(len, ply, len2)
-		if type(AdvDupe2.Info.File)~="Panel" then
-			AdvDupe2.Info.File = net.ReadString()
-		else
+		if AdvDupe2.Info then
 			AdvDupe2.Info.File:SetText("File: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Creator)~="Panel" then
-			AdvDupe2.Info.Creator = net.ReadString()
-		else
 			AdvDupe2.Info.Creator:SetText("Creator: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Date)~="Panel" then
-			AdvDupe2.Info.Date = net.ReadString()
-		else
 			AdvDupe2.Info.Date:SetText("Date: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Time)~="Panel" then
-			AdvDupe2.Info.Time = net.ReadString()
-		else
 			AdvDupe2.Info.Time:SetText("Time: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Size)~="Panel" then
-			AdvDupe2.Info.Size = net.ReadString()
-		else
 			AdvDupe2.Info.Size:SetText("Size: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Desc)~="Panel" then
-			AdvDupe2.Info.Desc = net.ReadString()
-		else
 			AdvDupe2.Info.Desc:SetText("Desc: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Entities)~="Panel" then
-			AdvDupe2.Info.Entities = net.ReadString()
-		else
 			AdvDupe2.Info.Entities:SetText("Entities: "..net.ReadString())
-		end
-		if type(AdvDupe2.Info.Constraints)~="Panel" then
-			AdvDupe2.Info.Constraints = net.ReadString()
-		else
 			AdvDupe2.Info.Constraints:SetText("Constraints: "..net.ReadString())
+		else
+			AdvDupe2.InfoText.File = "File: "..net.ReadString()
+			AdvDupe2.InfoText.Creator = "Creator: "..net.ReadString()
+			AdvDupe2.InfoText.Date = "Date: "..net.ReadString()
+			AdvDupe2.InfoText.Time = "Time: "..net.ReadString()
+			AdvDupe2.InfoText.Size = "Size: "..net.ReadString()
+			AdvDupe2.InfoText.Desc = "Desc: "..net.ReadString()
+			AdvDupe2.InfoText.Entities = "Entities: "..net.ReadString()
+			AdvDupe2.InfoText.Constraints = "Constraints: "..net.ReadString()
 		end
 	end)
 end
