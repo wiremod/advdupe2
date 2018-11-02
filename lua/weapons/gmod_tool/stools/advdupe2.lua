@@ -15,23 +15,12 @@ require "controlpanel"
 if(SERVER)then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
-	//Thanks to Donovan for fixing the table
 	//Turns a table into a numerically indexed table
 	local function CollapseTableToArray( t )
-		
+
 		local array = {}
-		local q = {}
-		local min, max = 0, 0
-		--get the bounds
-		for k in pairs(t) do
-			if not min and not max then min,max = k,k end
-			min = (k < min) and k or min
-			max = (k > max) and k or max	
-		end
-		for i=min, max do
-			if t[i] then
-				array[#array+1] = t[i]
-			end
+		for k, v in pairs(t) do
+			array[#array+1] = v
 		end
 
 		return array
