@@ -982,6 +982,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			if(Ent.OnDuplicated)then Ent:OnDuplicated(v) end
 			ApplyEntityModifiers( Player, Ent )
 			ApplyBoneModifiers( Player, Ent )
+			Ent.SolidMod = not Ent:IsSolid()
 			Ent:SetNotSolid(true)
 		elseif(Ent==false)then
 			Ent = nil
@@ -1021,7 +1022,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 				if(EntityList[_].BuildDupeInfo.DupeParentID and Parenting)then
 					v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
 				end
-				v:SetNotSolid(false)
+				v:SetNotSolid( v.SolidMod )
 				undo.AddEntity( v )
 			end
 			undo.SetPlayer( Player )
@@ -1044,7 +1045,7 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
 			end
 
-			v:SetNotSolid(false)
+			v:SetNotSolid( v.SolidMod )
 		end
 	end
 	DisablePropCreateEffect = nil
@@ -1131,6 +1132,7 @@ local function AdvDupe2_Spawn()
 			Ent.BoneMods = table.Copy( v.BoneMods )
 			Ent.EntityMods = table.Copy( v.EntityMods )
 			Ent.PhysicsObjects = table.Copy( v.PhysicsObjects )
+			Ent.SolidMod = not Ent:IsSolid()
 
 			local Phys = Ent:GetPhysicsObject()
 			if(IsValid(Phys))then Phys:EnableMotion(false) end
@@ -1280,7 +1282,7 @@ local function AdvDupe2_Spawn()
 						end
 
 						if(not edit or not Queue.DisableParents)then 
-							v:SetNotSolid(false)
+							v:SetNotSolid(v.SolidMod)
 						end
 
 						undo.AddEntity( v )
