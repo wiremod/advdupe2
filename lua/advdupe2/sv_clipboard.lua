@@ -985,8 +985,8 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			Ent:SetNotSolid(true)
 		elseif(Ent==false)then
 			Ent = nil
-			ConstraintList = {}
-			break
+			--ConstraintList = {}
+			--break
 		else
 			Ent = nil
 		end
@@ -1139,10 +1139,6 @@ local function AdvDupe2_Spawn()
 			if(Ent.OnDuplicated)then Ent:OnDuplicated(v) end
 		elseif(Ent==false)then
 			Ent = nil
-			Queue.Entity = false
-			Queue.Constraint = true
-			Queue.Current = 1
-			Queue.ConstraintList = {}
 		else
 			Ent = nil
 		end
