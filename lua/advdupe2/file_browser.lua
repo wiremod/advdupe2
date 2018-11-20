@@ -335,14 +335,16 @@ end
 
 local function DeleteFilesInFolders(path)
 	local files, folders = file.Find(path.."*", "DATA")
-	
+
 	for k,v in pairs(files)do
 		file.Delete(path..v)
 	end
-	
+
 	for k,v in pairs(folders)do
 		DeleteFilesInFolders(path..v.."/")
 	end
+
+	file.Delete(path)
 end
 
 local function SearchNodes(node, name)
