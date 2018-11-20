@@ -1074,10 +1074,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
 	
-	local function BuildCPanel()
-		local CPanel = controlpanel.Get("advdupe2")
-		
-		if not CPanel then return end
+	local function BuildCPanel(CPanel)
 		CPanel:ClearControls()
 		
 		if(!file.Exists("advdupe2", "DATA"))then
@@ -1652,7 +1649,15 @@ if(CLIENT)then
 			Text = "Advanced Duplicator 2",
 			Description = "Duplicate stuff."
 		})
-		timer.Simple(0, BuildCPanel)	
+		local function tryToBuild()
+			local CPanel = controlpanel.Get("advdupe2")
+			if CPanel and CPanel:GetWide()>16 then
+				BuildCPanel(CPanel)
+			else
+				timer.Simple(0.1,tryToBuild)
+			end
+		end
+		tryToBuild()
 	end
 	
 	function AdvDupe2.RemoveGhosts()
