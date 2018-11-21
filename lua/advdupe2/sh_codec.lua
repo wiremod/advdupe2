@@ -156,9 +156,9 @@ end
 
 local read4, read5
 
+local reference = 0
 do --Version 4
 	local dec = {}
-	local reference = 0
 	for i=1,255 do dec[i] = error_nodeserializer end
 
 	local function read()
@@ -246,7 +246,6 @@ end
 
 do --Version 5
 	local dec = {}
-	local reference = 0
 	for i=1,255 do dec[i] = error_nodeserializer end
 
 	local function read()
@@ -260,46 +259,28 @@ do --Version 5
 
 	dec[255] = function() --table
 		local t = {}
-		local k
 		reference = reference + 1
-		local ref = reference
+		tables[reference] = t
 
-		repeat
-			
-			k = read()
-			
-			if k ~= nil then
-				t[k] = read()
-			end
-			
-		until (k == nil)
-		
-		tables[ref] = t
-		
+		for k in read do
+			t[k] = read()
+		end
+
 		return t
-		
 	end
 
 	dec[254] = function() --array
 		local t = {}
-		local k,v = 0
 		reference = reference + 1
-		local ref = reference
-		
-		repeat
+		tables[reference] = t
+
+		local k = 1
+		for v in read do
+			t[k] = v
 			k = k + 1
-			v = read()
-			
-			if(v != nil) then
-				t[k] = v
-			end
-			
-		until (v == nil)
-		
-		tables[ref] = t
-		
+		end
+
 		return t
-		
 	end
 
 	dec[253] = function()
@@ -324,7 +305,6 @@ do --Version 5
 		return retv
 	end
 	dec[247] = function() --table reference
-		reference = reference + 1
 		return tables[buff:ReadShort()]
 	end
 	dec[246] = function() --nil
@@ -470,7 +450,7 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 			error("unknown duplication format")
 		end
 	elseif rev > REVISION then
-		error(format("this install lacks the codec version to parse the dupe (have rev %u, need rev %u)",REVISION,rev))
+		error(format("Newer codec needed. (have rev %u, need rev %u) Update Advdupe2.",REVISION,rev))
 	elseif rev < 1 then
 		error(format("attempt to use an invalid format revision (rev %d)", rev))
 	else
