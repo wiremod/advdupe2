@@ -13,6 +13,8 @@ include "nullesc.lua"
 AdvDupe2.NetFile = ""
 local AutoSave = false
 local uploading = false
+local uploading_timeout = 0
+local uploading_timeout_time = 10
 
 local function CheckFileNameCl(path)
 	if file.Exists(path..".txt", "DATA") then
@@ -221,7 +223,8 @@ end
 	Returns:
 ]]			
 function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
-	if(uploading)then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
+	if(uploading and CurTime()<uploading_timeout)then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
+	uploading_timeout = CurTime()+uploading_timeout_time
 	if(ReadArea==0)then
 		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
 	elseif(ReadArea==1)then
@@ -258,6 +261,7 @@ end
 	Returns:
 ]]
 local function SendFileToServer(eof)
+	uploading_timeout = CurTime()+uploading_timeout_time
 
 	if(AdvDupe2.LastPos+eof>AdvDupe2.Length)then
 		eof = AdvDupe2.Length
