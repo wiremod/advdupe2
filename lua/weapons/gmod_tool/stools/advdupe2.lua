@@ -2152,6 +2152,7 @@ if(CLIENT)then
 	end)
 	
 	usermessage.Hook("AdvDupe2_ResetDupeInfo", function(um)
+		if not AdvDupe2.Info then return end
 		AdvDupe2.Info.File:SetText("File:")
 		AdvDupe2.Info.Creator:SetText("Creator:")
 		AdvDupe2.Info.Date:SetText("Date:")
