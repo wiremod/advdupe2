@@ -605,7 +605,7 @@ end
 local function ApplyEntityModifiers( Player, Ent )
 	if(not Ent.EntityMods)then return end
 	local status, error
-	for Type, Data in pairs( Ent.EntityMods ) do
+	for Type, Data in SortedPairs( Ent.EntityMods ) do
 		local ModFunction = duplicator.EntityModifiers[ Type ]
 		if ( ModFunction ) then
 			status, error = pcall(ModFunction, Player, Ent, Data )
