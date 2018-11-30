@@ -309,28 +309,45 @@ end
 local function Copy( Ent, EntTable, ConstraintTable, Offset )
 
 	local index = Ent:EntIndex()
-	if(EntTable[index])then return EntTable, ConstraintTable end
+	if EntTable[index] then return EntTable, ConstraintTable end
 
-	EntTable[index] = CopyEntTable(Ent, Offset)
-	if(EntTable[index]==nil)then return EntTable, ConstraintTable end
+	local EntData = CopyEntTable(Ent, Offset)
+	if EntData == nil then return EntTable, ConstraintTable end
+	EntTable[index] = EntData
 
-	if ( not constraint.HasConstraints( Ent ) ) then 
-		for k,v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects)do
-			Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
+	if Ent.Constraints then
+		for k, Constraint in pairs( Ent.Constraints ) do
+			index = Constraint:GetCreationID()
+			if index and not ConstraintTable[index] then
+				Constraint.Identity = index
+				local ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
+				ConstraintTable[index] = ConstTable
+				for j,e in pairs(EntTab) do
+					if e and ( e:IsWorld() or e:IsValid() ) then
+						Copy( e, EntTable, ConstraintTable, Offset )
+					end
+				end
+			end
 		end
-		return EntTable, ConstraintTable 
 	end
 
-	local ConstTable, EntTab
-	for k, Constraint in pairs( Ent.Constraints ) do
-		index = Constraint:GetCreationID()
-		if(index and not ConstraintTable[index])then
-			Constraint.Identity = index
-			ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
-			ConstraintTable[index] = ConstTable
-			for j,e in pairs(EntTab) do
-				if ( e and ( e:IsWorld() or e:IsValid() ) ) and ( not EntTable[e:EntIndex()] ) then
-					Copy( e, EntTable, ConstraintTable, Offset )
+	do -- Wiremod Wire Connections
+		if istable(Ent.Inputs) then
+			for k, v in pairs(Ent.Inputs) do
+				if isentity(v.Src) and v.Src:IsValid() then
+					Copy( v.Src, EntTable, ConstraintTable, Offset )
+				end
+			end
+		end
+
+		if istable(Ent.Outputs) then
+			for k, v in pairs(Ent.Outputs) do
+				if istable(v.Connected) then
+					for k, v in pairs(v.Connected) do
+						if isentity(v.Entity) and v.Entity:IsValid() then
+							Copy( v.Entity, EntTable, ConstraintTable, Offset )
+						end
+					end
 				end
 			end
 		end
