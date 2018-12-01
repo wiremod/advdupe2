@@ -85,48 +85,47 @@ local function PasteMap()
 	end
 	
 	local map = file.Read("advdupe2_maps/"..filename..".txt")
-	AdvDupe2.Decode(map, function(success,dupe,info,moreinfo) 
-		if not success then 
-			print("[AdvDupe2Notify]\tCould not open map save "..dupe)
-			return
-		end	
-		
-		local Tab = {Entities=dupe["Entities"], Constraints=dupe["Constraints"], HeadEnt=dupe["HeadEnt"]}
-		local Entities = AdvDupe2.duplicator.Paste(nil, table.Copy(Tab.Entities), Tab.Constraints, nil, nil, Tab.HeadEnt.Pos, true)
-		local maptype = GetConVarString("AdvDupe2_LoadMap")
-		
-		if(maptype=="1")then
-			local PhysObj
-			for k,v in pairs(Entities) do
-				if(IsValid(v))then
-					for i=0, #Tab.Entities[k].PhysicsObjects do
-						if(Tab.Entities[k].PhysicsObjects[i].Frozen)then
-							PhysObj = v:GetPhysicsObjectNum( i )
-							if IsValid(PhysObj) then
-								PhysObj:EnableMotion(true)
-							end
-						end
-					end
-					if v.CPPISetOwner then v:CPPISetOwner(game.GetWorld()) end
-				end
-			end
-		elseif(maptype=="2")then
-			local PhysObj
-			for k,v in pairs(Entities) do
-				if(IsValid(v))then
-					for i=0, #Tab.Entities[k].PhysicsObjects do
+	local success,dupe,info,moreinfo = AdvDupe2.Decode(map) 
+	if not success then
+		print("[AdvDupe2Notify]\tCould not open map save "..dupe)
+		return
+	end	
+	
+	local Tab = {Entities=dupe["Entities"], Constraints=dupe["Constraints"], HeadEnt=dupe["HeadEnt"]}
+	local Entities = AdvDupe2.duplicator.Paste(nil, table.Copy(Tab.Entities), Tab.Constraints, nil, nil, Tab.HeadEnt.Pos, true)
+	local maptype = GetConVarString("AdvDupe2_LoadMap")
+	
+	if(maptype=="1")then
+		local PhysObj
+		for k,v in pairs(Entities) do
+			if(IsValid(v))then
+				for i=0, #Tab.Entities[k].PhysicsObjects do
+					if(Tab.Entities[k].PhysicsObjects[i].Frozen)then
 						PhysObj = v:GetPhysicsObjectNum( i )
 						if IsValid(PhysObj) then
 							PhysObj:EnableMotion(true)
 						end
 					end
-					if v.CPPISetOwner then v:CPPISetOwner(game.GetWorld()) end
 				end
+				if v.CPPISetOwner then v:CPPISetOwner(game.GetWorld()) end
 			end
 		end
-		
-		print("[AdvDupe2Notify]\tMap save pasted.")
-	end)
+	elseif(maptype=="2")then
+		local PhysObj
+		for k,v in pairs(Entities) do
+			if(IsValid(v))then
+				for i=0, #Tab.Entities[k].PhysicsObjects do
+					PhysObj = v:GetPhysicsObjectNum( i )
+					if IsValid(PhysObj) then
+						PhysObj:EnableMotion(true)
+					end
+				end
+				if v.CPPISetOwner then v:CPPISetOwner(game.GetWorld()) end
+			end
+		end
+	end
+	
+	print("[AdvDupe2Notify]\tMap save pasted.")
 end
 
 util.AddNetworkString("AdvDupe2_AddFile")

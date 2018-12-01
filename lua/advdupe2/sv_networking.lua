@@ -290,7 +290,7 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 	Net.Data = Net.Data..net.ReadString()
 
 	if(status==1)then
-		AdvDupe2.Decode(AdvDupe2.Null.invesc(Net.Data), function(success,dupe,info,moreinfo) AdvDupe2.LoadDupe(ply, success, dupe, info, moreinfo) end)
+		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(AdvDupe2.Null.invesc(Net.Data)))
 		AdvDupe2.Network.ClientNetworks[id]=nil
 		ply.AdvDupe2.Downloading = false
 		ply.AdvDupe2.Uploading = false
