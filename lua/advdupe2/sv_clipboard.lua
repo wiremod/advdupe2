@@ -317,14 +317,16 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 
 	if Ent.Constraints then
 		for k, Constraint in pairs( Ent.Constraints ) do
-			index = Constraint:GetCreationID()
-			if index and not ConstraintTable[index] then
-				Constraint.Identity = index
-				local ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
-				ConstraintTable[index] = ConstTable
-				for j,e in pairs(EntTab) do
-					if e and ( e:IsWorld() or e:IsValid() ) then
-						Copy( e, EntTable, ConstraintTable, Offset )
+			if Constraint:IsValid() then
+				index = Constraint:GetCreationID()
+				if index and not ConstraintTable[index] then
+					Constraint.Identity = index
+					local ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
+					ConstraintTable[index] = ConstTable
+					for j,e in pairs(EntTab) do
+						if e and ( e:IsWorld() or e:IsValid() ) then
+							Copy( e, EntTable, ConstraintTable, Offset )
+						end
 					end
 				end
 			end
