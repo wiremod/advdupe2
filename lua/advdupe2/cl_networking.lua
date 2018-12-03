@@ -62,14 +62,13 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 			
 			local read = file.Read(path..".txt")
 			if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
-			AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) 
-									if(success)then
-										AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
-									else
-										AdvDupe2.Notify("DEBUG CHECK: File contains EOF errors.", NOTIFY_ERROR)
-										errored = true
-									end
-										end)
+			local success,dupe,info,moreinfo = AdvDupe2.Decode(read)
+			if(success)then
+				AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
+			else
+				AdvDupe2.Notify("DEBUG CHECK: " .. dupe, NOTIFY_ERROR)
+				errored = true
+			end
 		end
 		
 		local filename = string.Explode("/", path)
@@ -243,15 +242,14 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	
 	uploading = true
 	
-	AdvDupe2.Decode(read, function(success, dupe, info, moreinfo) 
-		if(success)then
-			AdvDupe2.PendingDupe = { read, dupe, info, moreinfo, name }
-			RunConsoleCommand("AdvDupe2_InitReceiveFile")
-		else
-			uploading = false
-			AdvDupe2.Notify("File could not be decoded. Upload Canceled.", NOTIFY_ERROR)
-		end 
-	end)
+	local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
+	if(success)then
+		AdvDupe2.PendingDupe = { read, dupe, info, moreinfo, name }
+		RunConsoleCommand("AdvDupe2_InitReceiveFile")
+	else
+		uploading = false
+		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)
+	end
 end
 
 --[[

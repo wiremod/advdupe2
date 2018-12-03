@@ -568,7 +568,7 @@ if(SERVER)then
 			local name = string.Explode("/", path)
 			ply.AdvDupe2.Name = name[#name]
 
-			AdvDupe2.Decode(data, function(success,dupe,info,moreinfo) AdvDupe2.LoadDupe(ply, success, dupe, info, moreinfo) end)
+			AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
 		end
 		concommand.Add("AdvDupe2_OpenFile", OpenFile)
 	end
@@ -617,13 +617,12 @@ if(SERVER)then
 																			if(not file.Exists(dir, "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
 																			
 																			local read = file.Read(dir)
-																			AdvDupe2.Decode(read, 	function(success,dupe,info,moreinfo) 
-																										if(success)then
-																											AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 
-																										else
-																											AdvDupe2.Notify(ply, "DEBUG CHECK: File contains EOF errors.", NOTIFY_ERROR)
-																										end
-																									end)
+																			local success,dupe,info,moreinfo = AdvDupe2.Decode(read) 
+																			if(success)then
+																				AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 
+																			else
+																				AdvDupe2.Notify(ply, "DEBUG CHECK: ".. dupe, NOTIFY_ERROR)
+																			end
 																		end
 																	else
 																		if(not IsValid(ply))then return end

@@ -423,12 +423,12 @@ end
 	Params:	<string> encodedDupe, <function> callback, <...> args
 	Return:	runs callback(<boolean> success, <table/string> tbl, <table> info)
 ]]
-function AdvDupe2.Decode(encodedDupe, callback, ...)
+function AdvDupe2.Decode(encodedDupe)
 	
 	local sig, rev = encodedDupe:match("^(....)(.)")
 	
 	if not rev then
-		error("malformed dupe (wtf <5 chars long?!)")
+		return false, "malformed dupe (wtf <5 chars long?!)"
 	end
 	
 	rev = rev:byte()
@@ -445,14 +445,14 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 				ErrorNoHalt(tbl)
 			end
 
-			callback(success, tbl, info, moreinfo, ...)
+			return success, tbl, info, moreinfo
 		else
-			error("unknown duplication format")
+			return false, "unknown duplication format"
 		end
 	elseif rev > REVISION then
-		error(format("Newer codec needed. (have rev %u, need rev %u) Update Advdupe2.",REVISION,rev))
+		return false, format("Newer codec needed. (have rev %u, need rev %u) Update Advdupe2.",REVISION,rev)
 	elseif rev < 1 then
-		error(format("attempt to use an invalid format revision (rev %d)", rev))
+		return false, format("attempt to use an invalid format revision (rev %d)", rev)
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
 		
@@ -462,7 +462,6 @@ function AdvDupe2.Decode(encodedDupe, callback, ...)
 			ErrorNoHalt(tbl)
 		end
 		
-		callback(success, tbl, info, ...)
+		return success, tbl, info
 	end
-
 end

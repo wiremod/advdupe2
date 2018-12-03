@@ -409,7 +409,8 @@ function BROWSER:DoNodeRightClick(node)
 											local name = string.Explode("/", ReadPath)
 											name = name[#name]
 											name = string.sub(name, 1, #name-4)
-											AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true) end end)
+											local success,dupe,info,moreinfo = AdvDupe2.Decode(read)
+											if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true) end
 										end)
 		else
 			Menu:AddOption("Open", 	function() 
@@ -434,7 +435,8 @@ function BROWSER:DoNodeRightClick(node)
 											local name = string.Explode("/", ReadPath)
 											name = name[#name]
 											name = string.sub(name, 1, #name-4)
-											AdvDupe2.Decode(read, function(success,dupe,info,moreinfo) if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true) end end)
+											local success,dupe,info,moreinfo = AdvDupe2.Decode(read)
+											if(success)then AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true) end
 										end)
 			Menu:AddSpacer()
 			Menu:AddOption("Rename", 	function()
