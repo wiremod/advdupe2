@@ -22,7 +22,7 @@ deploy:
   skip_cleanup: true
   provider: releases
   api_key:
-    secure: EK1zfysVaXMB52mfDlPFwaqM7zGJE/G1iFKyjWMV20GDqZkE9/g+KlwwaRuz7q0NX0KgGuc7dk5j0JQXTg3Z14kUYdIYSq3tDkp0YBeePqVGUgQoA19ZFPlBdZEV0EF3dDHMYmErNYBuCYW7Twrzy++WgzghCcthXaV9jboF5lk=
+    secure: N2rH4ff/kkXzwgiiK6GpI93Vvkun27wMb5QU0++uJu1MmPt99kq2jtuDTe96U5F0Es+I9Rrip+EOaPrnLgv6X/8Uy+GA4cOb2FNAsaN/keISw88nZzuc/tsXf1qXitKrVfW7FKp1z79L4tIt6paBlWYTlcTGD9KnBgSZa7wHz0A=
   file: advdupe2.gma
   on:
     repo: wiremod/advdupe2
