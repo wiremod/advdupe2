@@ -94,7 +94,8 @@ function AdvDupe2_SendFile(ID)
 
 	net.Start("AdvDupe2_ReceiveFile")
 		net.WriteInt(status, 8)
-		net.WriteString(data)
+		net.WriteUInt(#data, 32)
+		net.WriteData(data, #data)
 	net.Send(Net.Player)
 	
 	AdvDupe2.UpdateProgressBar(Net.Player, math.floor((Net.LastPos/Net.Length)*100))
@@ -284,7 +285,8 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 	end
 
 	local status = net.ReadInt(8)
-	Net.Data = Net.Data..net.ReadData(len/8-1)
+	local datalen = net.ReadUInt(32)
+	Net.Data = Net.Data..net.ReadData(datalen)
 
 	if(status==1)then
 		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(Net.Data))

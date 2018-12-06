@@ -35,7 +35,8 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 	local status = net.ReadInt(8)
 	
 	if(status==1)then AdvDupe2.NetFile = "" end
-	AdvDupe2.NetFile=AdvDupe2.NetFile..net.ReadData(len/8-1)
+	local datalen = net.ReadUInt(32)
+	AdvDupe2.NetFile=AdvDupe2.NetFile..net.ReadData(datalen)
 
 	if(status==2)then
 		local path = ""
@@ -46,21 +47,25 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		else
 			path = CheckFileNameCl(AdvDupe2.SavePath)
 		end
-		file.Write(path..".txt", AdvDupe2.NetFile)
-		
-		if(!file.Exists(path..".txt", "DATA"))then
+
+		local dupefile = file.Open(path..".txt", "wb", "DATA")
+		if(!dupefile)then
 			AdvDupe2.NetFile = ""
 			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
 			return
 		end
+		dupefile:Write(AdvDupe2.NetFile)
+		dupefile:Close()
 		
 		local errored = false
 		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
 			if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 			
-			local read = file.Read(path..".txt")
-			if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
-			local success,dupe,info,moreinfo = AdvDupe2.Decode(read)
+			local readFile = file.Open(path..".txt", "rb", "DATA")
+			if not readFile then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
+			local readData = readFile:Read(readFile:Size())
+			readFile:Close()
+			local success,dupe,info,moreinfo = AdvDupe2.Decode(readData)
 			if(success)then
 				AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
 			else
@@ -270,7 +275,8 @@ local function SendFileToServer(eof)
 
 	net.Start("AdvDupe2_ReceiveFile")
 		net.WriteInt(AdvDupe2.LastPos>=AdvDupe2.Length and 1 or 0, 8)
-		net.WriteString(data)
+		net.WriteUInt(data, 32)
+		net.WriteData(data, #data)
 	net.SendToServer()
 	
 end
