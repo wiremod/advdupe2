@@ -8,9 +8,6 @@
 	Version: 1.0
 ]]
 
-include "nullesc.lua"
-AddCSLuaFile "nullesc.lua"
-
 AdvDupe2.Network = {}
 
 AdvDupe2.Network.Networks = {}
@@ -56,7 +53,7 @@ function AdvDupe2.EstablishNetwork(ply, file)
 	if(not IsValid(ply))then return end
 	local id = ply:UniqueID()
 	ply.AdvDupe2.Downloading = true
-	AdvDupe2.Network.Networks[id] = {Player = ply, File=AdvDupe2.Null.esc(file), Length = #file, LastPos=1}
+	AdvDupe2.Network.Networks[id] = {Player = ply, File=file, Length = #file, LastPos=1}
 	
 	local Cur_Time = CurTime()
 	local time = AdvDupe2.Network.SvStaggerSendRate - Cur_Time
@@ -97,7 +94,8 @@ function AdvDupe2_SendFile(ID)
 
 	net.Start("AdvDupe2_ReceiveFile")
 		net.WriteInt(status, 8)
-		net.WriteString(data)
+		net.WriteUInt(#data, 32)
+		net.WriteData(data, #data)
 	net.Send(Net.Player)
 	
 	AdvDupe2.UpdateProgressBar(Net.Player, math.floor((Net.LastPos/Net.Length)*100))
@@ -286,11 +284,12 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 		return
 	end
 
-	local status = net.ReadBit()
-	Net.Data = Net.Data..net.ReadString()
+	local status = net.ReadInt(8)
+	local datalen = net.ReadUInt(32)
+	Net.Data = Net.Data..net.ReadData(datalen)
 
 	if(status==1)then
-		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(AdvDupe2.Null.invesc(Net.Data)))
+		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(Net.Data))
 		AdvDupe2.Network.ClientNetworks[id]=nil
 		ply.AdvDupe2.Downloading = false
 		ply.AdvDupe2.Uploading = false
