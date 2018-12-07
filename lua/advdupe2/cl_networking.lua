@@ -275,7 +275,7 @@ local function SendFileToServer(eof)
 
 	net.Start("AdvDupe2_ReceiveFile")
 		net.WriteInt(AdvDupe2.LastPos>=AdvDupe2.Length and 1 or 0, 8)
-		net.WriteUInt(data, 32)
+		net.WriteUInt(#data, 32)
 		net.WriteData(data, #data)
 	net.SendToServer()
 	
