@@ -15,15 +15,38 @@ require "controlpanel"
 if(SERVER)then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
-	//Turns a table into a numerically indexed table
-	local function CollapseTableToArray( t )
+	//Orders constraints so that the dupe uses as little constraint systems as possible
+	local function GroupConstraintOrder( constraints )
+		local k = next(constraints)
+		if k == nil then return constraints end
+		local sortedConstraints = {constraints[k]}
+		constraints[k] = nil
+		while next(constraints) ~= nil do
+			for k, v in pairs(constraints) do
+				for _, target in pairs(sortedConstraints) do
+					for x = 1, 4 do
+						if v.Entity[x] then 
+							for y = 1, 4 do
+								if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
+									sortedConstraints[#sortedConstraints + 1] = v
+									constraints[k] = nil
+									goto super_loopbreak
+								end
+							end
+						end
+					end
+				end
+			end
 
-		local array = {}
-		for k, v in pairs(t) do
-			array[#array+1] = v
+			--Normally skipped by the goto unless no cluster is found. If so, make a new one.
+			local k = next(constraints)
+			sortedConstraints[#sortedConstraints + 1] = constraints[k]
+			constraints[k] = nil
+
+			::super_loopbreak::
 		end
 
-		return array
+		return sortedConstraints
 	end
 
 	local areacopy_classblacklist = {
@@ -211,7 +234,7 @@ if(SERVER)then
 		
 		ply.AdvDupe2.HeadEnt = HeadEnt
 		ply.AdvDupe2.Entities = Entities
-		ply.AdvDupe2.Constraints = CollapseTableToArray(Constraints)
+		ply.AdvDupe2.Constraints = GroupConstraintOrder(Constraints)
 		
 		net.Start("AdvDupe2_SetDupeInfo")
 			net.WriteString("")
@@ -771,7 +794,7 @@ if(SERVER)then
 
 				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, ply.AdvDupe2.AutoSaveOutSide)
 			end
-			Tab.Constraints = CollapseTableToArray(Tab.Constraints)
+			Tab.Constraints = GroupConstraintOrder(Tab.Constraints)
 			Tab.Description = ply.AdvDupe2.AutoSaveDesc
 
 			if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
@@ -832,7 +855,7 @@ if(SERVER)then
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
-		Tab.Constraints = CollapseTableToArray(Tab.Constraints)
+		Tab.Constraints = GroupConstraintOrder(Tab.Constraints)
 		
 		Tab.Map = true
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), 	function(data)
