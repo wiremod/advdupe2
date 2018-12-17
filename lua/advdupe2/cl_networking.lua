@@ -248,7 +248,7 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
 	if(success)then
 		AdvDupe2.PendingDupe = { read, dupe, info, moreinfo, name }
-		RunConsoleCommand("AdvDupe2_InitReceiveFile")
+		RunConsoleCommand("AdvDupe2_InitReceiveFile", name)
 	else
 		uploading = false
 		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)

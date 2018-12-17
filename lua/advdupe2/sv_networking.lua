@@ -221,7 +221,17 @@ local function AdvDupe2_InitReceiveFile( ply, cmd, args )
 	
 	ply.AdvDupe2.Downloading = true
 	ply.AdvDupe2.Uploading = true
-	//ply.AdvDupe2.Name = args[1]
+	--Sanitize the input name
+	if args[1] then
+		local _1, _2, _3 = string.find(args[1], "([%w_]+)")
+		if _3 then
+			ply.AdvDupe2.Name = string.sub(_3, 1, 32)
+		else
+			ply.AdvDupe2.Name = "Advanced Duplication"
+		end
+	else
+		ply.AdvDupe2.Name = "Advanced Duplication"
+	end
 	
 	AdvDupe2.Network.ClientNetworks[id] = {Player = ply, Data = "", Size = 0, Timeout = CurTime() + AdvDupe2.Network.Timeout}
 	
