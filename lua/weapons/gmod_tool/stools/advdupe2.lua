@@ -15,26 +15,48 @@ require "controlpanel"
 if(SERVER)then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
+	local phys_constraint_system_types = {
+		Weld = true,
+		Rope = true,
+		Elastic = true,
+		Slider = true,
+		Axis = true,
+		AdvBallsocket = true,
+		NoCollide = true,
+		Motor = true,
+		Pulley = true,
+		Ballsocket = true,
+		Winch = true,
+		Hydraulic = true,
+		WireMotor = true,
+		WireHydraulic = true
+	}
 	//Orders constraints so that the dupe uses as little constraint systems as possible
 	local function GroupConstraintOrder( constraints )
 		local k = next(constraints)
 		if k == nil then return constraints end
 		local sortedConstraints = {constraints[k]}
+		local unsortedConstraints = {}
 		constraints[k] = nil
 		while next(constraints) ~= nil do
 			for k, v in pairs(constraints) do
-				for _, target in pairs(sortedConstraints) do
-					for x = 1, 4 do
-						if v.Entity[x] then 
-							for y = 1, 4 do
-								if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
-									sortedConstraints[#sortedConstraints + 1] = v
-									constraints[k] = nil
-									goto super_loopbreak
+				if phys_constraint_system_types[v.Type] then
+					for _, target in pairs(sortedConstraints) do
+						for x = 1, 4 do
+							if v.Entity[x] then 
+								for y = 1, 4 do
+									if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
+										sortedConstraints[#sortedConstraints + 1] = v
+										constraints[k] = nil
+										goto super_loopbreak
+									end
 								end
 							end
 						end
 					end
+				else
+					unsortedConstraints[#unsortedConstraints + 1] = v
+					constraints[k] = nil
 				end
 			end
 
@@ -44,6 +66,9 @@ if(SERVER)then
 			constraints[k] = nil
 
 			::super_loopbreak::
+		end
+		for k, v in pairs(unsortedConstraints) do
+			sortedConstraints[#sortedConstraints + 1] = v
 		end
 
 		return sortedConstraints
