@@ -6,6 +6,10 @@ AdvDupe2 = {
 	FileRenameTryLimit = 256
 }
 
+if(!file.Exists(AdvDupe2.DataFolder, "DATA"))then
+	file.CreateDir(AdvDupe2.DataFolder)
+end
+
 include "advdupe2/cl_file.lua"
 include "advdupe2/cl_networking.lua"
 include "advdupe2/file_browser.lua"

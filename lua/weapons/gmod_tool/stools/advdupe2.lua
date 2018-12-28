@@ -1115,7 +1115,7 @@ if(CLIENT)then
 		local Check = vgui.Create("DCheckBoxLabel")
 		
 		Check:SetText( "Paste at original position" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_original_origin" ) 
 		Check:SetValue( 0 )
 		Check:SetToolTip("Paste at the position originally copied")
@@ -1123,7 +1123,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Paste with constraints" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_constraints" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Paste with or without constraints")
@@ -1131,7 +1131,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Paste with parenting" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_parents" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Paste with or without parenting")
@@ -1141,7 +1141,7 @@ if(CLIENT)then
 		local Check_2 = vgui.Create("DCheckBoxLabel")
 		
 		Check_1:SetText( "Unfreeze all after paste" )
-		Check_1:SetTextColor(Color(0,0,0,255))
+		Check_1:SetDark(true)
 		Check_1:SetConVar( "advdupe2_paste_unfreeze" ) 
 		Check_1:SetValue( 0 )
 		Check_1.OnChange = 	function() 
@@ -1153,7 +1153,7 @@ if(CLIENT)then
 		CPanel:AddItem(Check_1)
 		
 		Check_2:SetText( "Preserve frozen state after paste" )
-		Check_2:SetTextColor(Color(0,0,0,255))
+		Check_2:SetDark(true)
 		Check_2:SetConVar( "advdupe2_preserve_freeze" ) 
 		Check_2:SetValue( 0 )
 		Check_2.OnChange = 	function() 
@@ -1166,7 +1166,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Area copy constrained props outside of box" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_outside" ) 
 		Check:SetValue( 0 )
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
@@ -1174,7 +1174,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "World/Area copy only your own props" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_only_mine" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
@@ -1182,7 +1182,7 @@ if(CLIENT)then
 
 		local NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Ghost Percentage:" )
-		NumSlider.Label:SetTextColor(Color(0,0,0,255))
+		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
 		NumSlider:SetMax( 100 )
 		NumSlider:SetDecimals( 0 )
@@ -1199,7 +1199,7 @@ if(CLIENT)then
 		
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Area Copy Size:" )
-		NumSlider.Label:SetTextColor(Color(0,0,0,255))
+		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
 		local size = GetConVarNumber("AdvDupe2_MaxAreaCopySize") or 2500
 		if(size == 0)then size = 2500 end
@@ -1229,7 +1229,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Height Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( 0 )
 			NumSlider:SetMax( 2500 ) 
 			NumSlider:SetDecimals( 0 ) 
@@ -1239,7 +1239,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Use World Angles" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_offset_world" ) 
 			Check:SetValue( 0 )
 			Check:SetToolTip("Use world angles for the offset instead of the main entity")
@@ -1247,7 +1247,7 @@ if(CLIENT)then
 			
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Pitch Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( -180 ) 
 			NumSlider:SetMax( 180 ) 
 			NumSlider:SetDecimals( 0 ) 
@@ -1256,7 +1256,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Yaw Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( -180 )
 			NumSlider:SetMax( 180 )
 			NumSlider:SetDecimals( 0 )
@@ -1265,7 +1265,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Roll Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( -180 )
 			NumSlider:SetMax( 180 )
 			NumSlider:SetDecimals( 0 )
@@ -1301,49 +1301,49 @@ if(CLIENT)then
 			
 			local lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.File or "File: ")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.File = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Creator or "Creator:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Creator = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Date or "Date:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Date = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Time or "Time:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Time = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Size or "Size:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Size = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Desc or "Desc:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Desc = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Entities or "Entities:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Entities = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Constraints or "Constraints:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Constraints = lbl
 		
@@ -1370,7 +1370,7 @@ if(CLIENT)then
 				
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Spawn Delay" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			if(game.SinglePlayer())then
 				NumSlider:SetMin( 0 )
 			else
@@ -1387,7 +1387,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Undo Delay" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			if(game.SinglePlayer())then 
 				NumSlider:SetMin( 0 )
 				NumSlider:SetMax( 60 )
@@ -1408,28 +1408,28 @@ if(CLIENT)then
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable gravity for all spawned props" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_disgrav" ) 
 			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable drag for all spawned props" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_disdrag" ) 
 			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Add spawner's velocity to contraption" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_addvel" ) 
 			Check:SetValue( 1 )
 			CategoryContent3:AddItem(Check)
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable drawing spawner props" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_hideprops" ) 
 			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
@@ -1450,7 +1450,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Only copy contraption" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_auto_save_contraption" ) 
 			Check:SetValue( 0 )
 			Check:SetToolTip("Only copy a contraption instead of an area")
@@ -1458,7 +1458,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Overwrite File" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_auto_save_overwrite" )
 			Check:SetValue( 1 )
 			Check:SetToolTip("Overwrite the file instead of creating a new one everytime")
@@ -1466,7 +1466,7 @@ if(CLIENT)then
 			
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Minutes to Save:" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( GetConVarNumber("AdvDupe2_AreaAutoSaveTime") )
 			NumSlider:SetMax( 30 )
 			NumSlider:SetDecimals( 0 )
@@ -1483,7 +1483,7 @@ if(CLIENT)then
 			local label = vgui.Create("DLabel", pnl)
 			label:SetText("Directory: ")
 			label:SizeToContents()
-			label:SetTextColor(Color(0,0,0,255))
+			label:SetDark(true)
 			label:SetPos(5,7)
 			
 			AdvDupe2.AutoSavePath = ""
@@ -1598,14 +1598,14 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable parented props physics interaction" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_paste_disparents" ) 
 			Check:SetValue( 0 )
 			CategoryContent5:AddItem(Check)
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable Dupe Spawn Protection" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_paste_protectoveride" ) 
 			Check:SetValue( 1 )
 			Check:SetToolTip("Check this if you things don't look right after pasting.")
@@ -1613,7 +1613,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Open file after Saving" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_debug_openfile" ) 
 			Check:SetValue( 1 )
 			Check:SetToolTip("Check this if you want your files to be opened after saving them.")
@@ -1643,7 +1643,7 @@ if(CLIENT)then
 				label = vgui.Create("DLabel", pnl)
 				label:SetText("File Name: ")
 				label:SizeToContents()
-				label:SetTextColor(Color(0,0,0,255))
+				label:SetDark(true)
 				label:SetPos(5,7)
 				
 				AdvDupe2.AutoSavePath = ""

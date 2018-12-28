@@ -92,7 +92,7 @@ function BROWSERPNL:Init()
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(Color(255,255,255))
+	self:SetBackgroundColor(self:GetSkin().text_bright)
 end
 
 function BROWSERPNL:OnVScroll( iOffset )
@@ -841,7 +841,7 @@ function FOLDER:Init()
 	self.Icon:SizeToContents()
 	
 	self.Label = vgui.Create("DLabel", self)
-	self.Label:SetTextColor(Color(0,0,0))
+	self.Label:SetDark(true)
 	
 
 	self.m_bExpanded = false
@@ -927,14 +927,11 @@ function FOLDER:SetExpanded(bool)
 	end
 end
 
-local clrsel = Color(0,225,250)
-local clrunsel = Color(0,0,0,0)
-
 function FOLDER:SetSelected(bool)
 	if(bool)then
-		self:SetBackgroundColor(clrsel)
+		self:SetBackgroundColor(self:GetSkin().bg_color_bright)
 	else
-		self:SetBackgroundColor(clrunsel)
+		self:SetBackgroundColor(Color(0,0,0,0))
 	end
 end
 
@@ -974,17 +971,16 @@ function FILE:Init()
 	self.Icon:SizeToContents()
 	
 	self.Label = vgui.Create("DLabel", self)
-	
-	self.Label:SetTextColor(Color(0,0,0))
+	self.Label:SetDark(true)
 
 	self:Dock(TOP)
 end
 
 function FILE:SetSelected(bool)
 	if(bool)then
-		self:SetBackgroundColor(clrsel)
+		self:SetBackgroundColor(self:GetSkin().bg_color_bright)
 	else
-		self:SetBackgroundColor(clrunsel)
+		self:SetBackgroundColor(Color(0,0,0,0))
 	end
 end
 
@@ -1106,7 +1102,7 @@ function PANEL:Init()
 	
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
-	self:SetBackgroundColor(Color(125,125,125))
+	self:SetBackgroundColor(self:GetSkin().bg_color_bright)
 	
 	self.Browser = vgui.Create("advdupe2_browser_panel", self)
 	UpdateClientFiles()
@@ -1124,7 +1120,6 @@ function PANEL:Init()
 	self.Help:SetTooltip("Help Section")
 	self.Help.DoClick = function(btn)
 		local Menu = DermaMenu()
-		-- Menu:AddOption("Forum", function() gui.OpenURL("http://www.facepunch.com/threads/1136597") end)
 		Menu:AddOption("Bug Reporting", function() gui.OpenURL("https://github.com/wiremod/advdupe2/issues") end)
 		Menu:AddOption("Controls", function() gui.OpenURL("https://github.com/wiremod/advdupe2/wiki/Controls") end)
 		Menu:AddOption("Commands", function() gui.OpenURL("https://github.com/wiremod/advdupe2/wiki/Server-settings") end)
