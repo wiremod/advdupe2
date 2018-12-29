@@ -1103,10 +1103,6 @@ if(CLIENT)then
 	local function BuildCPanel(CPanel)
 		CPanel:ClearControls()
 		
-		if(!file.Exists("advdupe2", "DATA"))then
-			file.CreateDir("advdupe2")
-		end
-		
 		local FileBrowser = vgui.Create("advdupe2_browser")
 		CPanel:AddItem(FileBrowser)
 		FileBrowser:SetSize(CPanel:GetWide(),405)
