@@ -1770,17 +1770,28 @@ if(CLIENT)then
 		GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	//Was broken, making ghosts invisible
 		GhostEntity:SetColor( Color(255, 255, 255, 150) )
 
-		// If we're a ragdoll send our bone positions
-		/*if (EntTable.R) then
+		if (EntTable.R) then
+			-- This hack needed because GetBoneParent won't work on ClientsideModel
+			local ragdoll = ClientsideRagdoll(EntTable.Model, RENDERGROUP_TRANSLUCENT)
 			for k, v in pairs( EntTable.PhysicsObjects ) do
-				if(k==0)then
-					GhostEntity:SetNetworkedBonePosition( k, Vector(0,0,0), v.Angle )
+				local bone = ragdoll:TranslatePhysBoneToBone(k)
+				print(bone)
+				local parentbone = ragdoll:GetBoneParent(bone)
+				print(parentbone)
+				local bonepos, boneang
+				if parentbone ~= -1 then
+					bonepos, boneang = ragdoll:GetBonePosition(parentbone)
 				else
-					GhostEntity:SetNetworkedBonePosition( k, v.Pos, v.Angle )
+					bonepos, boneang = ragdoll:GetPos(), ragdoll:GetAngles()
 				end
-			end	
-			Phys.Angle = Angle(0,0,0)
-		end*/
+				print(bonepos, boneang)
+				local localpos, localang = WorldToLocal(v.Pos + ragdoll:GetPos(), v.Angle, bonepos, boneang)
+				print(localpos, localang)
+				GhostEntity:ManipulateBonePosition(bone, localpos)
+				GhostEntity:ManipulateBoneAngles(bone, localang)
+			end
+			ragdoll:Remove()
+		end
 		
 		if ( gParent ) then
 			local Parent = AdvDupe2.HeadGhost
