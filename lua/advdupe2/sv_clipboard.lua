@@ -320,7 +320,6 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 			if Constraint:IsValid() then
 				index = Constraint:GetCreationID()
 				if index and not ConstraintTable[index] then
-					Constraint.Identity = index
 					local ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
 					ConstraintTable[index] = ConstTable
 					for j,e in pairs(EntTab) do
@@ -390,7 +389,6 @@ function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 					index = v:GetCreationID()
 
 					if(index and not Constraints[index])then
-						v.Identity = v:GetCreationID()
 						Constraints[index] = v
 					end
 				end
@@ -522,14 +520,16 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Bone2
 	local Bone2Index
 	local ReEnableSecond
-	if(Constraint.BuildDupeInfo)then
-
-		if first ~= nil and second ~= nil and not second:IsWorld() and Constraint.BuildDupeInfo.EntityPos ~= nil then
+	if Constraint.BuildDupeInfo and first ~= nil and second ~= nil and not first:IsWorld() and not second:IsWorld() then
+		if Constraint.BuildDupeInfo.Ent4Ang then Constraint.BuildDupeInfo.Ent2Ang = Constraint.BuildDupeInfo.Ent4Ang end -- Backwards compatibility...
+		if Constraint.BuildDupeInfo.Ent2Ang ~= nil then
 			local SecondPhys = second:GetPhysicsObject()
 			if IsValid(SecondPhys) then
 				if not DontEnable then ReEnableSecond = SecondPhys:IsMoveable() end
 				SecondPhys:EnableMotion(false)
+				
 				second:SetPos(first:GetPos()-Constraint.BuildDupeInfo.EntityPos)
+				second:SetAngles(Constraint.BuildDupeInfo.Ent2Ang)
 				if(Constraint.BuildDupeInfo.Bone2) then
 					Bone2Index = Constraint.BuildDupeInfo.Bone2
 					Bone2 = second:GetPhysicsObjectNum(Bone2Index)
@@ -542,7 +542,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 			end
 		end
 
-		if first ~= nil and Constraint.BuildDupeInfo.Ent1Ang ~= nil then
+		if Constraint.BuildDupeInfo.Ent1Ang ~= nil then
 			local FirstPhys = first:GetPhysicsObject()
 			if IsValid(FirstPhys) then
 				if not DontEnable then ReEnableFirst = FirstPhys:IsMoveable() end
@@ -558,14 +558,6 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 					end
 				end
 			end
-		end
-
-		if second ~= nil and Constraint.BuildDupeInfo.Ent2Ang ~= nil then
-			second:SetAngles(Constraint.BuildDupeInfo.Ent2Ang)
-		end
-
-		if second ~= nil and Constraint.BuildDupeInfo.Ent4Ang ~= nil then
-			second:SetAngles(Constraint.BuildDupeInfo.Ent4Ang)
 		end
 	end
 
