@@ -22,7 +22,7 @@ if(SERVER)then
 		Slider = true,
 		Axis = true,
 		AdvBallsocket = true,
-		NoCollide = true,
+		-- NoCollide = true, Doesn't matter if nocollides make new systems, let the rigid stuff go first
 		Motor = true,
 		Pulley = true,
 		Ballsocket = true,
@@ -33,11 +33,21 @@ if(SERVER)then
 	}
 	//Orders constraints so that the dupe uses as little constraint systems as possible
 	local function GroupConstraintOrder( constraints )
-		local k = next(constraints)
-		if k == nil then return constraints end
-		local sortedConstraints = {constraints[k]}
+		local sortedConstraints = {}
 		local unsortedConstraints = {}
-		constraints[k] = nil
+
+		-- Get the initial constraint
+		for k, v in pairs(constraints) do
+			if phys_constraint_system_types[v.Type] then
+				sortedConstraints[#sortedConstraints + 1] = v
+				constraints[k] = nil
+				break
+			else
+				unsortedConstraints[#unsortedConstraints + 1] = v
+				constraints[k] = nil
+			end
+		end
+		
 		while next(constraints) ~= nil do
 			for k, v in pairs(constraints) do
 				if phys_constraint_system_types[v.Type] then
@@ -57,6 +67,7 @@ if(SERVER)then
 				else
 					unsortedConstraints[#unsortedConstraints + 1] = v
 					constraints[k] = nil
+					goto super_loopbreak
 				end
 			end
 
