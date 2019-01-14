@@ -1773,22 +1773,29 @@ if(CLIENT)then
 		if (EntTable.R) then
 			-- This hack needed because GetBoneParent won't work on ClientsideModel
 			local ragdoll = ClientsideRagdoll(EntTable.Model, RENDERGROUP_TRANSLUCENT)
+			local ref = {}
 			for k, v in pairs( EntTable.PhysicsObjects ) do
 				local bone = ragdoll:TranslatePhysBoneToBone(k)
-				print(bone)
 				local parentbone = ragdoll:GetBoneParent(bone)
-				print(parentbone)
-				local bonepos, boneang
 				if parentbone ~= -1 then
-					bonepos, boneang = ragdoll:GetBonePosition(parentbone)
-				else
-					bonepos, boneang = ragdoll:GetPos(), ragdoll:GetAngles()
+					ref[k] = ragdoll:GetBoneMatrix(bone):GetInverseTR() * ragdoll:GetBoneMatrix(parentbone)
 				end
-				print(bonepos, boneang)
-				local localpos, localang = WorldToLocal(v.Pos + ragdoll:GetPos(), v.Angle, bonepos, boneang)
-				print(localpos, localang)
-				GhostEntity:ManipulateBonePosition(bone, localpos)
-				GhostEntity:ManipulateBoneAngles(bone, localang)
+			end
+			for k, v in pairs( EntTable.PhysicsObjects ) do
+				local phys = ragdoll:GetPhysicsObjectNum(k)
+				if phys:IsValid() then
+					phys:SetPos(v.Pos)
+					phys:SetAngles(v.Angle)
+				end
+			end
+			for k, v in pairs( EntTable.PhysicsObjects ) do
+				local bone = ragdoll:TranslatePhysBoneToBone(k)
+				local parentbone = ragdoll:GetBoneParent(bone)
+				if parentbone ~= -1 then
+					local ang = Matrix() ang:SetAngles(v.Ang)
+					local m = ref[k] * ragdoll:GetBoneMatrix(bone) * ragdoll:GetBoneMatrix(parentbone):GetInverseTR()
+					GhostEntity:ManipulateBoneAngles(bone, m:GetAngles())
+				end
 			end
 			ragdoll:Remove()
 		end
