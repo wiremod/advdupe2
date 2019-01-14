@@ -1782,11 +1782,8 @@ if(CLIENT)then
 				end
 			end
 			for k, v in pairs( EntTable.PhysicsObjects ) do
-				local phys = ragdoll:GetPhysicsObjectNum(k)
-				if phys:IsValid() then
-					phys:SetPos(v.Pos)
-					phys:SetAngles(v.Angle)
-				end
+				local bone = ragdoll:TranslatePhysBoneToBone(k)
+				ragdoll:SetBonePosition(k, v.Pos, v.Angle)
 			end
 			for k, v in pairs( EntTable.PhysicsObjects ) do
 				local bone = ragdoll:TranslatePhysBoneToBone(k)
