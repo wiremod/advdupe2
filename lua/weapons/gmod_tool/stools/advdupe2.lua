@@ -46,12 +46,12 @@ if(SERVER)then
 			constraints[k] = nil
 		end
 
-		local systems = {}
+		local sortingSystems = {}
 		local fullSystems = {}
 		local function buildSystems(input)
 			while next(input) ~= nil do
 				for k, v in pairs(input) do
-					for systemi, system in pairs(systems) do
+					for systemi, system in pairs(sortingSystems) do
 						for _, target in pairs(system) do
 							for x = 1, 4 do
 								if v.Entity[x] then 
@@ -60,7 +60,7 @@ if(SERVER)then
 											system[#system + 1] = v
 											if #system==100 then
 												fullSystems[#fullSystems + 1] = system
-												table.remove(systems, systemi)
+												table.remove(sortingSystems, systemi)
 											end
 											input[k] = nil
 											goto super_loopbreak
@@ -74,7 +74,8 @@ if(SERVER)then
 
 				--Normally skipped by the goto unless no cluster is found. If so, make a new one.
 				local k = next(input)
-				systems[#systems + 1] = {input[k]}
+				sortingSystems[#sortingSystems + 1] = {input[k]}
+				input[k] = nil
 
 				::super_loopbreak::
 			end
@@ -87,7 +88,7 @@ if(SERVER)then
 				constraints[#constraints + 1] = v
 			end
 		end
-		for _, system in pairs(systems) do
+		for _, system in pairs(sortingSystems) do
 			for _, v in pairs(system) do
 				constraints[#constraints + 1] = v
 			end
