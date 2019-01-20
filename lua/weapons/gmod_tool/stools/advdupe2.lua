@@ -22,7 +22,7 @@ if(SERVER)then
 		Slider = true,
 		Axis = true,
 		AdvBallsocket = true,
-		-- NoCollide = true, Doesn't matter if nocollides make new systems, let the rigid stuff go first
+		NoCollide = true,
 		Motor = true,
 		Pulley = true,
 		Ballsocket = true,
@@ -33,56 +33,70 @@ if(SERVER)then
 	}
 	//Orders constraints so that the dupe uses as little constraint systems as possible
 	local function GroupConstraintOrder( constraints )
-		local sortedConstraints = {}
-		local unsortedConstraints = {}
-
-		-- Get the initial constraint
+		--First seperate the nocollides, sorted, and unsorted constraints
+		local nocollide, sorted, unsorted = {}, {}, {}
 		for k, v in pairs(constraints) do
-			if phys_constraint_system_types[v.Type] then
-				sortedConstraints[#sortedConstraints + 1] = v
-				constraints[k] = nil
-				break
+			if v.Type == "NoCollide" then
+				nocollide[#nocollide+1] = v
+			elseif phys_constraint_system_types[v.Type] then
+				sorted[#sorted+1] = v
 			else
-				unsortedConstraints[#unsortedConstraints + 1] = v
-				constraints[k] = nil
+				unsorted[#unsorted+1] = v
 			end
+			constraints[k] = nil
 		end
-		
-		while next(constraints) ~= nil do
-			for k, v in pairs(constraints) do
-				if phys_constraint_system_types[v.Type] then
-					for _, target in pairs(sortedConstraints) do
-						for x = 1, 4 do
-							if v.Entity[x] then 
-								for y = 1, 4 do
-									if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
-										sortedConstraints[#sortedConstraints + 1] = v
-										constraints[k] = nil
-										goto super_loopbreak
+
+		local systems = {}
+		local fullSystems = {}
+		local function buildSystems(input)
+			while next(input) ~= nil do
+				for k, v in pairs(input) do
+					for systemi, system in pairs(systems) do
+						for _, target in pairs(system) do
+							for x = 1, 4 do
+								if v.Entity[x] then 
+									for y = 1, 4 do
+										if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
+											system[#system + 1] = v
+											if #system==100 then
+												fullSystems[#fullSystems + 1] = system
+												table.remove(systems, systemi)
+											end
+											input[k] = nil
+											goto super_loopbreak
+										end
 									end
 								end
 							end
 						end
 					end
-				else
-					unsortedConstraints[#unsortedConstraints + 1] = v
-					constraints[k] = nil
-					goto super_loopbreak
 				end
+
+				--Normally skipped by the goto unless no cluster is found. If so, make a new one.
+				local k = next(input)
+				systems[#systems + 1] = {input[k]}
+
+				::super_loopbreak::
 			end
-
-			--Normally skipped by the goto unless no cluster is found. If so, make a new one.
-			local k = next(constraints)
-			sortedConstraints[#sortedConstraints + 1] = constraints[k]
-			constraints[k] = nil
-
-			::super_loopbreak::
 		end
-		for k, v in pairs(unsortedConstraints) do
-			sortedConstraints[#sortedConstraints + 1] = v
+		buildSystems(sorted)
+		buildSystems(nocollide)
+
+		for _, system in pairs(fullSystems) do
+			for _, v in pairs(system) do
+				constraints[#constraints + 1] = v
+			end
+		end
+		for _, system in pairs(systems) do
+			for _, v in pairs(system) do
+				constraints[#constraints + 1] = v
+			end
+		end
+		for k, v in pairs(unsorted) do
+			constraints[#constraints + 1] = v
 		end
 
-		return sortedConstraints
+		return constraints
 	end
 
 	local areacopy_classblacklist = {
