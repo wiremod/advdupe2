@@ -43,7 +43,6 @@ if(SERVER)then
 			else
 				unsorted[#unsorted+1] = v
 			end
-			constraints[k] = nil
 		end
 
 		local sortingSystems = {}
@@ -83,21 +82,42 @@ if(SERVER)then
 		buildSystems(sorted)
 		buildSystems(nocollide)
 
+		local ret = {}
 		for _, system in pairs(fullSystems) do
 			for _, v in pairs(system) do
-				constraints[#constraints + 1] = v
+				ret[#ret + 1] = v
 			end
 		end
 		for _, system in pairs(sortingSystems) do
 			for _, v in pairs(system) do
-				constraints[#constraints + 1] = v
+				ret[#ret + 1] = v
 			end
 		end
 		for k, v in pairs(unsorted) do
-			constraints[#constraints + 1] = v
+			ret[#ret + 1] = v
 		end
 
-		return constraints
+		return ret
+	end
+
+	local function CreationConstraintOrder( constraints )
+		local ret = {}
+		for k, v in pairs( constraints ) do
+			ret[#ret + 1] = k
+		end
+		table.sort(ret)
+		for i=1, #ret do
+			ret[i] = constraints[ret[i]]
+		end
+		return ret
+	end
+	
+	local function GetSortedConstraints( constraints )
+		if GetConVarNumber("advdupe2_sort_constraints") ~= 0 then
+			return GroupConstraintOrder( constraints )
+		else
+			return CreationConstraintOrder( constraints )
+		end
 	end
 
 	local areacopy_classblacklist = {
@@ -285,7 +305,7 @@ if(SERVER)then
 		
 		ply.AdvDupe2.HeadEnt = HeadEnt
 		ply.AdvDupe2.Entities = Entities
-		ply.AdvDupe2.Constraints = GroupConstraintOrder(Constraints)
+		ply.AdvDupe2.Constraints = GetSortedConstraints(Constraints)
 		
 		net.Start("AdvDupe2_SetDupeInfo")
 			net.WriteString("")
@@ -845,7 +865,7 @@ if(SERVER)then
 
 				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, ply.AdvDupe2.AutoSaveOutSide)
 			end
-			Tab.Constraints = GroupConstraintOrder(Tab.Constraints)
+			Tab.Constraints = GetSortedConstraints(Tab.Constraints)
 			Tab.Description = ply.AdvDupe2.AutoSaveDesc
 
 			if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
@@ -906,7 +926,7 @@ if(SERVER)then
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
-		Tab.Constraints = GroupConstraintOrder(Tab.Constraints)
+		Tab.Constraints = GetSortedConstraints(Tab.Constraints)
 		
 		Tab.Map = true
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), 	function(data)
@@ -1125,6 +1145,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_offset_roll", 0, false, true)
 	CreateClientConVar("advdupe2_original_origin", 0, false, true)
 	CreateClientConVar("advdupe2_paste_constraints", 1, false, true)
+	CreateClientConVar("advdupe2_sort_constraints", 1, true, true)
 	CreateClientConVar("advdupe2_paste_parents", 1, false, true)
 	CreateClientConVar("advdupe2_paste_unfreeze", 0, false, true)
 	CreateClientConVar("advdupe2_preserve_freeze", 0, false, true)
@@ -1225,6 +1246,14 @@ if(CLIENT)then
 		Check:SetConVar( "advdupe2_copy_only_mine" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
+		CPanel:AddItem(Check)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Sort constraints by their connections" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_sort_constraints" ) 
+		Check:SetValue( GetConVarNumber("advdupe2_sort_constraints") )
+		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
 		CPanel:AddItem(Check)
 
 		local NumSlider = vgui.Create( "DNumSlider" )
