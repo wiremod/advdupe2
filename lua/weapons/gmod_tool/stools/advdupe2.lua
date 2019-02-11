@@ -630,43 +630,6 @@ if(SERVER)then
 	end
 	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 	
-	
-	
-	--[[==============]]--
-	--[[FILE FUNCTIONS]]--
-	--[[==============]]--
-	
-	if(game.SinglePlayer())then
-		//Open file in SinglePlayer
-		local function OpenFile(ply, cmd, args)
-
-			if(ply.AdvDupe2.Pasting || ply.AdvDupe2.Downloading)then
-				AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
-				return false 
-			end
-			
-			local path, area = args[1], tonumber(args[2])
-			
-			if(area==0)then
-				data = ply:ReadAdvDupe2File(path)
-			elseif(area==1)then
-				data = AdvDupe2.ReadFile(nil, "-Public-/"..path)
-			else
-				data = AdvDupe2.ReadFile(ply, path, "adv_duplicator")
-			end
-			if(data==false or data==nil)then
-				AdvDupe2.Notify(ply, "File contains incorrect data!", NOTIFY_ERROR)
-				return
-			end
-			
-			local name = string.Explode("/", path)
-			ply.AdvDupe2.Name = name[#name]
-
-			AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
-		end
-		concommand.Add("AdvDupe2_OpenFile", OpenFile)
-	end
-	
 	//Save a file to the client
 	local function SaveFile(ply, cmd, args)
 		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or table.Count(ply.AdvDupe2.Entities)==0)then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
