@@ -32,7 +32,7 @@ if(SERVER)then
 		WireHydraulic = true
 	}
 	//Orders constraints so that the dupe uses as little constraint systems as possible
-	local function GroupConstraintOrder( constraints )
+	local function GroupConstraintOrder( ply, constraints )
 		--First seperate the nocollides, sorted, and unsorted constraints
 		local nocollide, sorted, unsorted = {}, {}, {}
 		for k, v in pairs(constraints) do
@@ -97,6 +97,10 @@ if(SERVER)then
 			ret[#ret + 1] = v
 		end
 
+		if #fullSystems ~= 0 then
+			ply:ChatPrint("DUPLICATOR: WARNING, Number of constraints exceeds 100: (".. #ret .."). Constraint sorting might not work as expected.")
+		end
+
 		return ret
 	end
 
@@ -112,9 +116,9 @@ if(SERVER)then
 		return ret
 	end
 	
-	local function GetSortedConstraints( constraints )
+	local function GetSortedConstraints( ply, constraints )
 		if GetConVarNumber("advdupe2_sort_constraints") ~= 0 then
-			return GroupConstraintOrder( constraints )
+			return GroupConstraintOrder( ply, constraints )
 		else
 			return CreationConstraintOrder( constraints )
 		end
@@ -305,7 +309,7 @@ if(SERVER)then
 		
 		ply.AdvDupe2.HeadEnt = HeadEnt
 		ply.AdvDupe2.Entities = Entities
-		ply.AdvDupe2.Constraints = GetSortedConstraints(Constraints)
+		ply.AdvDupe2.Constraints = GetSortedConstraints(ply, Constraints)
 		
 		net.Start("AdvDupe2_SetDupeInfo")
 			net.WriteString("")
@@ -865,7 +869,7 @@ if(SERVER)then
 
 				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, ply.AdvDupe2.AutoSaveOutSide)
 			end
-			Tab.Constraints = GetSortedConstraints(Tab.Constraints)
+			Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 			Tab.Description = ply.AdvDupe2.AutoSaveDesc
 
 			if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
@@ -926,7 +930,7 @@ if(SERVER)then
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
-		Tab.Constraints = GetSortedConstraints(Tab.Constraints)
+		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 		
 		Tab.Map = true
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), 	function(data)
