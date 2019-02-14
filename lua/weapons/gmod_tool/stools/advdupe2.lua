@@ -287,6 +287,8 @@ if(SERVER)then
 					end
 				end
 				if next(Entities)==nil then
+					umsg.Start("AdvDupe2_RemoveGhosts", ply)
+					umsg.End()
 					return true
 				end
 				
@@ -1766,23 +1768,6 @@ if(CLIENT)then
 		
 		if(AdvDupe2.Ghosting)then
 			hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
-			if(AdvDupe2.Preview)then
-				if(AdvDupe2.PHeadEnt)then
-					AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
-					AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
-					AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
-					AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
-					AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
-					AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
-				end
-				AdvDupe2.PHeadEnt = nil
-				AdvDupe2.PHeadZPos = nil
-				AdvDupe2.PHeadPos = nil
-				AdvDupe2.PHeadOffset = nil
-				AdvDupe2.PHeadAngle = nil
-				AdvDupe2.GhostToPreview = nil
-				AdvDupe2.Preview=false
-			end
 			AdvDupe2.Ghosting = false 
 			if(not AdvDupe2.BusyBar)then
 				AdvDupe2.RemoveProgressBar()
@@ -1803,6 +1788,7 @@ if(CLIENT)then
 		AdvDupe2.HeadGhost = nil
 		AdvDupe2.CurrentGhost = 1
 		AdvDupe2.GhostEntities = nil
+		AdvDupe2.Preview = false
 	end
 	
 	//Creates a ghost from the given entity's table
@@ -1880,15 +1866,6 @@ if(CLIENT)then
 	
 	net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 											AdvDupe2.RemoveGhosts()
-											if(AdvDupe2.Preview)then
-												AdvDupe2.PHeadEnt = nil
-												AdvDupe2.PHeadZPos = nil
-												AdvDupe2.PHeadPos = nil
-												AdvDupe2.PHeadOffset = nil
-												AdvDupe2.PHeadAngle = nil
-												AdvDupe2.GhostToPreview = nil
-												AdvDupe2.Preview=false
-											end
 											AdvDupe2.Ghosting = true
 											AdvDupe2.GhostToSpawn = {}
 											AdvDupe2.HeadEnt = net.ReadInt(16)
@@ -1932,33 +1909,12 @@ if(CLIENT)then
 										end)
 										
 	net.Receive("AdvDupe2_AddGhost", 	function(len, ply, len2)
-											local preview = false
-											if(AdvDupe2.Preview)then
-												if(AdvDupe2.PHeadEnt)then
-													AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
-													AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
-													AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
-													AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
-													AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
-													AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
-												end
-												AdvDupe2.PHeadEnt = nil
-												AdvDupe2.PHeadZPos = nil
-												AdvDupe2.PHeadPos = nil
-												AdvDupe2.PHeadOffset = nil
-												AdvDupe2.PHeadAngle = nil
-												AdvDupe2.GhostToPreview = nil
-												AdvDupe2.Preview=false
-												preview = true
-											end
 											local gNew = table.insert(AdvDupe2.GhostToSpawn, {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}})
 											for k=0, net.ReadInt(8) do
 												AdvDupe2.GhostToSpawn[gNew].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 											end
 											
-											if(preview)then
-												AdvDupe2.StartGhosting()
-											elseif(AdvDupe2.CurrentGhost==gNew)then
+											if(AdvDupe2.CurrentGhost==gNew)then
 												AdvDupe2.GhostEntities[gNew] = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[gNew], true)
 												AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + math.floor(gPerc)
 												gTemp = gTemp + gPerc - math.floor(gPerc)
@@ -1998,23 +1954,6 @@ if(CLIENT)then
 		end
 	end
 	usermessage.Hook("AdvDupe2_StartGhosting", function()
-													if(AdvDupe2.Preview)then
-														if(AdvDupe2.PHeadEnt)then
-															AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
-															AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
-															AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
-															AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
-															AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
-															AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
-														end
-														AdvDupe2.PHeadEnt = nil
-														AdvDupe2.PHeadZPos = nil
-														AdvDupe2.PHeadPos = nil
-														AdvDupe2.PHeadOffset = nil
-														AdvDupe2.PHeadAngle = nil
-														AdvDupe2.GhostToPreview = nil
-														AdvDupe2.Preview=false
-													end
 													AdvDupe2.StartGhosting()
 												end)
 												
