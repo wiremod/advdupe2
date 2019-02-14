@@ -353,6 +353,14 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 			end
 		end
 	end
+	
+	do -- Parented stuff
+		local parent = Ent:GetParent()
+		if IsValid(parent) then Copy(parent, EntTable, ConstraintTable, Offset) end
+		for k, child in pairs(Ent:GetChildren()) do
+			Copy(child, EntTable, ConstraintTable, Offset)
+		end
+	end
 
 	for k,v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects)do
 		Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
