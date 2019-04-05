@@ -320,7 +320,6 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 			if Constraint:IsValid() then
 				index = Constraint:GetCreationID()
 				if index and not ConstraintTable[index] then
-					Constraint.Identity = index
 					local ConstTable, EntTab = CopyConstraintTable( table.Copy(Constraint:GetTable()), Offset )
 					ConstraintTable[index] = ConstTable
 					for j,e in pairs(EntTab) do
@@ -352,6 +351,14 @@ local function Copy( Ent, EntTable, ConstraintTable, Offset )
 					end
 				end
 			end
+		end
+	end
+	
+	do -- Parented stuff
+		local parent = Ent:GetParent()
+		if IsValid(parent) then Copy(parent, EntTable, ConstraintTable, Offset) end
+		for k, child in pairs(Ent:GetChildren()) do
+			Copy(child, EntTable, ConstraintTable, Offset)
 		end
 	end
 
@@ -387,10 +394,9 @@ function AdvDupe2.duplicator.AreaCopy( Entities, Offset, CopyOutside )
 				for k,v in pairs(Ent.Constraints)do
 					-- Filter duplicator blocked constraints out.
 					if v.DoNotDuplicate then continue end
-					index = v:GetCreationID()
 
+					index = v:GetCreationID()
 					if(index and not Constraints[index])then
-						v.Identity = v:GetCreationID()
 						Constraints[index] = v
 					end
 				end

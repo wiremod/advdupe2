@@ -32,46 +32,96 @@ if(SERVER)then
 		WireHydraulic = true
 	}
 	//Orders constraints so that the dupe uses as little constraint systems as possible
-	local function GroupConstraintOrder( constraints )
-		local k = next(constraints)
-		if k == nil then return constraints end
-		local sortedConstraints = {constraints[k]}
-		local unsortedConstraints = {}
-		constraints[k] = nil
-		while next(constraints) ~= nil do
-			for k, v in pairs(constraints) do
-				if phys_constraint_system_types[v.Type] then
-					for _, target in pairs(sortedConstraints) do
-						for x = 1, 4 do
-							if v.Entity[x] then 
-								for y = 1, 4 do
-									if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
-										sortedConstraints[#sortedConstraints + 1] = v
-										constraints[k] = nil
-										goto super_loopbreak
+	local function GroupConstraintOrder( ply, constraints )
+		--First seperate the nocollides, sorted, and unsorted constraints
+		local nocollide, sorted, unsorted = {}, {}, {}
+		for k, v in pairs(constraints) do
+			if v.Type == "NoCollide" then
+				nocollide[#nocollide+1] = v
+			elseif phys_constraint_system_types[v.Type] then
+				sorted[#sorted+1] = v
+			else
+				unsorted[#unsorted+1] = v
+			end
+		end
+
+		local sortingSystems = {}
+		local fullSystems = {}
+		local function buildSystems(input)
+			while next(input) ~= nil do
+				for k, v in pairs(input) do
+					for systemi, system in pairs(sortingSystems) do
+						for _, target in pairs(system) do
+							for x = 1, 4 do
+								if v.Entity[x] then 
+									for y = 1, 4 do
+										if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
+											system[#system + 1] = v
+											if #system==100 then
+												fullSystems[#fullSystems + 1] = system
+												table.remove(sortingSystems, systemi)
+											end
+											input[k] = nil
+											goto super_loopbreak
+										end
 									end
 								end
 							end
 						end
 					end
-				else
-					unsortedConstraints[#unsortedConstraints + 1] = v
-					constraints[k] = nil
 				end
+
+				--Normally skipped by the goto unless no cluster is found. If so, make a new one.
+				local k = next(input)
+				sortingSystems[#sortingSystems + 1] = {input[k]}
+				input[k] = nil
+
+				::super_loopbreak::
 			end
-
-			--Normally skipped by the goto unless no cluster is found. If so, make a new one.
-			local k = next(constraints)
-			sortedConstraints[#sortedConstraints + 1] = constraints[k]
-			constraints[k] = nil
-
-			::super_loopbreak::
 		end
-		for k, v in pairs(unsortedConstraints) do
-			sortedConstraints[#sortedConstraints + 1] = v
+		buildSystems(sorted)
+		buildSystems(nocollide)
+
+		local ret = {}
+		for _, system in pairs(fullSystems) do
+			for _, v in pairs(system) do
+				ret[#ret + 1] = v
+			end
+		end
+		for _, system in pairs(sortingSystems) do
+			for _, v in pairs(system) do
+				ret[#ret + 1] = v
+			end
+		end
+		for k, v in pairs(unsorted) do
+			ret[#ret + 1] = v
 		end
 
-		return sortedConstraints
+		if #fullSystems ~= 0 then
+			ply:ChatPrint("DUPLICATOR: WARNING, Number of constraints exceeds 100: (".. #ret .."). Constraint sorting might not work as expected.")
+		end
+
+		return ret
+	end
+
+	local function CreationConstraintOrder( constraints )
+		local ret = {}
+		for k, v in pairs( constraints ) do
+			ret[#ret + 1] = k
+		end
+		table.sort(ret)
+		for i=1, #ret do
+			ret[i] = constraints[ret[i]]
+		end
+		return ret
+	end
+	
+	local function GetSortedConstraints( ply, constraints )
+		if GetConVarNumber("advdupe2_sort_constraints") ~= 0 then
+			return GroupConstraintOrder( ply, constraints )
+		else
+			return CreationConstraintOrder( constraints )
+		end
 	end
 
 	local areacopy_classblacklist = {
@@ -241,6 +291,8 @@ if(SERVER)then
 					end
 				end
 				if next(Entities)==nil then
+					umsg.Start("AdvDupe2_RemoveGhosts", ply)
+					umsg.End()
 					return true
 				end
 				
@@ -259,7 +311,7 @@ if(SERVER)then
 		
 		ply.AdvDupe2.HeadEnt = HeadEnt
 		ply.AdvDupe2.Entities = Entities
-		ply.AdvDupe2.Constraints = GroupConstraintOrder(Constraints)
+		ply.AdvDupe2.Constraints = GetSortedConstraints(ply, Constraints)
 		
 		net.Start("AdvDupe2_SetDupeInfo")
 			net.WriteString("")
@@ -584,43 +636,6 @@ if(SERVER)then
 	end
 	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 	
-	
-	
-	--[[==============]]--
-	--[[FILE FUNCTIONS]]--
-	--[[==============]]--
-	
-	if(game.SinglePlayer())then
-		//Open file in SinglePlayer
-		local function OpenFile(ply, cmd, args)
-
-			if(ply.AdvDupe2.Pasting || ply.AdvDupe2.Downloading)then
-				AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
-				return false 
-			end
-			
-			local path, area = args[1], tonumber(args[2])
-			
-			if(area==0)then
-				data = ply:ReadAdvDupe2File(path)
-			elseif(area==1)then
-				data = AdvDupe2.ReadFile(nil, "-Public-/"..path)
-			else
-				data = AdvDupe2.ReadFile(ply, path, "adv_duplicator")
-			end
-			if(data==false or data==nil)then
-				AdvDupe2.Notify(ply, "File contains incorrect data!", NOTIFY_ERROR)
-				return
-			end
-			
-			local name = string.Explode("/", path)
-			ply.AdvDupe2.Name = name[#name]
-
-			AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
-		end
-		concommand.Add("AdvDupe2_OpenFile", OpenFile)
-	end
-	
 	//Save a file to the client
 	local function SaveFile(ply, cmd, args)
 		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or table.Count(ply.AdvDupe2.Entities)==0)then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
@@ -819,7 +834,7 @@ if(SERVER)then
 
 				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, ply.AdvDupe2.AutoSaveOutSide)
 			end
-			Tab.Constraints = GroupConstraintOrder(Tab.Constraints)
+			Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 			Tab.Description = ply.AdvDupe2.AutoSaveDesc
 
 			if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
@@ -880,7 +895,7 @@ if(SERVER)then
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
-		Tab.Constraints = GroupConstraintOrder(Tab.Constraints)
+		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 		
 		Tab.Map = true
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), 	function(data)
@@ -1099,6 +1114,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_offset_roll", 0, false, true)
 	CreateClientConVar("advdupe2_original_origin", 0, false, true)
 	CreateClientConVar("advdupe2_paste_constraints", 1, false, true)
+	CreateClientConVar("advdupe2_sort_constraints", 1, true, true)
 	CreateClientConVar("advdupe2_paste_parents", 1, false, true)
 	CreateClientConVar("advdupe2_paste_unfreeze", 0, false, true)
 	CreateClientConVar("advdupe2_preserve_freeze", 0, false, true)
@@ -1128,10 +1144,6 @@ if(CLIENT)then
 	local function BuildCPanel(CPanel)
 		CPanel:ClearControls()
 		
-		if(!file.Exists("advdupe2", "DATA"))then
-			file.CreateDir("advdupe2")
-		end
-		
 		local FileBrowser = vgui.Create("advdupe2_browser")
 		CPanel:AddItem(FileBrowser)
 		FileBrowser:SetSize(CPanel:GetWide(),405)
@@ -1140,7 +1152,7 @@ if(CLIENT)then
 		local Check = vgui.Create("DCheckBoxLabel")
 		
 		Check:SetText( "Paste at original position" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_original_origin" ) 
 		Check:SetValue( 0 )
 		Check:SetToolTip("Paste at the position originally copied")
@@ -1148,7 +1160,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Paste with constraints" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_constraints" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Paste with or without constraints")
@@ -1156,7 +1168,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Paste with parenting" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_parents" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Paste with or without parenting")
@@ -1166,7 +1178,7 @@ if(CLIENT)then
 		local Check_2 = vgui.Create("DCheckBoxLabel")
 		
 		Check_1:SetText( "Unfreeze all after paste" )
-		Check_1:SetTextColor(Color(0,0,0,255))
+		Check_1:SetDark(true)
 		Check_1:SetConVar( "advdupe2_paste_unfreeze" ) 
 		Check_1:SetValue( 0 )
 		Check_1.OnChange = 	function() 
@@ -1178,7 +1190,7 @@ if(CLIENT)then
 		CPanel:AddItem(Check_1)
 		
 		Check_2:SetText( "Preserve frozen state after paste" )
-		Check_2:SetTextColor(Color(0,0,0,255))
+		Check_2:SetDark(true)
 		Check_2:SetConVar( "advdupe2_preserve_freeze" ) 
 		Check_2:SetValue( 0 )
 		Check_2.OnChange = 	function() 
@@ -1191,7 +1203,7 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Area copy constrained props outside of box" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_outside" ) 
 		Check:SetValue( 0 )
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
@@ -1199,15 +1211,23 @@ if(CLIENT)then
 		
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "World/Area copy only your own props" )
-		Check:SetTextColor(Color(0,0,0,255))
+		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_only_mine" ) 
 		Check:SetValue( 1 )
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
 		CPanel:AddItem(Check)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Sort constraints by their connections" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_sort_constraints" ) 
+		Check:SetValue( GetConVarNumber("advdupe2_sort_constraints") )
+		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
+		CPanel:AddItem(Check)
 
 		local NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Ghost Percentage:" )
-		NumSlider.Label:SetTextColor(Color(0,0,0,255))
+		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
 		NumSlider:SetMax( 100 )
 		NumSlider:SetDecimals( 0 )
@@ -1224,7 +1244,7 @@ if(CLIENT)then
 		
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Area Copy Size:" )
-		NumSlider.Label:SetTextColor(Color(0,0,0,255))
+		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
 		local size = GetConVarNumber("AdvDupe2_MaxAreaCopySize") or 2500
 		if(size == 0)then size = 2500 end
@@ -1254,7 +1274,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Height Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( 0 )
 			NumSlider:SetMax( 2500 ) 
 			NumSlider:SetDecimals( 0 ) 
@@ -1264,7 +1284,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Use World Angles" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_offset_world" ) 
 			Check:SetValue( 0 )
 			Check:SetToolTip("Use world angles for the offset instead of the main entity")
@@ -1272,7 +1292,7 @@ if(CLIENT)then
 			
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Pitch Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( -180 ) 
 			NumSlider:SetMax( 180 ) 
 			NumSlider:SetDecimals( 0 ) 
@@ -1281,7 +1301,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Yaw Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( -180 )
 			NumSlider:SetMax( 180 )
 			NumSlider:SetDecimals( 0 )
@@ -1290,7 +1310,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Roll Offset" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( -180 )
 			NumSlider:SetMax( 180 )
 			NumSlider:SetDecimals( 0 )
@@ -1326,49 +1346,49 @@ if(CLIENT)then
 			
 			local lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.File or "File: ")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.File = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Creator or "Creator:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Creator = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Date or "Date:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Date = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Time or "Time:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Time = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Size or "Size:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Size = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Desc or "Desc:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Desc = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Entities or "Entities:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Entities = lbl
 			
 			lbl = vgui.Create( "DLabel" )
 			lbl:SetText(AdvDupe2.InfoText.Constraints or "Constraints:")
-			lbl:SetTextColor(Color(0,0,0,255))
+			lbl:SetDark(true)
 			CategoryContent2:AddItem(lbl)
 			AdvDupe2.Info.Constraints = lbl
 		
@@ -1395,7 +1415,7 @@ if(CLIENT)then
 				
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Spawn Delay" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			if(game.SinglePlayer())then
 				NumSlider:SetMin( 0 )
 			else
@@ -1412,7 +1432,7 @@ if(CLIENT)then
 					
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Undo Delay" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			if(game.SinglePlayer())then 
 				NumSlider:SetMin( 0 )
 				NumSlider:SetMax( 60 )
@@ -1433,28 +1453,28 @@ if(CLIENT)then
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable gravity for all spawned props" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_disgrav" ) 
 			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable drag for all spawned props" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_disdrag" ) 
 			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Add spawner's velocity to contraption" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_addvel" ) 
 			Check:SetValue( 1 )
 			CategoryContent3:AddItem(Check)
 					
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable drawing spawner props" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_contr_spawner_hideprops" ) 
 			Check:SetValue( 0 )
 			CategoryContent3:AddItem(Check)
@@ -1475,7 +1495,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Only copy contraption" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_auto_save_contraption" ) 
 			Check:SetValue( 0 )
 			Check:SetToolTip("Only copy a contraption instead of an area")
@@ -1483,7 +1503,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Overwrite File" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_auto_save_overwrite" )
 			Check:SetValue( 1 )
 			Check:SetToolTip("Overwrite the file instead of creating a new one everytime")
@@ -1491,7 +1511,7 @@ if(CLIENT)then
 			
 			NumSlider = vgui.Create( "DNumSlider" )
 			NumSlider:SetText( "Minutes to Save:" )
-			NumSlider.Label:SetTextColor(Color(0,0,0,255))
+			NumSlider.Label:SetDark(true)
 			NumSlider:SetMin( GetConVarNumber("AdvDupe2_AreaAutoSaveTime") )
 			NumSlider:SetMax( 30 )
 			NumSlider:SetDecimals( 0 )
@@ -1508,7 +1528,7 @@ if(CLIENT)then
 			local label = vgui.Create("DLabel", pnl)
 			label:SetText("Directory: ")
 			label:SizeToContents()
-			label:SetTextColor(Color(0,0,0,255))
+			label:SetDark(true)
 			label:SetPos(5,7)
 			
 			AdvDupe2.AutoSavePath = ""
@@ -1623,14 +1643,14 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable parented props physics interaction" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_paste_disparents" ) 
 			Check:SetValue( 0 )
 			CategoryContent5:AddItem(Check)
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Disable Dupe Spawn Protection" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_paste_protectoveride" ) 
 			Check:SetValue( 1 )
 			Check:SetToolTip("Check this if you things don't look right after pasting.")
@@ -1638,7 +1658,7 @@ if(CLIENT)then
 			
 			Check = vgui.Create("DCheckBoxLabel")
 			Check:SetText( "Open file after Saving" )
-			Check:SetTextColor(Color(0,0,0,255))
+			Check:SetDark(true)
 			Check:SetConVar( "advdupe2_debug_openfile" ) 
 			Check:SetValue( 1 )
 			Check:SetToolTip("Check this if you want your files to be opened after saving them.")
@@ -1668,7 +1688,7 @@ if(CLIENT)then
 				label = vgui.Create("DLabel", pnl)
 				label:SetText("File Name: ")
 				label:SizeToContents()
-				label:SetTextColor(Color(0,0,0,255))
+				label:SetDark(true)
 				label:SetPos(5,7)
 				
 				AdvDupe2.AutoSavePath = ""
@@ -1715,23 +1735,6 @@ if(CLIENT)then
 		
 		if(AdvDupe2.Ghosting)then
 			hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
-			if(AdvDupe2.Preview)then
-				if(AdvDupe2.PHeadEnt)then
-					AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
-					AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
-					AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
-					AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
-					AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
-					AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
-				end
-				AdvDupe2.PHeadEnt = nil
-				AdvDupe2.PHeadZPos = nil
-				AdvDupe2.PHeadPos = nil
-				AdvDupe2.PHeadOffset = nil
-				AdvDupe2.PHeadAngle = nil
-				AdvDupe2.GhostToPreview = nil
-				AdvDupe2.Preview=false
-			end
 			AdvDupe2.Ghosting = false 
 			if(not AdvDupe2.BusyBar)then
 				AdvDupe2.RemoveProgressBar()
@@ -1752,6 +1755,7 @@ if(CLIENT)then
 		AdvDupe2.HeadGhost = nil
 		AdvDupe2.CurrentGhost = 1
 		AdvDupe2.GhostEntities = nil
+		AdvDupe2.Preview = false
 	end
 	
 	//Creates a ghost from the given entity's table
@@ -1829,15 +1833,6 @@ if(CLIENT)then
 	
 	net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 											AdvDupe2.RemoveGhosts()
-											if(AdvDupe2.Preview)then
-												AdvDupe2.PHeadEnt = nil
-												AdvDupe2.PHeadZPos = nil
-												AdvDupe2.PHeadPos = nil
-												AdvDupe2.PHeadOffset = nil
-												AdvDupe2.PHeadAngle = nil
-												AdvDupe2.GhostToPreview = nil
-												AdvDupe2.Preview=false
-											end
 											AdvDupe2.Ghosting = true
 											AdvDupe2.GhostToSpawn = {}
 											AdvDupe2.HeadEnt = net.ReadInt(16)
@@ -1881,33 +1876,12 @@ if(CLIENT)then
 										end)
 										
 	net.Receive("AdvDupe2_AddGhost", 	function(len, ply, len2)
-											local preview = false
-											if(AdvDupe2.Preview)then
-												if(AdvDupe2.PHeadEnt)then
-													AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
-													AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
-													AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
-													AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
-													AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
-													AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
-												end
-												AdvDupe2.PHeadEnt = nil
-												AdvDupe2.PHeadZPos = nil
-												AdvDupe2.PHeadPos = nil
-												AdvDupe2.PHeadOffset = nil
-												AdvDupe2.PHeadAngle = nil
-												AdvDupe2.GhostToPreview = nil
-												AdvDupe2.Preview=false
-												preview = true
-											end
 											local gNew = table.insert(AdvDupe2.GhostToSpawn, {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}})
 											for k=0, net.ReadInt(8) do
 												AdvDupe2.GhostToSpawn[gNew].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 											end
 											
-											if(preview)then
-												AdvDupe2.StartGhosting()
-											elseif(AdvDupe2.CurrentGhost==gNew)then
+											if(AdvDupe2.CurrentGhost==gNew)then
 												AdvDupe2.GhostEntities[gNew] = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[gNew], true)
 												AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + math.floor(gPerc)
 												gTemp = gTemp + gPerc - math.floor(gPerc)
@@ -1947,23 +1921,6 @@ if(CLIENT)then
 		end
 	end
 	usermessage.Hook("AdvDupe2_StartGhosting", function()
-													if(AdvDupe2.Preview)then
-														if(AdvDupe2.PHeadEnt)then
-															AdvDupe2.HeadEnt = AdvDupe2.PHeadEnt
-															AdvDupe2.HeadZPos = AdvDupe2.PHeadZPos
-															AdvDupe2.HeadPos = AdvDupe2.PHeadPos*1
-															AdvDupe2.HeadOffset = AdvDupe2.PHeadOffset*1
-															AdvDupe2.HeadAngle = AdvDupe2.PHeadAngle*1
-															AdvDupe2.GhostToSpawn = table.Copy(AdvDupe2.GhostToPreview)
-														end
-														AdvDupe2.PHeadEnt = nil
-														AdvDupe2.PHeadZPos = nil
-														AdvDupe2.PHeadPos = nil
-														AdvDupe2.PHeadOffset = nil
-														AdvDupe2.PHeadAngle = nil
-														AdvDupe2.GhostToPreview = nil
-														AdvDupe2.Preview=false
-													end
 													AdvDupe2.StartGhosting()
 												end)
 												

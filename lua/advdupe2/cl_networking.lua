@@ -109,26 +109,6 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 	AdvDupe2.RemoveGhosts()
 	AdvDupe2.Ghosting = true
 	
-	if(preview)then
-		AdvDupe2.Preview = true
-		if(AdvDupe2.HeadEnt)then
-			AdvDupe2.PHeadEnt = AdvDupe2.HeadEnt
-			AdvDupe2.PHeadZPos = AdvDupe2.HeadZPos
-			AdvDupe2.PHeadPos = AdvDupe2.HeadPos*1
-			AdvDupe2.PHeadOffset = AdvDupe2.HeadOffset*1
-			AdvDupe2.PHeadAngle = AdvDupe2.HeadAngle*1
-			AdvDupe2.GhostToPreview = table.Copy(AdvDupe2.GhostToSpawn)
-		end
-	else
-		AdvDupe2.PHeadEnt = nil
-		AdvDupe2.PHeadZPos = nil
-		AdvDupe2.PHeadPos = nil
-		AdvDupe2.PHeadOffset = nil
-		AdvDupe2.PHeadAngle = nil
-		AdvDupe2.GhostToPreview = nil
-		AdvDupe2.Preview=false
-	end
-	
 	AdvDupe2.GhostToSpawn = {}
 	local count = 0
 	
@@ -215,6 +195,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 	end
 	
 	AdvDupe2.StartGhosting()
+	AdvDupe2.Preview = preview
 
 end
 
