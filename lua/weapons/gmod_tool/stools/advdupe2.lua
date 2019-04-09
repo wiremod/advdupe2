@@ -117,7 +117,7 @@ if(SERVER)then
 	end
 	
 	local function GetSortedConstraints( ply, constraints )
-		if GetConVarNumber("advdupe2_sort_constraints") ~= 0 then
+		if ply:GetInfo("advdupe2_sort_constraints") ~= 0 then
 			return GroupConstraintOrder( ply, constraints )
 		else
 			return CreationConstraintOrder( constraints )
