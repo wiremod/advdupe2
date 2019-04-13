@@ -197,7 +197,6 @@ if(SERVER)then
 	function TOOL:RightClick( trace )
 		local ply = self:GetOwner()
 		
-		if(not ply.AdvDupe2)then ply.AdvDupe2 = {} end
 		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.", NOTIFY_ERROR)
 			return false 
@@ -346,8 +345,6 @@ if(SERVER)then
 	//Checks table, re-draws loading bar, and recreates ghosts when tool is pulled out
 	function TOOL:Deploy()
 		local ply = self:GetOwner()
-		
-		if ( not ply.AdvDupe2 ) then ply.AdvDupe2={} end
 		
 		if(not ply.AdvDupe2.Entities)then return end
 		
@@ -668,31 +665,31 @@ if(SERVER)then
 		local Tab = {Entities = ply.AdvDupe2.Entities, Constraints = ply.AdvDupe2.Constraints, HeadEnt = ply.AdvDupe2.HeadEnt, Description=args[2]}
 		if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-																	if(game.SinglePlayer())then
-																		local path = args[1]
-																		if(args[3]~="" and args[3]~=nil)then path = args[3].."/"..path end
-																		local dir, name = ply:WriteAdvDupe2File(path, data)
-																		umsg.Start("AdvDupe2_AddFile", ply)
-																			umsg.Bool(false)
-																			umsg.String(name)
-																		umsg.End()
-																		if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
-																			if(not file.Exists(dir, "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
-																			
-																			local read = file.Read(dir)
-																			local success,dupe,info,moreinfo = AdvDupe2.Decode(read) 
-																			if(success)then
-																				AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 
-																			else
-																				AdvDupe2.Notify(ply, "DEBUG CHECK: ".. dupe, NOTIFY_ERROR)
-																			end
-																		end
-																	else
-																		if(not IsValid(ply))then return end
-																		ply:ConCommand("AdvDupe2_SaveType 0")
-																		timer.Simple(1, function() AdvDupe2.EstablishNetwork(ply, data) end)
-																	end
-																end)
+			if(game.SinglePlayer())then
+				local path = args[1]
+				if(args[3]~="" and args[3]~=nil)then path = args[3].."/"..path end
+				local dir, name = ply:WriteAdvDupe2File(path, data)
+				umsg.Start("AdvDupe2_AddFile", ply)
+					umsg.Bool(false)
+					umsg.String(name)
+				umsg.End()
+				if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
+					if(not file.Exists(dir, "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
+					
+					local read = file.Read(dir)
+					local success,dupe,info,moreinfo = AdvDupe2.Decode(read) 
+					if(success)then
+						AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 
+					else
+						AdvDupe2.Notify(ply, "DEBUG CHECK: ".. dupe, NOTIFY_ERROR)
+					end
+				end
+			else
+				if(not IsValid(ply))then return end
+				AdvDupe2.InitProgressBar(ply,"Saving:")
+				AdvDupe2.DownloadFile(ply, data, 0)
+			end
+		end)
 	end
 	concommand.Add("AdvDupe2_SaveFile", SaveFile)
 
@@ -747,8 +744,6 @@ if(SERVER)then
 	
 		local desc = net.ReadString()
 		local ent = net.ReadInt(16)
-
-		ply.AdvDupe2 = ply.AdvDupe2 or {}
 
 		if(ent~=0)then
 			ply.AdvDupe2.AutoSaveEnt = ent
@@ -839,27 +834,26 @@ if(SERVER)then
 
 			if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
 			AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-																		if(game.SinglePlayer())then
-																			
-																			local dir, name = ""
-																			if(ply:GetInfo("advdupe2_auto_save_overwrite")=="1")then
-																				file.Write("advdupe2/"..ply.AdvDupe2.AutoSavePath..".txt", data)
-																				name = string.Explode("/", ply.AdvDupe2.AutoSavePath)
-																				name = name[#name]
-																			else
-																				dir, name = ply:WriteAdvDupe2File(ply.AdvDupe2.AutoSavePath, data)
-																			end
-																			umsg.Start("AdvDupe2_AddFile", ply)
-																				umsg.Bool(true)
-																				umsg.String(name)
-																			umsg.End()
-																			AdvDupe2.Notify(ply, "Area auto saved.")
-																		else
-																			if(not IsValid(ply))then return end
-																			ply:ConCommand("AdvDupe2_SaveType 1")
-																			timer.Simple(1, function() AdvDupe2.EstablishNetwork(ply, data) end)
-																		end
-																	end)
+				if(game.SinglePlayer())then
+					
+					local dir, name = ""
+					if(ply:GetInfo("advdupe2_auto_save_overwrite")=="1")then
+						file.Write("advdupe2/"..ply.AdvDupe2.AutoSavePath..".txt", data)
+						name = string.Explode("/", ply.AdvDupe2.AutoSavePath)
+						name = name[#name]
+					else
+						dir, name = ply:WriteAdvDupe2File(ply.AdvDupe2.AutoSavePath, data)
+					end
+					umsg.Start("AdvDupe2_AddFile", ply)
+						umsg.Bool(true)
+						umsg.String(name)
+					umsg.End()
+					AdvDupe2.Notify(ply, "Area auto saved.")
+				else
+					if(not IsValid(ply))then return end
+					AdvDupe2.DownloadFile(ply, data, 1)
+				end
+			end)
 			ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
 		end)
 		timer.Start(name)
@@ -1832,68 +1826,67 @@ if(CLIENT)then
 	end
 	
 	net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
-											AdvDupe2.RemoveGhosts()
-											AdvDupe2.Ghosting = true
-											AdvDupe2.GhostToSpawn = {}
-											AdvDupe2.HeadEnt = net.ReadInt(16)
-											AdvDupe2.HeadZPos = net.ReadFloat()
-											AdvDupe2.HeadPos = net.ReadVector()
-											local cache = {}
-											for i=1, net.ReadInt(16) do
-												cache[i] = net.ReadString()
-											end
-											
-											for i=1, net.ReadInt(16) do
-												AdvDupe2.GhostToSpawn[i] = {R = net.ReadBit()==1, Model = cache[net.ReadInt(16)], PhysicsObjects = {}}
-												for k=0, net.ReadInt(8) do
-													AdvDupe2.GhostToSpawn[i].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
-												end
-											end
-											AdvDupe2.GhostEntities = {}
-											AdvDupe2.HeadGhost = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
-											AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
-											AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
-											AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost	
-											AdvDupe2.CurrentGhost = 0
-											AdvDupe2.TotalGhosts = table.Count(AdvDupe2.GhostToSpawn)
-											
-											if(AdvDupe2.TotalGhosts>1)then
-												gTemp = 0
-												gPerc = AdvDupe2.TotalGhosts*(GetConVarNumber("advdupe2_limit_ghost")*0.01)
-												if(gPerc>0)then
-													gPerc = AdvDupe2.TotalGhosts / gPerc
-													if(not AdvDupe2.BusyBar)then
-														AdvDupe2.InitProgressBar("Ghosting: ")
-														AdvDupe2.BusyBar = false
-													end
-													hook.Add("Tick", "AdvDupe2_SpawnGhosts", SpawnGhosts)
-												else
-													AdvDupe2.Ghosting = false
-												end
-											else
-												AdvDupe2.Ghosting = false
-											end
-										end)
+		AdvDupe2.RemoveGhosts()
+		AdvDupe2.Ghosting = true
+		AdvDupe2.GhostToSpawn = {}
+		AdvDupe2.HeadEnt = net.ReadInt(16)
+		AdvDupe2.HeadZPos = net.ReadFloat()
+		AdvDupe2.HeadPos = net.ReadVector()
+		local cache = {}
+		for i=1, net.ReadInt(16) do
+			cache[i] = net.ReadString()
+		end
+		
+		for i=1, net.ReadInt(16) do
+			AdvDupe2.GhostToSpawn[i] = {R = net.ReadBit()==1, Model = cache[net.ReadInt(16)], PhysicsObjects = {}}
+			for k=0, net.ReadInt(8) do
+				AdvDupe2.GhostToSpawn[i].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
+			end
+		end
+		AdvDupe2.GhostEntities = {}
+		AdvDupe2.HeadGhost = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
+		AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+		AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+		AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost	
+		AdvDupe2.CurrentGhost = 0
+		AdvDupe2.TotalGhosts = table.Count(AdvDupe2.GhostToSpawn)
+		
+		if(AdvDupe2.TotalGhosts>1)then
+			gTemp = 0
+			gPerc = AdvDupe2.TotalGhosts*(GetConVarNumber("advdupe2_limit_ghost")*0.01)
+			if(gPerc>0)then
+				gPerc = AdvDupe2.TotalGhosts / gPerc
+				if(not AdvDupe2.BusyBar)then
+					AdvDupe2.InitProgressBar("Ghosting: ")
+					AdvDupe2.BusyBar = false
+				end
+				hook.Add("Tick", "AdvDupe2_SpawnGhosts", SpawnGhosts)
+			else
+				AdvDupe2.Ghosting = false
+			end
+		else
+			AdvDupe2.Ghosting = false
+		end
+	end)
 										
 	net.Receive("AdvDupe2_AddGhost", 	function(len, ply, len2)
-											local gNew = table.insert(AdvDupe2.GhostToSpawn, {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}})
-											for k=0, net.ReadInt(8) do
-												AdvDupe2.GhostToSpawn[gNew].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
-											end
-											
-											if(AdvDupe2.CurrentGhost==gNew)then
-												AdvDupe2.GhostEntities[gNew] = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[gNew], true)
-												AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + math.floor(gPerc)
-												gTemp = gTemp + gPerc - math.floor(gPerc)
-												if(gTemp>1)then
-													AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
-													gTemp = gTemp - math.floor(gTemp)
-												end
-											end
-										end)
-	
+		local gNew = table.insert(AdvDupe2.GhostToSpawn, {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}})
+		for k=0, net.ReadInt(8) do
+			AdvDupe2.GhostToSpawn[gNew].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
+		end
+		
+		if(AdvDupe2.CurrentGhost==gNew)then
+			AdvDupe2.GhostEntities[gNew] = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[gNew], true)
+			AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + math.floor(gPerc)
+			gTemp = gTemp + gPerc - math.floor(gPerc)
+			if(gTemp>1)then
+				AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
+				gTemp = gTemp - math.floor(gTemp)
+			end
+		end
+	end)
+
 	function AdvDupe2.StartGhosting()
-	
 		AdvDupe2.RemoveGhosts()
 		if(not AdvDupe2.GhostToSpawn)then return end
 		AdvDupe2.Ghosting = true
@@ -1921,11 +1914,10 @@ if(CLIENT)then
 		end
 	end
 	usermessage.Hook("AdvDupe2_StartGhosting", function()
-													AdvDupe2.StartGhosting()
-												end)
+		AdvDupe2.StartGhosting()
+	end)
 												
 	usermessage.Hook("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
-												
 	
 
 	local state = 0
@@ -1934,7 +1926,6 @@ if(CLIENT)then
 	local rate
 	surface.CreateFont ("AD2Font", {font="Arial", size=40, weight=1000}) ---Remember to use gm_clearfonts
 	surface.CreateFont ("AD2TitleFont", {font="Arial", size=24, weight=1000})
-	//local spacing = {"   ","     ","       ","         ","           ","             "}
 	function TOOL:DrawToolScreen()
 		if(not AdvDupe2)then return true end
 		
@@ -1942,7 +1933,7 @@ if(CLIENT)then
 		if(AdvDupe2.Preview)then
 			text = "Preview"
 		end
-		state=0
+		local state=0
 		if(AdvDupe2.ProgressBar.Text)then
 			state=1
 			text = AdvDupe2.ProgressBar.Text
@@ -1974,10 +1965,6 @@ if(CLIENT)then
 				draw.RoundedBox( 6, 32, 178, 192, 28, Color( 255, 255, 255, 150 ) )
 				draw.RoundedBox( 6, 36, 182, 188*(AdvDupe2.ProgressBar.Percent/100), 24, Color( 0, 255, 0, 255 ) )
 			elseif(LocalPlayer():KeyDown(IN_USE))then
-				//draw.SimpleText("Height:   Pitch:   Roll:", "AD2TitleFont", 128, 206, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_BOTTOM)
-				//local str_space1 = spacing[7-string.len(height)] or ""
-				//local str_space2 = spacing[7-string.len(pitch)] or ""
-				//draw.SimpleText(height..str_space1..pitch..str_space2..LocalPlayer():GetInfo("advdupe2_offset_roll"), "AD2TitleFont", 25, 226, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 				draw.SimpleText("Height: "..LocalPlayer():GetInfo("advdupe2_offset_z"), "AD2TitleFont", 25, 160, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 				draw.SimpleText("Pitch: "..LocalPlayer():GetInfo("advdupe2_offset_pitch"), "AD2TitleFont", 25, 190, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 				draw.SimpleText("Yaw: "..LocalPlayer():GetInfo("advdupe2_offset_yaw"), "AD2TitleFont", 25, 220, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)

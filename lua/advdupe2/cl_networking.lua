@@ -1,19 +1,3 @@
---[[
-	Title: Adv. Dupe 2 Networking (Clientside)
-	
-	Desc: Handles file transfers and all that jazz.
-	
-	Author: TB
-	
-	Version: 1.0
-]]
-
-AdvDupe2.NetFile = ""
-local AutoSave = false
-local uploading = false
-local uploading_timeout = 0
-local uploading_timeout_time = 10
-
 local function CheckFileNameCl(path)
 	if file.Exists(path..".txt", "DATA") then
 		for i = 1, AdvDupe2.FileRenameTryLimit do
@@ -31,14 +15,16 @@ end
 	Params: 
 	Returns:
 ]]
-local function AdvDupe2_ReceiveFile(len, ply, len2)
-	local status = net.ReadInt(8)
-	
-	if(status==1)then AdvDupe2.NetFile = "" end
-	local datalen = net.ReadUInt(32)
-	AdvDupe2.NetFile=AdvDupe2.NetFile..net.ReadData(datalen)
+local function AdvDupe2_ReceiveFile(len, ply)
+	local Autosave = net.ReadInt(8) == 1
 
-	if(status==2)then
+	AdvDupe2.Stream = net.ReadStream(nil, function(data)
+		AdvDupe2.Stream = nil
+		AdvDupe2.RemoveProgressBar()
+		if(!data)then
+			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+			return
+		end
 		local path = ""
 		if(AutoSave)then
 			if(LocalPlayer():GetInfo("advdupe2_auto_save_overwrite")~="1")then
@@ -50,11 +36,10 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 
 		local dupefile = file.Open(path..".txt", "wb", "DATA")
 		if(!dupefile)then
-			AdvDupe2.NetFile = ""
 			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
 			return
 		end
-		dupefile:Write(AdvDupe2.NetFile)
+		dupefile:Write(data)
 		dupefile:Close()
 		
 		local errored = false
@@ -94,13 +79,10 @@ local function AdvDupe2_ReceiveFile(len, ply, len2)
 			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(filename)
 			AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
 		end
-		AdvDupe2.NetFile = ""
 		if(!errored)then
 			AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
 		end
-		return
-	end
-
+	end)
 end
 net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
 
@@ -199,15 +181,10 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 
 end
 
---[[
-	Name: InitializeUpload
-	Desc: When the client clicks upload, prepares to send data to the server
-	Params: File Data, Path to save
-	Returns:
-]]			
-function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
-	if(uploading and CurTime()<uploading_timeout)then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
-	uploading_timeout = CurTime()+uploading_timeout_time
+
+local uploading = nil
+function AdvDupe2.UploadFile(ReadPath, ReadArea)
+	if uploading then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
 	if(ReadArea==0)then
 		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
 	elseif(ReadArea==1)then
@@ -224,72 +201,17 @@ function AdvDupe2.InitializeUpload(ReadPath, ReadArea)
 	name = name[#name]
 	name = string.sub(name, 1, #name-4)
 	
-	uploading = true
-	
 	local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
 	if(success)then
-		AdvDupe2.PendingDupe = { read, dupe, info, moreinfo, name }
-		RunConsoleCommand("AdvDupe2_InitReceiveFile", name)
+		net.Start("AdvDupe2_ReceiveFile")
+		net.WriteString(name)
+		uploading = net.WriteStream(read, function()
+			uploading = nil
+			AdvDupe2.File = nil
+			AdvDupe2.RemoveProgressBar()
+		end)
+		net.SendToServer()
 	else
-		uploading = false
 		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)
 	end
 end
-
---[[
-	Name: SendFileToServer
-	Desc: Send chunks of the file data to the server
-	Params: end of file
-	Returns:
-]]
-local function SendFileToServer(eof)
-	uploading_timeout = CurTime()+uploading_timeout_time
-
-	if(AdvDupe2.LastPos+eof>AdvDupe2.Length)then
-		eof = AdvDupe2.Length
-	end
-
-	local data = string.sub(AdvDupe2.File, AdvDupe2.LastPos, AdvDupe2.LastPos+eof)
-
-	AdvDupe2.LastPos = AdvDupe2.LastPos+eof+1
-	AdvDupe2.ProgressBar.Percent = math.min(math.floor((AdvDupe2.LastPos/AdvDupe2.Length)*100),100)
-
-	net.Start("AdvDupe2_ReceiveFile")
-		net.WriteInt(AdvDupe2.LastPos>=AdvDupe2.Length and 1 or 0, 8)
-		net.WriteUInt(#data, 32)
-		net.WriteData(data, #data)
-	net.SendToServer()
-	
-end
-
-usermessage.Hook("AdvDupe2_ReceiveNextStep",function(um)
-	if AdvDupe2.PendingDupe then
-		local read,dupe,info,moreinfo,name = unpack( AdvDupe2.PendingDupe )
-		
-		AdvDupe2.PendingDupe = nil
-		AdvDupe2.LoadGhosts(dupe, info, moreinfo, name )
-		AdvDupe2.File = read
-		AdvDupe2.LastPos = 0
-		AdvDupe2.Length = string.len(AdvDupe2.File)
-		AdvDupe2.InitProgressBar("Opening:")
-	end
-	
-	if uploading then
-		SendFileToServer(um:ReadShort())
-	end
-end)
-
-usermessage.Hook("AdvDupe2_UploadRejected",function(um)
-	if uploading then
-		uploading = false
-		AdvDupe2.PendingDupe = nil
-		AdvDupe2.File = nil
-		AdvDupe2.LastPos = nil
-		AdvDupe2.Length = nil
-	end
-	if(um:ReadBool())then AdvDupe2.RemoveProgressBar() end
-end)
-
-concommand.Add("AdvDupe2_SaveType", function(ply, cmd, args)
-	AutoSave = args[1]=="1"
-end)

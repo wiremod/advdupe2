@@ -168,7 +168,7 @@ function BROWSER:DoNodeLeftClick(node)
 				node:SetExpanded()												//It's a folder, expand/collapse it
 			end
 		else
-			AdvDupe2.InitializeUpload(GetNodePath(node))
+			AdvDupe2.UploadFile(GetNodePath(node))
 		end
 	else
 		self:SetSelected(node)													//A node was clicked, select it
@@ -384,7 +384,7 @@ function BROWSER:DoNodeRightClick(node)
 	if(node.Derma.ClassName=="advdupe2_browser_file")then
 		if(node.Control.Search)then
 			Menu:AddOption("Open", 	function()
-										AdvDupe2.InitializeUpload(GetNodePath(node.Ref))
+										AdvDupe2.UploadFile(GetNodePath(node.Ref))
 									end)
 			Menu:AddOption("Preview", 	function() 
 											local ReadPath, ReadArea = GetNodePath(node.Ref)
@@ -406,7 +406,7 @@ function BROWSER:DoNodeRightClick(node)
 										end)
 		else
 			Menu:AddOption("Open", 	function()
-										AdvDupe2.InitializeUpload(GetNodePath(node))
+										AdvDupe2.UploadFile(GetNodePath(node))
 									end)
 			Menu:AddOption("Preview", 	function() 
 											local ReadPath, ReadArea = GetNodePath(node)

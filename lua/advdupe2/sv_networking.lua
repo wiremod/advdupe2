@@ -1,20 +1,3 @@
---[[
-	Title: Adv. Dupe 2 Networking (Serverside)
-	
-	Desc: Handles file transfers and all that jazz.
-	
-	Author: TB
-	
-	Version: 1.0
-]]
-
-AdvDupe2.Network = {}
-
-AdvDupe2.Network.Networks = {}
-AdvDupe2.Network.ClientNetworks = {}
-AdvDupe2.Network.SvStaggerSendRate = 0
-AdvDupe2.Network.ClStaggerSendRate = 0
-AdvDupe2.Network.Timeout = 10
 
 local function CheckFileNameSv(path)
 	if file.Exists(path..".txt", "DATA") then
@@ -43,81 +26,16 @@ end
 //=========	   Server To Client	    =========
 //===========================================
 
---[[
-	Name: EstablishNetwork
-	Desc: Add user to the queue and set up to begin data sending
-	Params: Player, File data
-	Returns:
-]]
-function AdvDupe2.EstablishNetwork(ply, file)
+function AdvDupe2.DownloadFile(ply, data, autosave)
 	if(not IsValid(ply))then return end
-	local id = ply:UniqueID()
 	ply.AdvDupe2.Downloading = true
-	AdvDupe2.Network.Networks[id] = {Player = ply, File=file, Length = #file, LastPos=1}
-	
-	local Cur_Time = CurTime()
-	local time = AdvDupe2.Network.SvStaggerSendRate - Cur_Time
-
-	if(time > 0)then
-		AdvDupe2.Network.SvStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ServerSendRate")) + time
-		timer.Simple(time, function() AdvDupe2_SendFile(id) end)
-	else
-		AdvDupe2.Network.SvStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ServerSendRate"))
-		AdvDupe2_SendFile(id)
-	end
-	
-end
-
---[[
-	Name: AdvDupe2_SendFile
-	Desc: Client has responded and is ready for the next chunk of data
-	Params: Network table, Network ID
-	Returns:
-]]
-function AdvDupe2_SendFile(ID)
-	local Net = AdvDupe2.Network.Networks[ID]
-	
-	if(not IsValid(Net.Player))then
-		AdvDupe2.Network.Networks[ID] = nil
-		return
-	end
-	
-	local status = 0
-	local data = ""
-
-	if(Net.LastPos==1)then status = 1 AdvDupe2.InitProgressBar(Net.Player,"Saving:") end
-	data = string.sub(Net.File, Net.LastPos, Net.LastPos+tonumber(GetConVarString("AdvDupe2_MaxDownloadBytes2")))
-
-	Net.LastPos=Net.LastPos+tonumber(GetConVarString("AdvDupe2_MaxDownloadBytes2"))+1
-
-	if(Net.LastPos>=Net.Length)then status = 2 end
 
 	net.Start("AdvDupe2_ReceiveFile")
-		net.WriteInt(status, 8)
-		net.WriteUInt(#data, 32)
-		net.WriteData(data, #data)
+		net.WriteInt(autosave, 8)
+		net.WriteStream(data, function()
+			ply.AdvDupe2.Downloading = false
+		end)
 	net.Send(Net.Player)
-	
-	AdvDupe2.UpdateProgressBar(Net.Player, math.floor((Net.LastPos/Net.Length)*100))
-	
-	if(Net.LastPos>=Net.Length)then
-		Net.Player.AdvDupe2.Downloading = false
-		AdvDupe2.RemoveProgressBar(Net.Player)
-		AdvDupe2.Network.Networks[ID] = nil
-		return 
-	end
-	
-	local Cur_Time = CurTime()
-	local time = AdvDupe2.Network.SvStaggerSendRate - Cur_Time
-	
-	timer.Simple(time, function() AdvDupe2_SendFile(ID) end)
-	
-	if(time > 0)then
-		AdvDupe2.Network.SvStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ServerSendRate")) + time
-	else
-		AdvDupe2.Network.SvStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ServerSendRate"))
-	end
-	
 end
 
 
@@ -187,129 +105,40 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 	AdvDupe2.ResetOffsets(ply, true)
 end
 
-function AdvDupe2.ReceiveNextStep(id)
-	if(not IsValid(AdvDupe2.Network.ClientNetworks[id].Player))then AdvDupe2.Network.ClientNetworks[id] = nil return end
-	umsg.Start("AdvDupe2_ReceiveNextStep", AdvDupe2.Network.ClientNetworks[id].Player)
-		umsg.Short(tonumber(GetConVarString("AdvDupe2_MaxUploadBytes2")))
-	umsg.End()
-end
-
---[[
-	Name: AdvDupe2_InitReceiveFile
-	Desc: Start the file recieving process and send the servers settings to the client
-	Params: concommand
-	Returns:
-]]
-local function AdvDupe2_InitReceiveFile( ply, cmd, args )
-	if(not IsValid(ply))then return end
-	if(not ply.AdvDupe2)then ply.AdvDupe2={} end
-	
-	local id = ply:UniqueID()
-	if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading or AdvDupe2.Network.ClientNetworks[id])then
-		if AdvDupe2.Network.ClientNetworks[id] and AdvDupe2.Network.ClientNetworks[id].Timeout < CurTime() then
-			AdvDupe2.Network.ClientNetworks[id]=nil
-			ply.AdvDupe2.Downloading = false
-			ply.AdvDupe2.Uploading = false
-		else
-			umsg.Start("AdvDupe2_UploadRejected", ply)
-				umsg.Bool(false)
-			umsg.End()
-			AdvDupe2.Notify(ply, "Duplicator is Busy!",NOTIFY_ERROR,5)
-			return
-		end
-	end
-	
-	ply.AdvDupe2.Downloading = true
-	ply.AdvDupe2.Uploading = true
-	--Sanitize the input name
-	if args[1] then
-		local _1, _2, _3 = string.find(args[1], "([%w_]+)")
-		if _3 then
-			ply.AdvDupe2.Name = string.sub(_3, 1, 32)
-		else
-			ply.AdvDupe2.Name = "Advanced Duplication"
-		end
-	else
-		ply.AdvDupe2.Name = "Advanced Duplication"
-	end
-	
-	AdvDupe2.Network.ClientNetworks[id] = {Player = ply, Data = "", Size = 0, Timeout = CurTime() + AdvDupe2.Network.Timeout}
-	
-	local Cur_Time = CurTime()
-	local time = AdvDupe2.Network.ClStaggerSendRate - Cur_Time
-	if(time > 0)then
-		AdvDupe2.Network.ClStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ClientSendRate")) + time
-		AdvDupe2.Network.ClientNetworks[id].NextSend = time + Cur_Time
-		timer.Simple(time, function() AdvDupe2.ReceiveNextStep(id) end)
-	else
-		AdvDupe2.Network.ClStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ClientSendRate"))
-		AdvDupe2.Network.ClientNetworks[id].NextSend = Cur_Time
-		AdvDupe2.ReceiveNextStep(id)
-	end
-
-end
-concommand.Add("AdvDupe2_InitReceiveFile", AdvDupe2_InitReceiveFile)
-
-
-local function AdvDupe2_SetNextResponse(id)
-
-	local Cur_Time = CurTime()
-	local time = AdvDupe2.Network.ClStaggerSendRate - Cur_Time
-	if(time > 0)then
-		AdvDupe2.Network.ClStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ClientSendRate")) + time
-		AdvDupe2.Network.ClientNetworks[id].NextSend = time + Cur_Time
-		timer.Simple(time, function() AdvDupe2.ReceiveNextStep(id) end)
-	else
-		AdvDupe2.Network.ClStaggerSendRate = Cur_Time + tonumber(GetConVarString("AdvDupe2_ClientSendRate"))
-		AdvDupe2.Network.ClientNetworks[id].NextSend = Cur_Time
-		AdvDupe2.ReceiveNextStep(id)
-	end
-
-end
-
 --[[
 	Name: AdvDupe2_ReceiveFile
 	Desc: Receive file data from the client to save on the server
 	Params: concommand
 	Returns:
 ]]
-local function AdvDupe2_ReceiveFile(len, ply, len2)
+local function AdvDupe2_ReceiveFile(len, ply)
 	if(not IsValid(ply))then return end
-
-	local id = ply:UniqueID()
-	if(not AdvDupe2.Network.ClientNetworks[id])then return end
-	local Net = AdvDupe2.Network.ClientNetworks[id]
-	Net.Timeout = CurTime() + AdvDupe2.Network.Timeout
 	
-	//Someone tried to mess with upload commands
-	if(Net.NextSend - CurTime()>0)then
-		AdvDupe2.Network.ClientNetworks[id]=nil
-		ply.AdvDupe2.Downloading = false
-		ply.AdvDupe2.Uploading = false
-		
+	if ply.AdvDupe2.Uploading then
 		umsg.Start("AdvDupe2_UploadRejected", ply)
 			umsg.Bool(false)
 		umsg.End()
-		AdvDupe2.Notify(ply,"Upload Rejected!",NOTIFY_GENERIC,5)
+		AdvDupe2.Notify(ply, "Duplicator is Busy!",NOTIFY_ERROR,5)
 		return
 	end
+	
+	ply.AdvDupe2.Uploading = true
+	
+	local name = net.ReadString()
+	local _1, _2, _3 = string.find(name, "([%w_]+)")
+	if _3 then
+		ply.AdvDupe2.Name = string.sub(_3, 1, 32)
+	else
+		ply.AdvDupe2.Name = "Advanced Duplication"
+	end
 
-	local status = net.ReadInt(8)
-	local datalen = net.ReadUInt(32)
-	Net.Data = Net.Data..net.ReadData(datalen)
-
-	if(status==1)then
-		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(Net.Data))
-		AdvDupe2.Network.ClientNetworks[id]=nil
-		ply.AdvDupe2.Downloading = false
+	net.ReadStream(ply, function(data)
+		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
 		ply.AdvDupe2.Uploading = false
 					
 		umsg.Start("AdvDupe2_UploadRejected", ply)
 			umsg.Bool(true)
 		umsg.End()
-		return
-	end
-	
-	AdvDupe2_SetNextResponse(id)
+	end)
 end
 net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
