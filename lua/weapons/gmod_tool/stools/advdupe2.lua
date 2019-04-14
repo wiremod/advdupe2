@@ -31,7 +31,7 @@ if(SERVER)then
 		WireMotor = true,
 		WireHydraulic = true
 	}
-	//Orders constraints so that the dupe uses as little constraint systems as possible
+	--Orders constraints so that the dupe uses as little constraint systems as possible
 	local function GroupConstraintOrder( ply, constraints )
 		--First seperate the nocollides, sorted, and unsorted constraints
 		local nocollide, sorted, unsorted = {}, {}, {}
@@ -139,10 +139,10 @@ if(SERVER)then
 		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
 	end
 	
-	//Find all the entities in a box, given the adjacent corners and the player
+	--Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
 		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
-		local Entities = ents.GetAll() //Don't use FindInBox. It has a 512 entity limit.
+		local Entities = ents.GetAll() --Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
 		local pos, ent
 		for i=1, #Entities do
@@ -202,7 +202,7 @@ if(SERVER)then
 			return false 
 		end
 
-		//Set Area Copy on or off
+		--Set Area Copy on or off
 		if( ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK) )then
 			if(self:GetStage()==0)then
 				AdvDupe2.DrawSelectBox(ply)
@@ -219,7 +219,7 @@ if(SERVER)then
 		
 		local Entities, Constraints, AddOne
 		local HeadEnt = {}
-		//If area copy is on
+		--If area copy is on
 		if(self:GetStage()==1)then
 			local area_size = tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50
 			if( not game.SinglePlayer() and area_size > tonumber(GetConVarString("AdvDupe2_MaxAreaCopySize")))then
@@ -245,13 +245,13 @@ if(SERVER)then
 
 			self:SetStage(0)
 			AdvDupe2.RemoveSelectBox(ply)
-		elseif trace.HitNonWorld then	//Area Copy is off
+		elseif trace.HitNonWorld then	--Area Copy is off
 			-- Filter duplicator blocked entities out.
 			if not duplicator.IsAllowed( trace.Entity:GetClass() ) then
 				return false
 			end
 
-			//If Alt is being held, add a prop to the dupe
+			--If Alt is being held, add a prop to the dupe
 			if(ply:KeyDown(IN_WALK) and ply.AdvDupe2.Entities~=nil and next(ply.AdvDupe2.Entities)~=nil)then
 				Entities = ply.AdvDupe2.Entities
 				Constraints = ply.AdvDupe2.Constraints
@@ -259,7 +259,7 @@ if(SERVER)then
 				
 				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, HeadEnt.Pos)
 				
-				//Only add the one ghost
+				--Only add the one ghost
 				AddOne = Entities[trace.Entity:EntIndex()]
 			else
 				Entities = {}
@@ -269,9 +269,9 @@ if(SERVER)then
 				
 				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, trace.HitPos )
 			end
-		else //Non valid entity or clicked the world
+		else --Non valid entity or clicked the world
 			if ply.AdvDupe2.Entities then
-				//clear the dupe
+				--clear the dupe
 				umsg.Start("AdvDupe2_RemoveGhosts", ply)
 				umsg.End()
 				ply.AdvDupe2.Entities = nil
@@ -281,7 +281,7 @@ if(SERVER)then
 				AdvDupe2.ResetOffsets(ply)
 				return true
 			else
-				//select all owned props
+				--select all owned props
 				Entities = {}
 				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 				for _, ent in pairs(ents.GetAll()) do
@@ -342,7 +342,7 @@ if(SERVER)then
 		return true
 	end
 	
-	//Checks table, re-draws loading bar, and recreates ghosts when tool is pulled out
+	--Checks table, re-draws loading bar, and recreates ghosts when tool is pulled out
 	function TOOL:Deploy()
 		local ply = self:GetOwner()
 		
@@ -371,7 +371,7 @@ if(SERVER)then
 
 	end
 
-	//Removes progress bar
+	--Removes progress bar
 	function TOOL:Holster()
 		AdvDupe2.RemoveProgressBar(self:GetOwner())
 	end
@@ -409,7 +409,7 @@ if(SERVER)then
 			return true
 		end
 		
-		//If a contraption spawner was clicked then update it with the current settings
+		--If a contraption spawner was clicked then update it with the current settings
 		if(trace.Entity:GetClass()=="gmod_contr_spawner")then
 			local delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_delay"))
 			local undo_delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay"))
@@ -447,7 +447,7 @@ if(SERVER)then
 			return true
 		end
 
-		//Create a contraption spawner
+		--Create a contraption spawner
 		if ply.AdvDupe2 and ply.AdvDupe2.Entities then
 			local headent = ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index]
 			local Pos, Ang
@@ -484,7 +484,7 @@ if(SERVER)then
 		end
 	end	
 
-	//Called to clean up the tool when pasting is finished or undo during pasting
+	--Called to clean up the tool when pasting is finished or undo during pasting
 	function AdvDupe2.FinishPasting(Player, Paste)
 		Player.AdvDupe2.Pasting=false
 		AdvDupe2.RemoveProgressBar(Player)
@@ -548,7 +548,7 @@ if(SERVER)then
 		
 	end
 
-	//function for creating a contraption spawner
+	--function for creating a contraption spawner
 	function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, ConstraintTable, delay, undo_delay, model, key, undo_key, disgrav, disdrag, addvel, hideprops)
 
 		if not ply:CheckLimit("gmod_contr_spawners") then return nil end
@@ -610,7 +610,7 @@ if(SERVER)then
 			end
 		end
 			
-		// Set options
+		-- Set options
 		spawner:SetPlayer(ply)
 		spawner:GetTable():SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel, hideprops)
 
@@ -633,7 +633,7 @@ if(SERVER)then
 	end
 	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 	
-	//Save a file to the client
+	--Save a file to the client
 	local function SaveFile(ply, cmd, args)
 		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or table.Count(ply.AdvDupe2.Entities)==0)then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
 		if(not game.SinglePlayer() and CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
@@ -663,68 +663,149 @@ if(SERVER)then
 		net.Send(ply)
 		
 		local Tab = {Entities = ply.AdvDupe2.Entities, Constraints = ply.AdvDupe2.Constraints, HeadEnt = ply.AdvDupe2.HeadEnt, Description=args[2]}
-		if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
+
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-			if(game.SinglePlayer())then
-				local path = args[1]
-				if(args[3]~="" and args[3]~=nil)then path = args[3].."/"..path end
-				local dir, name = ply:WriteAdvDupe2File(path, data)
-				umsg.Start("AdvDupe2_AddFile", ply)
-					umsg.Bool(false)
-					umsg.String(name)
-				umsg.End()
-				if(ply:GetInfo("advdupe2_debug_openfile")=="1")then
-					if(not file.Exists(dir, "DATA"))then AdvDupe2.Notify(ply, "File does not exist", NOTIFY_ERROR) return end
-					
-					local read = file.Read(dir)
-					local success,dupe,info,moreinfo = AdvDupe2.Decode(read) 
-					if(success)then
-						AdvDupe2.Notify(ply, "DEBUG CHECK: File successfully opens. No EOF errors.") 
-					else
-						AdvDupe2.Notify(ply, "DEBUG CHECK: ".. dupe, NOTIFY_ERROR)
-					end
-				end
-			else
-				if(not IsValid(ply))then return end
-				AdvDupe2.InitProgressBar(ply,"Saving:")
-				AdvDupe2.DownloadFile(ply, data, 0)
-			end
+			AdvDupe2.SendToClient(ply, data, 0)
 		end)
 	end
 	concommand.Add("AdvDupe2_SaveFile", SaveFile)
 
+	function AdvDupe2.SendToClient(ply, data, autosave)
+		if(not IsValid(ply))then return end
+		ply.AdvDupe2.Downloading = true
+		AdvDupe2.InitProgressBar(ply,"Saving:")
+
+		net.Start("AdvDupe2_ReceiveFile")
+		net.WriteUInt(autosave, 8)
+		net.WriteStream(data, function()
+			ply.AdvDupe2.Downloading = false
+		end)
+		net.Send(ply)
+	end
+
+	function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
+		if(not IsValid(ply))then return end
+				
+		if not success then 
+			AdvDupe2.Notify(ply,"Could not open "..dupe,NOTIFY_ERROR)
+			return
+		end
+				
+		if(not game.SinglePlayer())then
+			if(tonumber(GetConVarString("AdvDupe2_MaxConstraints"))~=0 and #dupe["Constraints"]>tonumber(GetConVarString("AdvDupe2_MaxConstraints")))then
+				AdvDupe2.Notify(ply,"Amount of constraints is greater than "..GetConVarString("AdvDupe2_MaxConstraints"),NOTIFY_ERROR)
+				return false
+			end
+		end
+
+		ply.AdvDupe2.Entities = {}
+		ply.AdvDupe2.Constraints = {}
+		ply.AdvDupe2.HeadEnt={}
+
+		if(info.ad1)then
+
+			ply.AdvDupe2.HeadEnt.Index = tonumber(moreinfo.Head)
+			local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
+			ply.AdvDupe2.HeadEnt.Pos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+			local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+			ply.AdvDupe2.HeadEnt.Z = z
+			ply.AdvDupe2.HeadEnt.Pos.Z = ply.AdvDupe2.HeadEnt.Pos.Z + z
+			local Pos
+			local Ang
+			for k,v in pairs(dupe["Entities"])do
+				Pos = nil
+				Ang = nil
+				if(v.SavedParentIdx)then 
+					if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
+					v.BuildDupeInfo.DupeParentID = v.SavedParentIdx
+					Pos = v.LocalPos*1
+					Ang = v.LocalAngle*1
+				end
+				for i,p in pairs(v.PhysicsObjects)do
+					p.Pos = Pos or (p.LocalPos*1)
+					p.Pos.Z = p.Pos.Z - z
+					p.Angle = Ang or (p.LocalAngle*1)
+					p.LocalPos = nil
+					p.LocalAngle = nil
+					p.Frozen = not p.Frozen -- adv dupe 2 does this wrong way 
+				end
+				v.LocalPos = nil
+				v.LocalAngle = nil
+			end
+
+			ply.AdvDupe2.Entities = dupe["Entities"]
+			ply.AdvDupe2.Constraints = dupe["Constraints"]
+			
+		else	
+			ply.AdvDupe2.Entities = dupe["Entities"]
+			ply.AdvDupe2.Constraints = dupe["Constraints"]
+			ply.AdvDupe2.HeadEnt = dupe["HeadEnt"]
+		end
+		if(game.SinglePlayer())then AdvDupe2.SendGhosts(ply) end
+		AdvDupe2.ResetOffsets(ply, true)
+	end
+
+	local function AdvDupe2_ReceiveFile(len, ply)
+		if(not IsValid(ply))then return end
 		
-	--[[=====================]]--
-	--[[END OF FILE FUNCTIONS]]--
-	--[[=====================]]--
+		if ply.AdvDupe2.Uploading then
+			umsg.Start("AdvDupe2_UploadRejected", ply)
+				umsg.Bool(false)
+			umsg.End()
+			AdvDupe2.Notify(ply, "Duplicator is Busy!",NOTIFY_ERROR,5)
+			return
+		end
+		
+		ply.AdvDupe2.Uploading = true
+		AdvDupe2.InitProgressBar(ply, "Opening: ")
+		
+		local name = net.ReadString()
+		local _1, _2, _3 = string.find(name, "([%w_]+)")
+		if _3 then
+			ply.AdvDupe2.Name = string.sub(_3, 1, 32)
+		else
+			ply.AdvDupe2.Name = "Advanced Duplication"
+		end
+
+		net.ReadStream(ply, function(data)
+			AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
+			ply.AdvDupe2.Uploading = false
+						
+			umsg.Start("AdvDupe2_UploadRejected", ply)
+				umsg.Bool(true)
+			umsg.End()
+		end)
+	end
+	net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
 	
-	
-	
-	
-	--[[=====================]]--
-	--[[	USERMESSAGES	 ]]--
-	--[[=====================]]--
-	
-	//Start the progress bar
 	function AdvDupe2.InitProgressBar(ply,label)
 		umsg.Start("AdvDupe2_InitProgressBar",ply)
 			umsg.String(label)
 		umsg.End()
 	end
-	
-	//Start drawing the area copy box
+
 	function AdvDupe2.DrawSelectBox(ply)
 		umsg.Start("AdvDupe2_DrawSelectBox", ply)
 		umsg.End()
 	end
 
-	//Removes the area copy box
 	function AdvDupe2.RemoveSelectBox(ply)
 		umsg.Start("AdvDupe2_RemoveSelectBox", ply)
 		umsg.End()
 	end
 
-	//Reset the offsets of height, pitch, yaw, and roll back to default
+	function AdvDupe2.UpdateProgressBar(ply,percent)
+		umsg.Start("AdvDupe2_UpdateProgressBar",ply)
+			umsg.Char(percent)
+		umsg.End()
+	end
+
+	function AdvDupe2.RemoveProgressBar(ply)
+		umsg.Start("AdvDupe2_RemoveProgressBar",ply)
+		umsg.End()
+	end
+
+	--Reset the offsets of height, pitch, yaw, and roll back to default
 	function AdvDupe2.ResetOffsets(ply, keep)
 		
 		if(not keep)then
@@ -832,27 +913,8 @@ if(SERVER)then
 			Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 			Tab.Description = ply.AdvDupe2.AutoSaveDesc
 
-			if(not game.SinglePlayer())then ply.AdvDupe2.Downloading = true end
 			AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-				if(game.SinglePlayer())then
-					
-					local dir, name = ""
-					if(ply:GetInfo("advdupe2_auto_save_overwrite")=="1")then
-						file.Write("advdupe2/"..ply.AdvDupe2.AutoSavePath..".txt", data)
-						name = string.Explode("/", ply.AdvDupe2.AutoSavePath)
-						name = name[#name]
-					else
-						dir, name = ply:WriteAdvDupe2File(ply.AdvDupe2.AutoSavePath, data)
-					end
-					umsg.Start("AdvDupe2_AddFile", ply)
-						umsg.Bool(true)
-						umsg.String(name)
-					umsg.End()
-					AdvDupe2.Notify(ply, "Area auto saved.")
-				else
-					if(not IsValid(ply))then return end
-					AdvDupe2.DownloadFile(ply, data, 1)
-				end
+				AdvDupe2.SendToClient(ply, data, 1)
 			end)
 			ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
 		end)
@@ -892,14 +954,13 @@ if(SERVER)then
 		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 		
 		Tab.Map = true
-		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), 	function(data)
-																	if(not file.IsDir("advdupe2_maps", "DATA"))then
-																		file.CreateDir("advdupe2_maps")
-																	end
-																	file.Write("advdupe2_maps/"..args[1]..".txt", data)	
-																	AdvDupe2.Notify(ply, "Map save, saved successfully.")
-																end)
-		
+		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
+			if(not file.IsDir("advdupe2_maps", "DATA"))then
+				file.CreateDir("advdupe2_maps")
+			end
+			file.Write("advdupe2_maps/"..args[1]..".txt", data)	
+			AdvDupe2.Notify(ply, "Map save, saved successfully.")
+		end)
 	end)
 end
 
@@ -919,7 +980,7 @@ if(CLIENT)then
 		return true
 	end
 	
-	//Removes progress bar and removes ghosts when tool is put away
+	--Removes progress bar and removes ghosts when tool is put away
 	function TOOL:Holster()
 		AdvDupe2.RemoveGhosts()
 		AdvDupe2.RemoveSelectBox()
@@ -936,7 +997,7 @@ if(CLIENT)then
 		return false
 	end
 
-	//Take control of the mouse wheel bind so the player can modify the height of the dupe
+	--Take control of the mouse wheel bind so the player can modify the height of the dupe
 	local function MouseWheelScrolled(ply, bind, pressed)
 
 		if(bind=="invprev")then
@@ -1020,13 +1081,13 @@ if(CLIENT)then
 			local pitch = tonumber(LocalPlayer():GetInfo("advdupe2_offset_pitch"))
 			local roll = tonumber(LocalPlayer():GetInfo("advdupe2_offset_roll"))
 			
-				//print(modyaw3)
+				--print(modyaw3)
 			if(modyaw3 <= 90)then
 				pitch = pitch + (Y - Y * (modyaw3/90))
 				roll = roll - (Y*(modyaw3/90))
 			end
 			
-			//if(pitch>180)then pitch = -180
+			--if(pitch>180)then pitch = -180
 			
 			RunConsoleCommand("advdupe2_offset_pitch",pitch)
 			RunConsoleCommand("advdupe2_offset_roll",roll)
@@ -1034,7 +1095,7 @@ if(CLIENT)then
 		
 	end
 
-	//Update the ghost's postion and angles based on where the player is looking and the offsets
+	--Update the ghost's postion and angles based on where the player is looking and the offsets
 	local Utrace, UGhostEnt, UEntAngle, UPos, UAngle
 	local function UpdateGhost()
 		Utrace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
@@ -1061,7 +1122,7 @@ if(CLIENT)then
 		end
 	end
 
-	//Checks binds to modify dupes position and angles
+	--Checks binds to modify dupes position and angles
 	function TOOL:Think()
 
 		if(AdvDupe2.HeadGhost)then UpdateGhost() end
@@ -1087,7 +1148,7 @@ if(CLIENT)then
 		end
 	end
 	
-	//Hinder the player from looking to modify offsets with the mouse
+	--Hinder the player from looking to modify offsets with the mouse
 	function TOOL:FreezeMovement()
 		return AdvDupe2.Rotation
 	end
@@ -1120,7 +1181,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_auto_save_overwrite", 1, false, true)
 	CreateClientConVar("advdupe2_auto_save_time", 10, false, true)
 	
-	//Contraption Spawner
+	--Contraption Spawner
 	CreateClientConVar("advdupe2_contr_spawner_key", -1, false, true)
 	CreateClientConVar("advdupe2_contr_spawner_undo_key", -1, false, true)
 	CreateClientConVar("advdupe2_contr_spawner_delay", 0, false, true)
@@ -1130,7 +1191,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_contr_spawner_addvel", 1, false, true)
 	CreateClientConVar("advdupe2_contr_spawner_hideprops", 0, false, true)
 	
-	//Experimental
+	--Experimental
 	CreateClientConVar("advdupe2_paste_disparents", 0, false, true)
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
@@ -1175,11 +1236,11 @@ if(CLIENT)then
 		Check_1:SetDark(true)
 		Check_1:SetConVar( "advdupe2_paste_unfreeze" ) 
 		Check_1:SetValue( 0 )
-		Check_1.OnChange = 	function() 
-								if(Check_1:GetChecked() and Check_2:GetChecked())then
-									Check_2:SetValue(0)
-								end
-							end
+		Check_1.OnChange = function() 
+			if(Check_1:GetChecked() and Check_2:GetChecked())then
+				Check_2:SetValue(0)
+			end
+		end
 		Check_1:SetToolTip("Unfreeze all props after pasting")
 		CPanel:AddItem(Check_1)
 		
@@ -1187,11 +1248,11 @@ if(CLIENT)then
 		Check_2:SetDark(true)
 		Check_2:SetConVar( "advdupe2_preserve_freeze" ) 
 		Check_2:SetValue( 0 )
-		Check_2.OnChange = 	function() 
-								if(Check_2:GetChecked() and Check_1:GetChecked())then
-									Check_1:SetValue(0)
-								end
-							end
+		Check_2.OnChange = function() 
+			if(Check_2:GetChecked() and Check_1:GetChecked())then
+				Check_1:SetValue(0)
+			end
+		end
 		Check_2:SetToolTip("Makes props have the same frozen state as when they were copied")
 		CPanel:AddItem(Check_2)
 		
@@ -1227,7 +1288,7 @@ if(CLIENT)then
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_limit_ghost" )
 		NumSlider:SetToolTip("Change the percent of ghosts to spawn")
-		//If these funcs are not here, problems occur for each
+		--If these funcs are not here, problems occur for each
 		local func = NumSlider.Slider.OnMouseReleased
 		NumSlider.Slider.OnMouseReleased = function(self, mcode) func(self, mcode) AdvDupe2.StartGhosting() end
 		local func2 = NumSlider.Slider.Knob.OnMouseReleased
@@ -1256,456 +1317,455 @@ if(CLIENT)then
 		
 		local parent = FileBrowser:GetParent():GetParent():GetParent():GetParent()
 		--[[Offsets]]--
-			local CategoryContent1 = vgui.Create( "DPanelList" )
-			CategoryContent1:SetAutoSize( true )
-			CategoryContent1:SetDrawBackground( false )
-			CategoryContent1:SetSpacing( 1 )
-			CategoryContent1:SetPadding( 2 )
-			CategoryContent1.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end		//Fix the damned mouse not scrolling when it's over the catagories
-			
-			Category1:SetContents( CategoryContent1 )
-
-					
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Height Offset" )
-			NumSlider.Label:SetDark(true)
-			NumSlider:SetMin( 0 )
-			NumSlider:SetMax( 2500 ) 
-			NumSlider:SetDecimals( 0 ) 
-			NumSlider:SetConVar("advdupe2_offset_z")
-			NumSlider:SetToolTip("Change the Z offset of the dupe")
-			CategoryContent1:AddItem(NumSlider)
-			
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Use World Angles" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_offset_world" ) 
-			Check:SetValue( 0 )
-			Check:SetToolTip("Use world angles for the offset instead of the main entity")
-			CategoryContent1:AddItem(Check)
-			
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Pitch Offset" )
-			NumSlider.Label:SetDark(true)
-			NumSlider:SetMin( -180 ) 
-			NumSlider:SetMax( 180 ) 
-			NumSlider:SetDecimals( 0 ) 
-			NumSlider:SetConVar("advdupe2_offset_pitch")
-			CategoryContent1:AddItem(NumSlider)
-					
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Yaw Offset" )
-			NumSlider.Label:SetDark(true)
-			NumSlider:SetMin( -180 )
-			NumSlider:SetMax( 180 )
-			NumSlider:SetDecimals( 0 )
-			NumSlider:SetConVar("advdupe2_offset_yaw")
-			CategoryContent1:AddItem(NumSlider)
-					
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Roll Offset" )
-			NumSlider.Label:SetDark(true)
-			NumSlider:SetMin( -180 )
-			NumSlider:SetMax( 180 )
-			NumSlider:SetDecimals( 0 )
-			NumSlider:SetConVar("advdupe2_offset_roll")
-			CategoryContent1:AddItem(NumSlider)
-			
-			local Btn = vgui.Create("DButton")
-			Btn:SetText("Reset")
-			Btn.DoClick =	function()
-								RunConsoleCommand("advdupe2_offset_z", 0)
-								RunConsoleCommand("advdupe2_offset_pitch", 0)
-								RunConsoleCommand("advdupe2_offset_yaw", 0)
-								RunConsoleCommand("advdupe2_offset_roll", 0)
-							end
-			CategoryContent1:AddItem(Btn)
-			
-			
-		--[[Dupe Information]]--
-			local Category2 = vgui.Create("DCollapsibleCategory")
-			CPanel:AddItem(Category2)
-			Category2:SetLabel("Dupe Information")
-			Category2:SetExpanded(0)
-					
-			local CategoryContent2 = vgui.Create( "DPanelList" )
-			CategoryContent2:SetAutoSize( true )
-			CategoryContent2:SetDrawBackground( false )
-			CategoryContent2:SetSpacing( 3 )
-			CategoryContent2:SetPadding( 2 )
-			Category2:SetContents( CategoryContent2 )
-			CategoryContent2.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
-			
-			AdvDupe2.Info = {}
-			
-			local lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.File or "File: ")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.File = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Creator or "Creator:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Creator = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Date or "Date:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Date = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Time or "Time:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Time = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Size or "Size:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Size = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Desc or "Desc:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Desc = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Entities or "Entities:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Entities = lbl
-			
-			lbl = vgui.Create( "DLabel" )
-			lbl:SetText(AdvDupe2.InfoText.Constraints or "Constraints:")
-			lbl:SetDark(true)
-			CategoryContent2:AddItem(lbl)
-			AdvDupe2.Info.Constraints = lbl
+		local CategoryContent1 = vgui.Create( "DPanelList" )
+		CategoryContent1:SetAutoSize( true )
+		CategoryContent1:SetDrawBackground( false )
+		CategoryContent1:SetSpacing( 1 )
+		CategoryContent1:SetPadding( 2 )
+		CategoryContent1.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end		--Fix the damned mouse not scrolling when it's over the catagories
 		
-		--[[Contraption Spawner]]--
-			local Category3 = vgui.Create("DCollapsibleCategory")
-			CPanel:AddItem(Category3)
-			Category3:SetLabel("Contraption Spawner")
-			Category3:SetExpanded(0)
-			
-			local CategoryContent3 = vgui.Create( "DPanelList" )
-			CategoryContent3:SetAutoSize( true )
-			CategoryContent3:SetDrawBackground( false )
-			CategoryContent3:SetSpacing( 3 )
-			CategoryContent3:SetPadding( 2 )
-			Category3:SetContents( CategoryContent3 )
-			CategoryContent3.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
-					
-			local ctrl = vgui.Create( "CtrlNumPad" )
-			ctrl:SetConVar1( "advdupe2_contr_spawner_key" )
-			ctrl:SetConVar2( "advdupe2_contr_spawner_undo_key" )
-			ctrl:SetLabel1( "Spawn Key")
-			ctrl:SetLabel2( "Undo Key" )
-			CategoryContent3:AddItem(ctrl)
+		Category1:SetContents( CategoryContent1 )
+
 				
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Spawn Delay" )
-			NumSlider.Label:SetDark(true)
-			if(game.SinglePlayer())then
-				NumSlider:SetMin( 0 )
-			else
-				local min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
-				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<min)then
-					RunConsoleCommand("advdupe2_contr_spawner_delay", tostring(min))
-				end
-				NumSlider:SetMin( min )
-			end
-			NumSlider:SetMax(60)
-			NumSlider:SetDecimals( 1 )
-			NumSlider:SetConVar("advdupe2_contr_spawner_delay")
-			CategoryContent3:AddItem(NumSlider)
-					
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Undo Delay" )
-			NumSlider.Label:SetDark(true)
-			if(game.SinglePlayer())then 
-				NumSlider:SetMin( 0 )
-				NumSlider:SetMax( 60 )
-			else
-				local min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 10
-				local max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
-				if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < min)then
-					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(min))
-				elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > max)then
-					RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(max))
-				end
-				NumSlider:SetMin( min )
-				NumSlider:SetMax( max )
-			end
-			NumSlider:SetDecimals( 1 )
-			NumSlider:SetConVar("advdupe2_contr_spawner_undo_delay")
-			CategoryContent3:AddItem(NumSlider)
-					
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Disable gravity for all spawned props" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_contr_spawner_disgrav" ) 
-			Check:SetValue( 0 )
-			CategoryContent3:AddItem(Check)
-					
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Disable drag for all spawned props" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_contr_spawner_disdrag" ) 
-			Check:SetValue( 0 )
-			CategoryContent3:AddItem(Check)
-					
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Add spawner's velocity to contraption" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_contr_spawner_addvel" ) 
-			Check:SetValue( 1 )
-			CategoryContent3:AddItem(Check)
-					
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Disable drawing spawner props" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_contr_spawner_hideprops" ) 
-			Check:SetValue( 0 )
-			CategoryContent3:AddItem(Check)
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Height Offset" )
+		NumSlider.Label:SetDark(true)
+		NumSlider:SetMin( 0 )
+		NumSlider:SetMax( 2500 ) 
+		NumSlider:SetDecimals( 0 ) 
+		NumSlider:SetConVar("advdupe2_offset_z")
+		NumSlider:SetToolTip("Change the Z offset of the dupe")
+		CategoryContent1:AddItem(NumSlider)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Use World Angles" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_offset_world" ) 
+		Check:SetValue( 0 )
+		Check:SetToolTip("Use world angles for the offset instead of the main entity")
+		CategoryContent1:AddItem(Check)
+		
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Pitch Offset" )
+		NumSlider.Label:SetDark(true)
+		NumSlider:SetMin( -180 ) 
+		NumSlider:SetMax( 180 ) 
+		NumSlider:SetDecimals( 0 ) 
+		NumSlider:SetConVar("advdupe2_offset_pitch")
+		CategoryContent1:AddItem(NumSlider)
+				
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Yaw Offset" )
+		NumSlider.Label:SetDark(true)
+		NumSlider:SetMin( -180 )
+		NumSlider:SetMax( 180 )
+		NumSlider:SetDecimals( 0 )
+		NumSlider:SetConVar("advdupe2_offset_yaw")
+		CategoryContent1:AddItem(NumSlider)
+				
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Roll Offset" )
+		NumSlider.Label:SetDark(true)
+		NumSlider:SetMin( -180 )
+		NumSlider:SetMax( 180 )
+		NumSlider:SetDecimals( 0 )
+		NumSlider:SetConVar("advdupe2_offset_roll")
+		CategoryContent1:AddItem(NumSlider)
+		
+		local Btn = vgui.Create("DButton")
+		Btn:SetText("Reset")
+		Btn.DoClick = function()
+			RunConsoleCommand("advdupe2_offset_z", 0)
+			RunConsoleCommand("advdupe2_offset_pitch", 0)
+			RunConsoleCommand("advdupe2_offset_yaw", 0)
+			RunConsoleCommand("advdupe2_offset_roll", 0)
+		end
+		CategoryContent1:AddItem(Btn)
+		
+		
+		--[[Dupe Information]]--
+		local Category2 = vgui.Create("DCollapsibleCategory")
+		CPanel:AddItem(Category2)
+		Category2:SetLabel("Dupe Information")
+		Category2:SetExpanded(0)
+				
+		local CategoryContent2 = vgui.Create( "DPanelList" )
+		CategoryContent2:SetAutoSize( true )
+		CategoryContent2:SetDrawBackground( false )
+		CategoryContent2:SetSpacing( 3 )
+		CategoryContent2:SetPadding( 2 )
+		Category2:SetContents( CategoryContent2 )
+		CategoryContent2.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
+		
+		AdvDupe2.Info = {}
+		
+		local lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.File or "File: ")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.File = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Creator or "Creator:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Creator = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Date or "Date:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Date = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Time or "Time:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Time = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Size or "Size:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Size = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Desc or "Desc:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Desc = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Entities or "Entities:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Entities = lbl
+		
+		lbl = vgui.Create( "DLabel" )
+		lbl:SetText(AdvDupe2.InfoText.Constraints or "Constraints:")
+		lbl:SetDark(true)
+		CategoryContent2:AddItem(lbl)
+		AdvDupe2.Info.Constraints = lbl
+	
+	--[[Contraption Spawner]]--
+		local Category3 = vgui.Create("DCollapsibleCategory")
+		CPanel:AddItem(Category3)
+		Category3:SetLabel("Contraption Spawner")
+		Category3:SetExpanded(0)
+		
+		local CategoryContent3 = vgui.Create( "DPanelList" )
+		CategoryContent3:SetAutoSize( true )
+		CategoryContent3:SetDrawBackground( false )
+		CategoryContent3:SetSpacing( 3 )
+		CategoryContent3:SetPadding( 2 )
+		Category3:SetContents( CategoryContent3 )
+		CategoryContent3.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
+				
+		local ctrl = vgui.Create( "CtrlNumPad" )
+		ctrl:SetConVar1( "advdupe2_contr_spawner_key" )
+		ctrl:SetConVar2( "advdupe2_contr_spawner_undo_key" )
+		ctrl:SetLabel1( "Spawn Key")
+		ctrl:SetLabel2( "Undo Key" )
+		CategoryContent3:AddItem(ctrl)
 			
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Spawn Delay" )
+		NumSlider.Label:SetDark(true)
+		if(game.SinglePlayer())then
+			NumSlider:SetMin( 0 )
+		else
+			local min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+			if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<min)then
+				RunConsoleCommand("advdupe2_contr_spawner_delay", tostring(min))
+			end
+			NumSlider:SetMin( min )
+		end
+		NumSlider:SetMax(60)
+		NumSlider:SetDecimals( 1 )
+		NumSlider:SetConVar("advdupe2_contr_spawner_delay")
+		CategoryContent3:AddItem(NumSlider)
+				
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Undo Delay" )
+		NumSlider.Label:SetDark(true)
+		if(game.SinglePlayer())then 
+			NumSlider:SetMin( 0 )
+			NumSlider:SetMax( 60 )
+		else
+			local min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 10
+			local max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+			if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < min)then
+				RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(min))
+			elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > max)then
+				RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(max))
+			end
+			NumSlider:SetMin( min )
+			NumSlider:SetMax( max )
+		end
+		NumSlider:SetDecimals( 1 )
+		NumSlider:SetConVar("advdupe2_contr_spawner_undo_delay")
+		CategoryContent3:AddItem(NumSlider)
+				
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Disable gravity for all spawned props" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_contr_spawner_disgrav" ) 
+		Check:SetValue( 0 )
+		CategoryContent3:AddItem(Check)
+				
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Disable drag for all spawned props" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_contr_spawner_disdrag" ) 
+		Check:SetValue( 0 )
+		CategoryContent3:AddItem(Check)
+				
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Add spawner's velocity to contraption" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_contr_spawner_addvel" ) 
+		Check:SetValue( 1 )
+		CategoryContent3:AddItem(Check)
+				
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Disable drawing spawner props" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_contr_spawner_hideprops" ) 
+		Check:SetValue( 0 )
+		CategoryContent3:AddItem(Check)
+		
 		--[[Area Auto Save]]--
-			local Category4 = vgui.Create("DCollapsibleCategory")
-			CPanel:AddItem(Category4)
-			Category4:SetLabel("Area Auto Save")
-			Category4:SetExpanded(0)
+		local Category4 = vgui.Create("DCollapsibleCategory")
+		CPanel:AddItem(Category4)
+		Category4:SetLabel("Area Auto Save")
+		Category4:SetExpanded(0)
+		
+		local CategoryContent4 = vgui.Create( "DPanelList" )
+		CategoryContent4:SetAutoSize( true )
+		CategoryContent4:SetDrawBackground( false )
+		CategoryContent4:SetSpacing( 3 )
+		CategoryContent4:SetPadding( 2 )
+		Category4:SetContents( CategoryContent4 )
+		CategoryContent4.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Only copy contraption" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_auto_save_contraption" ) 
+		Check:SetValue( 0 )
+		Check:SetToolTip("Only copy a contraption instead of an area")
+		CategoryContent4:AddItem(Check)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Overwrite File" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_auto_save_overwrite" )
+		Check:SetValue( 1 )
+		Check:SetToolTip("Overwrite the file instead of creating a new one everytime")
+		CategoryContent4:AddItem(Check)
+		
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Minutes to Save:" )
+		NumSlider.Label:SetDark(true)
+		NumSlider:SetMin( GetConVarNumber("AdvDupe2_AreaAutoSaveTime") )
+		NumSlider:SetMax( 30 )
+		NumSlider:SetDecimals( 0 )
+		NumSlider:SetConVar( "advdupe2_auto_save_time" )
+		NumSlider:SetToolTip("Interval time to save in minutes")
+		CategoryContent4:AddItem(NumSlider)
+		
+		local pnl = vgui.Create("Panel")
+		pnl:SetWide(CPanel:GetWide()-40)
+		pnl:SetTall(75)
+		pnl:SetPos(0, 50)
+		CategoryContent4:AddItem(pnl)
+		
+		local label = vgui.Create("DLabel", pnl)
+		label:SetText("Directory: ")
+		label:SizeToContents()
+		label:SetDark(true)
+		label:SetPos(5,7)
+		
+		AdvDupe2.AutoSavePath = ""
+		local txtbox = vgui.Create("DTextEntry", pnl)
+		txtbox:SetWide(pnl:GetWide()-100)
+		txtbox:SetPos(60, 5)
+		txtbox:SetUpdateOnType(true)
+		txtbox.OnTextChanged = function(self)
+			self:SetValue(AdvDupe2.AutoSavePath)
+		end
+		
+		local btn = vgui.Create("DImageButton", pnl)
+		local x, y = txtbox:GetPos()
+		btn:SetPos(x + txtbox:GetWide() + 5, 7)
+		btn:SetMaterial("icon16/folder_explore.png")
+		btn:SizeToContents()
+		btn:SetToolTip("Browse")
+		btn.DoClick = function()
+			local ScrollBar = parent.VBar
+			ScrollBar:AnimateTo(0, 1, 0, 0.2)
 			
-			local CategoryContent4 = vgui.Create( "DPanelList" )
-			CategoryContent4:SetAutoSize( true )
-			CategoryContent4:SetDrawBackground( false )
-			CategoryContent4:SetSpacing( 3 )
-			CategoryContent4:SetPadding( 2 )
-			Category4:SetContents( CategoryContent4 )
-			CategoryContent4.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
+			FileBrowser.Submit:SetMaterial("icon16/disk.png")
+			FileBrowser.Submit:SetTooltip("Directory for Area Auto Save")
+			if(FileBrowser.FileName:GetValue()=="Folder_Name...")then
+				FileBrowser.FileName:SetValue("File_Name...")
+			end
+			FileBrowser.Desc:SetVisible(true)
+			FileBrowser.Info:SetVisible(false)
+			FileBrowser.FileName:SetVisible(true)
+			FileBrowser.FileName:SelectAllOnFocus(true) 
+			FileBrowser.FileName:OnMousePressed()
+			FileBrowser.FileName:RequestFocus()
+			FileBrowser.Expanding=true
+			FileBrowser:Slide(true)
+			FileBrowser.Submit.DoClick = function()
+				local name = FileBrowser.FileName:GetValue()
+				if(name=="" or name=="File_Name...")then
+					AdvDupe2.Notify("Name field is blank.", NOTIFY_ERROR)
+					FileBrowser.FileName:SelectAllOnFocus(true)
+					FileBrowser.FileName:OnGetFocus()
+					FileBrowser.FileName:RequestFocus()
+					return 
+				end 
+				local desc = FileBrowser.Desc:GetValue()
+				if(desc=="Description...")then desc="" end
+				
+				if(not IsValid(FileBrowser.Browser.pnlCanvas.m_pSelectedItem) or FileBrowser.Browser.pnlCanvas.m_pSelectedItem.Derma.ClassName~="advdupe2_browser_folder")then
+					AdvDupe2.Notify("Folder to save Area Auto Save not selected.", NOTIFY_ERROR)
+					return
+				end
+				
+				FileBrowser.AutoSaveNode = FileBrowser.Browser.pnlCanvas.m_pSelectedItem
+				txtbox:SetValue(FileBrowser:GetFullPath(FileBrowser.Browser.pnlCanvas.m_pSelectedItem)..name)
+				AdvDupe2.AutoSavePath = txtbox:GetValue()
+				txtbox:SetToolTip(txtbox:GetValue())
+				AdvDupe2.AutoSaveDesc = desc
+				
+				FileBrowser:Slide(false)
+				ScrollBar:AnimateTo(ScrollBar.CanvasSize, 1, 0, 0.2)
+				
+				RunConsoleCommand("AdvDupe2_SetStage")
+				hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
+			end
+			FileBrowser.FileName.OnEnter = function()
+				FileBrowser.FileName:KillFocus()
+				FileBrowser.Desc:SelectAllOnFocus(true)
+				FileBrowser.Desc.OnMousePressed()
+				FileBrowser.Desc:RequestFocus()
+			end
+			FileBrowser.Desc.OnEnter = FileBrowser.Submit.DoClick
+		end
+				
+		btn = vgui.Create("DButton", pnl)
+		btn:SetSize(50, 35)
+		btn:SetPos(pnl:GetWide()/4-10, 30)
+		btn:SetText("Show")
+		btn.DoClick = function()
+			if(AdvDupe2.AutoSavePos)then
+				RunConsoleCommand("advdupe2_area_copy_size", AdvDupe2.AutoSaveSize)
+				LocalPlayer():SetEyeAngles( (AdvDupe2.AutoSavePos - LocalPlayer():GetShootPos()):Angle() )
+				RunConsoleCommand("AdvDupe2_SetStage")
+				hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
+			end
+		end
+				
+		btn = vgui.Create("DButton", pnl)
+		btn:SetSize(50, 35)
+		btn:SetPos((pnl:GetWide()/4)*3-40, 30)
+		btn:SetText("Turn Off")
+		btn:SetDisabled(true)
+		btn.DoClick = function(self)
+			RunConsoleCommand("AdvDupe2_RemoveAutoSave")
+			self:SetDisabled(true)
+			AdvDupe2.AutoSavePos = nil
+		end
+		AdvDupe2.OffButton = btn
+
+		
+		--[[Experimental Section]]--
+		local Category5 = vgui.Create("DCollapsibleCategory")
+		CPanel:AddItem(Category5)
+		Category5:SetLabel("Experimental Section")
+		Category5:SetExpanded(0)
+		
+		local CategoryContent5 = vgui.Create( "DPanelList" )
+		CategoryContent5:SetAutoSize( true )
+		CategoryContent5:SetDrawBackground( false )
+		CategoryContent5:SetSpacing( 3 )
+		CategoryContent5:SetPadding( 2 )
+		Category5:SetContents( CategoryContent5 )
+		CategoryContent5.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Disable parented props physics interaction" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_paste_disparents" ) 
+		Check:SetValue( 0 )
+		CategoryContent5:AddItem(Check)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Disable Dupe Spawn Protection" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_paste_protectoveride" ) 
+		Check:SetValue( 1 )
+		Check:SetToolTip("Check this if you things don't look right after pasting.")
+		CategoryContent5:AddItem(Check)
+		
+		Check = vgui.Create("DCheckBoxLabel")
+		Check:SetText( "Open file after Saving" )
+		Check:SetDark(true)
+		Check:SetConVar( "advdupe2_debug_openfile" ) 
+		Check:SetValue( 1 )
+		Check:SetToolTip("Check this if you want your files to be opened after saving them.")
+		CategoryContent5:AddItem(Check)
+		
+		--[[Save Map]]--
+		if(LocalPlayer():IsAdmin())then
+			local Category6 = vgui.Create("DCollapsibleCategory")
+			CPanel:AddItem(Category6)
+			Category6:SetLabel("Save Map")
+			Category6:SetExpanded(0)
 			
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Only copy contraption" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_auto_save_contraption" ) 
-			Check:SetValue( 0 )
-			Check:SetToolTip("Only copy a contraption instead of an area")
-			CategoryContent4:AddItem(Check)
+			local CategoryContent6 = vgui.Create( "DPanelList" )
+			CategoryContent6:SetAutoSize( true )
+			CategoryContent6:SetDrawBackground( false )
+			CategoryContent6:SetSpacing( 3 )
+			CategoryContent6:SetPadding( 2 )
+			Category6:SetContents( CategoryContent6 )
+			CategoryContent6.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
 			
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Overwrite File" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_auto_save_overwrite" )
-			Check:SetValue( 1 )
-			Check:SetToolTip("Overwrite the file instead of creating a new one everytime")
-			CategoryContent4:AddItem(Check)
-			
-			NumSlider = vgui.Create( "DNumSlider" )
-			NumSlider:SetText( "Minutes to Save:" )
-			NumSlider.Label:SetDark(true)
-			NumSlider:SetMin( GetConVarNumber("AdvDupe2_AreaAutoSaveTime") )
-			NumSlider:SetMax( 30 )
-			NumSlider:SetDecimals( 0 )
-			NumSlider:SetConVar( "advdupe2_auto_save_time" )
-			NumSlider:SetToolTip("Interval time to save in minutes")
-			CategoryContent4:AddItem(NumSlider)
-			
-			local pnl = vgui.Create("Panel")
+			pnl = vgui.Create("Panel")
 			pnl:SetWide(CPanel:GetWide()-40)
 			pnl:SetTall(75)
 			pnl:SetPos(0, 50)
-			CategoryContent4:AddItem(pnl)
+			CategoryContent6:AddItem(pnl)
 			
-			local label = vgui.Create("DLabel", pnl)
-			label:SetText("Directory: ")
+			label = vgui.Create("DLabel", pnl)
+			label:SetText("File Name: ")
 			label:SizeToContents()
 			label:SetDark(true)
 			label:SetPos(5,7)
 			
 			AdvDupe2.AutoSavePath = ""
-			local txtbox = vgui.Create("DTextEntry", pnl)
-			txtbox:SetWide(pnl:GetWide()-100)
-			txtbox:SetPos(60, 5)
-			txtbox:SetUpdateOnType(true)
-			txtbox.OnTextChanged = 	function(self)
-										self:SetValue(AdvDupe2.AutoSavePath)
-									end
 			
-			local btn = vgui.Create("DImageButton", pnl)
-			local x, y = txtbox:GetPos()
-			btn:SetPos(x + txtbox:GetWide() + 5, 7)
-			btn:SetMaterial("icon16/folder_explore.png")
-			btn:SizeToContents()
-			btn:SetToolTip("Browse")
-			btn.DoClick = 	function()
-								local ScrollBar = parent.VBar
-								ScrollBar:AnimateTo(0, 1, 0, 0.2)
-								
-								FileBrowser.Submit:SetMaterial("icon16/disk.png")
-								FileBrowser.Submit:SetTooltip("Directory for Area Auto Save")
-								if(FileBrowser.FileName:GetValue()=="Folder_Name...")then
-									FileBrowser.FileName:SetValue("File_Name...")
-								end
-								FileBrowser.Desc:SetVisible(true)
-								FileBrowser.Info:SetVisible(false)
-								FileBrowser.FileName:SetVisible(true)
-								FileBrowser.FileName:SelectAllOnFocus(true) 
-								FileBrowser.FileName:OnMousePressed()
-								FileBrowser.FileName:RequestFocus()
-								FileBrowser.Expanding=true
-								FileBrowser:Slide(true)
-								FileBrowser.Submit.DoClick = function()
-																	local name = FileBrowser.FileName:GetValue()
-																	if(name=="" or name=="File_Name...")then
-																		AdvDupe2.Notify("Name field is blank.", NOTIFY_ERROR)
-																		FileBrowser.FileName:SelectAllOnFocus(true)
-																		FileBrowser.FileName:OnGetFocus()
-																		FileBrowser.FileName:RequestFocus()
-																		return 
-																	end 
-																	local desc = FileBrowser.Desc:GetValue()
-																	if(desc=="Description...")then desc="" end
-																	
-																	if(not IsValid(FileBrowser.Browser.pnlCanvas.m_pSelectedItem) or FileBrowser.Browser.pnlCanvas.m_pSelectedItem.Derma.ClassName~="advdupe2_browser_folder")then
-																		AdvDupe2.Notify("Folder to save Area Auto Save not selected.", NOTIFY_ERROR)
-																		return
-																	end
-																	
-																	FileBrowser.AutoSaveNode = FileBrowser.Browser.pnlCanvas.m_pSelectedItem
-																	txtbox:SetValue(FileBrowser:GetFullPath(FileBrowser.Browser.pnlCanvas.m_pSelectedItem)..name)
-																	AdvDupe2.AutoSavePath = txtbox:GetValue()
-																	txtbox:SetToolTip(txtbox:GetValue())
-																	AdvDupe2.AutoSaveDesc = desc
-																	
-																	FileBrowser:Slide(false)
-																	ScrollBar:AnimateTo(ScrollBar.CanvasSize, 1, 0, 0.2)
-																	
-																	RunConsoleCommand("AdvDupe2_SetStage")
-																	hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
-																end
-								FileBrowser.FileName.OnEnter = function()
-																	FileBrowser.FileName:KillFocus()
-																	FileBrowser.Desc:SelectAllOnFocus(true)
-																	FileBrowser.Desc.OnMousePressed()
-																	FileBrowser.Desc:RequestFocus()
-																end
-								FileBrowser.Desc.OnEnter = FileBrowser.Submit.DoClick
-							end
-					
-			btn = vgui.Create("DButton", pnl)
-			btn:SetSize(50, 35)
-			btn:SetPos(pnl:GetWide()/4-10, 30)
-			btn:SetText("Show")
-			btn.DoClick = 	function()
-								if(AdvDupe2.AutoSavePos)then
-									RunConsoleCommand("advdupe2_area_copy_size", AdvDupe2.AutoSaveSize)
-									LocalPlayer():SetEyeAngles( (AdvDupe2.AutoSavePos - LocalPlayer():GetShootPos()):Angle() )
-									RunConsoleCommand("AdvDupe2_SetStage")
-									hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
-								end
-							end
-					
-			btn = vgui.Create("DButton", pnl)
-			btn:SetSize(50, 35)
-			btn:SetPos((pnl:GetWide()/4)*3-40, 30)
-			btn:SetText("Turn Off")
-			btn:SetDisabled(true)
-			btn.DoClick = 	function(self)
-								RunConsoleCommand("AdvDupe2_RemoveAutoSave")
-								self:SetDisabled(true)
-								AdvDupe2.AutoSavePos = nil
-							end
-			AdvDupe2.OffButton = btn
-
-			
-		--[[Experimental Section]]--
-			local Category5 = vgui.Create("DCollapsibleCategory")
-			CPanel:AddItem(Category5)
-			Category5:SetLabel("Experimental Section")
-			Category5:SetExpanded(0)
-			
-			local CategoryContent5 = vgui.Create( "DPanelList" )
-			CategoryContent5:SetAutoSize( true )
-			CategoryContent5:SetDrawBackground( false )
-			CategoryContent5:SetSpacing( 3 )
-			CategoryContent5:SetPadding( 2 )
-			Category5:SetContents( CategoryContent5 )
-			CategoryContent5.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
-			
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Disable parented props physics interaction" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_paste_disparents" ) 
-			Check:SetValue( 0 )
-			CategoryContent5:AddItem(Check)
-			
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Disable Dupe Spawn Protection" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_paste_protectoveride" ) 
-			Check:SetValue( 1 )
-			Check:SetToolTip("Check this if you things don't look right after pasting.")
-			CategoryContent5:AddItem(Check)
-			
-			Check = vgui.Create("DCheckBoxLabel")
-			Check:SetText( "Open file after Saving" )
-			Check:SetDark(true)
-			Check:SetConVar( "advdupe2_debug_openfile" ) 
-			Check:SetValue( 1 )
-			Check:SetToolTip("Check this if you want your files to be opened after saving them.")
-			CategoryContent5:AddItem(Check)
-			
-		--[[Save Map]]--
-			if(LocalPlayer():IsAdmin())then
-				local Category6 = vgui.Create("DCollapsibleCategory")
-				CPanel:AddItem(Category6)
-				Category6:SetLabel("Save Map")
-				Category6:SetExpanded(0)
-				
-				local CategoryContent6 = vgui.Create( "DPanelList" )
-				CategoryContent6:SetAutoSize( true )
-				CategoryContent6:SetDrawBackground( false )
-				CategoryContent6:SetSpacing( 3 )
-				CategoryContent6:SetPadding( 2 )
-				Category6:SetContents( CategoryContent6 )
-				CategoryContent6.OnMouseWheeled = function(self, dlta) parent:OnMouseWheeled(dlta) end
-				
-				pnl = vgui.Create("Panel")
-				pnl:SetWide(CPanel:GetWide()-40)
-				pnl:SetTall(75)
-				pnl:SetPos(0, 50)
-				CategoryContent6:AddItem(pnl)
-				
-				label = vgui.Create("DLabel", pnl)
-				label:SetText("File Name: ")
-				label:SizeToContents()
-				label:SetDark(true)
-				label:SetPos(5,7)
-				
-				AdvDupe2.AutoSavePath = ""
-				
-				local txtbox2 = vgui.Create("DTextEntry", pnl)
-				txtbox2:SetWide(pnl:GetWide()-100)
-				txtbox2:SetPos(60, 5)
-				txtbox2.OnEnter =	function()
-										btn2:DoClick()	
-									end
-									
-				local btn2 = vgui.Create("DImageButton", pnl)
-				x, y = txtbox2:GetPos()
-				btn2:SetPos(x + txtbox2:GetWide() + 5, 7)
-				btn2:SetMaterial("icon16/disk.png")
-				btn2:SizeToContents()
-				btn2:SetToolTip("Save Map")
-				btn2.DoClick = 	function()
-									if(txtbox2:GetValue()=="")then return end
-									RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
-								end
+			local txtbox2 = vgui.Create("DTextEntry", pnl)
+			txtbox2:SetWide(pnl:GetWide()-100)
+			txtbox2:SetPos(60, 5)
+			txtbox2.OnEnter = function()
+				btn2:DoClick()	
 			end
-			
+								
+			local btn2 = vgui.Create("DImageButton", pnl)
+			x, y = txtbox2:GetPos()
+			btn2:SetPos(x + txtbox2:GetWide() + 5, 7)
+			btn2:SetMaterial("icon16/disk.png")
+			btn2:SizeToContents()
+			btn2:SetToolTip("Save Map")
+			btn2.DoClick = 	function()
+				if(txtbox2:GetValue()=="")then return end
+				RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
+			end
+		end
 	end
 	
 	function TOOL.BuildCPanel(panel)
@@ -1723,6 +1783,205 @@ if(CLIENT)then
 			end
 		end
 		tryToBuild()
+	end
+
+	local function AdvDupe2_ReceiveFile(len, ply)
+		local Autosave = net.ReadUInt(8) == 1
+
+		net.ReadStream(nil, function(data)
+			AdvDupe2.RemoveProgressBar()
+			if(!data)then
+				AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+				return
+			end
+			local path = ""
+			if(AutoSave)then
+				if(LocalPlayer():GetInfo("advdupe2_auto_save_overwrite")~="1")then
+					path = AdvDupe2.GetFilename(AdvDupe2.AutoSavePath)
+				end
+			else
+				path = AdvDupe2.GetFilename(AdvDupe2.SavePath)
+			end
+
+			local dupefile = file.Open(path..".txt", "wb", "DATA")
+			if(!dupefile)then
+				AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+				return
+			end
+			dupefile:Write(data)
+			dupefile:Close()
+			
+			local errored = false
+			if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
+				if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+				
+				local readFile = file.Open(path..".txt", "rb", "DATA")
+				if not readFile then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
+				local readData = readFile:Read(readFile:Size())
+				readFile:Close()
+				local success,dupe,info,moreinfo = AdvDupe2.Decode(readData)
+				if(success)then
+					AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
+				else
+					AdvDupe2.Notify("DEBUG CHECK: " .. dupe, NOTIFY_ERROR)
+					errored = true
+				end
+			end
+			
+			local filename = string.Explode("/", path)
+			filename = filename[#filename]
+			if(AutoSave)then
+				if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
+					local add = true
+					for i=1, #AdvDupe2.FileBrowser.AutoSaveNode.Files do
+						if(filename==AdvDupe2.FileBrowser.AutoSaveNode.Files[i].Label:GetText())then
+							add=false
+							break
+						end
+					end
+					if(add)then
+						AdvDupe2.FileBrowser.AutoSaveNode:AddFile(filename)
+						AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
+					end
+				end
+			else
+				AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(filename)
+				AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
+			end
+			if(!errored)then
+				AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
+			end
+		end)
+	end
+	net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
+	
+	local uploading = nil
+	function AdvDupe2.UploadFile(ReadPath, ReadArea)
+		if uploading then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
+		if(ReadArea==0)then
+			ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
+		elseif(ReadArea==1)then
+			ReadPath = AdvDupe2.DataFolder.."/-Public-/"..ReadPath..".txt"
+		else
+			ReadPath = "adv_duplicator/"..ReadPath..".txt"
+		end
+		
+		if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+		
+		local read = file.Read(ReadPath)
+		if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
+		local name = string.Explode("/", ReadPath)
+		name = name[#name]
+		name = string.sub(name, 1, #name-4)
+		
+		local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
+		if(success)then
+			net.Start("AdvDupe2_ReceiveFile")
+			net.WriteString(name)
+			uploading = net.WriteStream(read, function()
+				uploading = nil
+				AdvDupe2.File = nil
+				AdvDupe2.RemoveProgressBar()
+			end)
+			net.SendToServer()
+		else
+			AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)
+		end
+	end
+
+	function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
+
+		AdvDupe2.RemoveGhosts()
+		AdvDupe2.Ghosting = true
+		
+		AdvDupe2.GhostToSpawn = {}
+		local count = 0
+		
+		local time
+		local desc
+		local date
+		local creator
+		
+		if(info.ad1)then
+			time = moreinfo["Time"] or ""
+			desc = info["Description"] or ""
+			date = info["Date"] or ""
+			creator = info["Creator"] or ""
+
+			AdvDupe2.HeadEnt = tonumber(moreinfo.Head)
+			local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
+			AdvDupe2.HeadPos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+			local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+			AdvDupe2.HeadZPos = z
+			AdvDupe2.HeadPos.Z = AdvDupe2.HeadPos.Z + z
+
+			local Pos
+			local Ang
+			for k,v in pairs(dupe["Entities"])do
+				
+				if(v.SavedParentIdx)then 
+					if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
+					v.BuildDupeInfo.DupeParentID = v.SavedParentIdx
+					Pos = v.LocalPos*1
+					Ang = v.LocalAngle*1
+				else
+					Pos = nil
+					Ang = nil
+				end
+				for i,p in pairs(v.PhysicsObjects)do
+					p.Pos = Pos or (p.LocalPos*1)
+					p.Pos.Z = p.Pos.Z - z
+					p.Angle = Ang or (p.LocalAngle*1)
+					p.LocalPos = nil
+					p.LocalAngle = nil
+				end
+				v.LocalPos = nil
+				v.LocalAngle = nil
+				AdvDupe2.GhostToSpawn[count] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+				if(AdvDupe2.HeadEnt == k)then
+					AdvDupe2.HeadEnt = count
+				end
+				count = count + 1
+			end
+			
+			AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+			AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+		
+		else
+			time = info["time"]
+			desc = dupe["Description"]
+			date = info["date"]
+			creator = info["name"]
+
+			AdvDupe2.HeadEnt = dupe["HeadEnt"].Index
+			AdvDupe2.HeadZPos = dupe["HeadEnt"].Z
+			AdvDupe2.HeadPos = dupe["HeadEnt"].Pos
+			AdvDupe2.HeadOffset = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+			AdvDupe2.HeadAngle = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+			
+			for k,v in pairs(dupe["Entities"])do
+				AdvDupe2.GhostToSpawn[count] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+				if(AdvDupe2.HeadEnt == k)then
+					AdvDupe2.HeadEnt = count
+				end
+				count = count + 1
+			end
+		end
+		
+		if(not preview)then
+			AdvDupe2.Info.File:SetText("File: "..name)
+			AdvDupe2.Info.Creator:SetText("Creator: "..creator)
+			AdvDupe2.Info.Date:SetText("Date: "..date)
+			AdvDupe2.Info.Time:SetText("Time: "..time)
+			AdvDupe2.Info.Size:SetText("Size: "..string.NiceSize(tonumber(info.size) or 0))
+			AdvDupe2.Info.Desc:SetText("Desc: "..(desc or ""))
+			AdvDupe2.Info.Entities:SetText("Entities: "..table.Count(dupe["Entities"]))
+			AdvDupe2.Info.Constraints:SetText("Constraints: "..table.Count(dupe["Constraints"]))
+		end
+		
+		AdvDupe2.StartGhosting()
+		AdvDupe2.Preview = preview
+
 	end
 	
 	function AdvDupe2.RemoveGhosts()
@@ -1752,7 +2011,7 @@ if(CLIENT)then
 		AdvDupe2.Preview = false
 	end
 	
-	//Creates a ghost from the given entity's table
+	--Creates a ghost from the given entity's table
 	local function MakeGhostsFromTable(EntTable, gParent)
 
 		if(not EntTable)then return end
@@ -1760,7 +2019,7 @@ if(CLIENT)then
 
 		local GhostEntity = ClientsideModel(EntTable.Model, RENDERGROUP_TRANSLUCENT)
 		
-		// If there are too many entities we might not spawn..
+		-- If there are too many entities we might not spawn..
 		if not IsValid(GhostEntity) then 
 			AdvDupe2.RemoveGhosts()
 			AdvDupe2.Notify("Too many entities to spawn ghosts", NOTIFY_ERROR)
@@ -1769,10 +2028,10 @@ if(CLIENT)then
 		
 		local Phys = EntTable.PhysicsObjects[0]
 		
-		GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	//Was broken, making ghosts invisible
+		GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	--Was broken, making ghosts invisible
 		GhostEntity:SetColor( Color(255, 255, 255, 150) )
 
-		// If we're a ragdoll send our bone positions
+		-- If we're a ragdoll send our bone positions
 		/*if (EntTable.R) then
 			for k, v in pairs( EntTable.PhysicsObjects ) do
 				if(k==0)then
@@ -1981,9 +2240,9 @@ if(CLIENT)then
 		for _,ent in pairs(Entities) do
 			local pos = ent:GetPos()
 			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) then
-				//if(ent:GetClass()~="C_BaseFlexclass")then
+				--if(ent:GetClass()~="C_BaseFlexclass")then
 					EntTable[ent:EntIndex()] = ent
-				//end
+				--end
 			end
 		end
 
@@ -1997,13 +2256,13 @@ if(CLIENT)then
 		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
 		local i = tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50
 				
-		//Bottom Points
+		--Bottom Points
 		local B1 = (Vector(-i,-i,-i)+TraceRes.HitPos)
 		local B2 = (Vector(-i,i,-i)+TraceRes.HitPos)
 		local B3 = (Vector(i,i,-i)+TraceRes.HitPos)
 		local B4 = (Vector(i,-i,-i)+TraceRes.HitPos)
 				
-		//Top Points
+		--Top Points
 		local T1 = (Vector(-i,-i,i)+TraceRes.HitPos):ToScreen()
 		local T2 = (Vector(-i,i,i)+TraceRes.HitPos):ToScreen()
 		local T3 = (Vector(i,i,i)+TraceRes.HitPos):ToScreen()
@@ -2054,19 +2313,19 @@ if(CLIENT)then
 				
 		surface.SetDrawColor( 0, 255, 0, 255 )
 				
-		//Draw Sides
+		--Draw Sides
 		surface.DrawLine(B1.x, B1.y, T1.x, T1.y)
 		surface.DrawLine(B2.x, B2.y, T2.x, T2.y)
 		surface.DrawLine(B3.x, B3.y, T3.x, T3.y)
 		surface.DrawLine(B4.x, B4.y, T4.x, T4.y)
 				
-		//Draw Bottom
+		--Draw Bottom
 		surface.DrawLine(B1.x, B1.y, B2.x, B2.y)
 		surface.DrawLine(B2.x, B2.y, B3.x, B3.y)
 		surface.DrawLine(B3.x, B3.y, B4.x, B4.y)
 		surface.DrawLine(B4.x, B4.y, B1.x, B1.y)
 			
-		//Draw Top
+		--Draw Top
 		surface.DrawLine(T1.x, T1.y, T2.x, T2.y)
 		surface.DrawLine(T2.x, T2.y, T3.x, T3.y)
 		surface.DrawLine(T3.x, T3.y, T4.x, T4.y)
