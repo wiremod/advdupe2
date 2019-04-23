@@ -54,26 +54,23 @@ local function makeInfo(tbl)
 	for k,v in pairs(tbl) do
 		info = concat{info,k,"\1",v,"\1"}
 	end
-	return info.."\2"
+	return info .. "\2"
 end
 
 local AD2FF = "AD2F%s\n%s\n%s"
 
-local tables
-local buff
-
 local function noserializer() end
 
 local enc = {}
-for i=1,255 do enc[i] = noserializer end
+for i = 1, 255 do enc[i] = noserializer end
 
 local function isArray(tbl)
 	local ret = true
 	local m = 0
-	
+
 	for k, v in pairs(tbl) do
 		m = m + 1
-		if k ~= m or enc[TypeID(v)]==noserializer then
+		if k ~= m or enc[TypeID(v)] == noserializer then
 			ret = false
 			break
 		end
@@ -87,7 +84,7 @@ local function write(obj)
 end
 
 local len
-local tables,tablesLookup
+local tables, tablesLookup
 
 enc[TYPE_TABLE] = function(obj) --table
 	tables = tables + 1
@@ -98,7 +95,7 @@ enc[TYPE_TABLE] = function(obj) --table
 		buff:WriteShort(tablesLookup[obj])
 		return
 	end
-	
+
 	if isArray(obj) then
 		buff:WriteByte(254)
 		for i,v in pairs(obj) do
@@ -107,7 +104,7 @@ enc[TYPE_TABLE] = function(obj) --table
 	else
 		buff:WriteByte(255)
 		for k,v in pairs(obj) do
-			if(enc[TypeID(k)]!=noserializer and enc[TypeID(v)]!=noserializer)then
+			if enc[TypeID(k)] ~= noserializer and enc[TypeID(v)] ~= noserializer then
 				write(k)
 				write(v)
 			end
@@ -135,9 +132,9 @@ enc[TYPE_ANGLE] = function(obj) --angle
 	buff:WriteDouble(obj.r)
 end
 enc[TYPE_STRING] = function(obj) --string
-	
+
 	len = #obj
-	
+
 	if len < 246 then
 		buff:WriteByte(len)
 		buff:Write(obj)
@@ -146,11 +143,11 @@ enc[TYPE_STRING] = function(obj) --string
 		buff:WriteULong(len)
 		buff:Write(obj)
 	end
-	
+
 end
 
 local function error_nodeserializer()
-	buff:Seek(buff:Tell()-1)
+	buff:Seek(buff:Tell() - 1)
 	error(format("couldn't find deserializer for type {typeid:%d}", buff:ReadByte()))
 end
 
@@ -159,7 +156,7 @@ local read4, read5
 local reference = 0
 do --Version 4
 	local dec = {}
-	for i=1,255 do dec[i] = error_nodeserializer end
+	for i = 1, 255 do dec[i] = error_nodeserializer end
 
 	local function read()
 		local tt = buff:ReadByte()
@@ -196,7 +193,7 @@ do --Version 4
 		repeat
 			k = k + 1
 			v = read()
-			if(v != nil) then
+			if v ~= nil  then
 				t[k] = v
 			end
 
@@ -223,15 +220,17 @@ do --Version 4
 	dec[248] = function() --null-terminated string
 		local start = buff:Tell()
 		local slen = 0
-		
-		while buff:ReadByte() != 0 do
+
+		while buff:ReadByte() ~= 0 do
 			slen = slen + 1
 		end
-		
+
 		buff:Seek(start)
-		
+
 		local retv = buff:Read(slen)
-		if(not retv)then retv="" end
+		if not retv then
+			retv = ""
+		end
 		buff:ReadByte()
 
 		return retv
@@ -241,12 +240,12 @@ do --Version 4
 		return tables[buff:ReadShort()]
 	end
 
-	for i=1,246 do dec[i] = function() return buff:Read(i) end end
+	for i = 1, 246 do dec[i] = function() return buff:Read(i) end end
 end
 
 do --Version 5
 	local dec = {}
-	for i=1,255 do dec[i] = error_nodeserializer end
+	for i = 1, 255 do dec[i] = error_nodeserializer end
 
 	local function read()
 		local tt = buff:ReadByte()
@@ -301,7 +300,9 @@ do --Version 5
 	dec[248] = function() -- Length>246 string
 		local slen = buff:ReadULong()
 		local retv = buff:Read(slen)
-		if(not retv)then retv="" end
+		if not retv then
+			retv = ""
+		end
 		return retv
 	end
 	dec[247] = function() --table reference
@@ -311,7 +312,7 @@ do --Version 5
 		return
 	end
 
-	for i=1,245 do dec[i] = function() return buff:Read(i) end end
+	for i = 1, 245 do dec[i] = function() return buff:Read(i) end end
 	dec[0] = function() return "" end
 end
 
@@ -331,23 +332,23 @@ end
 
 
 local function deserialize(str, read)
-	
-	if(str==nil)then
+
+	if not str then
 		error("File could not be decompressed.")
 		return {}
 	end
-	
+
 	tables = {}
 	reference = 0
 	buff = file.Open("ad2temp.txt","wb","DATA")
 	buff:Write(str)
 	buff:Flush()
 	buff:Close()
-	
+
 	buff = file.Open("ad2temp.txt","rb", "DATA")
 	local success, tbl = pcall(read)
 	buff:Close()
-	
+
 	if success then
 		return tbl
 	else
@@ -362,13 +363,13 @@ end
 	Return:	runs callback(<string> encoded_dupe, <...> args)
 ]]
 function AdvDupe2.Encode(dupe, info, callback, ...)
-	
+
 	local encodedTable = compress(serialize(dupe))
 	info.check = "\r\n\t\n"
 	info.size = #encodedTable
-	
+
 	callback(AD2FF:format(char(REVISION), makeInfo(info), encodedTable),...)
-	
+
 end
 
 --seperates the header and body and converts the header to a table
@@ -382,7 +383,7 @@ local function getInfo(str)
 	for k,v in ss:gmatch("(.-)\1(.-)\1") do
 		info[k] = v
 	end
-	
+
 	if info.check ~= "\r\n\t\n" then
 		if info.check == "\10\9\10" then
 			error("detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)")
@@ -390,7 +391,7 @@ local function getInfo(str)
 			error("attempt to read AD2 file with malformed info block")
 		end
 	end
-	return info, str:sub(last+2)
+	return info, str:sub(last + 2)
 end
 
 --decoders for individual versions go here
@@ -424,15 +425,15 @@ end
 	Return:	runs callback(<boolean> success, <table/string> tbl, <table> info)
 ]]
 function AdvDupe2.Decode(encodedDupe)
-	
+
 	local sig, rev = encodedDupe:match("^(....)(.)")
-	
+
 	if not rev then
 		return false, "malformed dupe (wtf <5 chars long?!)"
 	end
-	
+
 	rev = rev:byte()
-	
+
 	if sig ~= "AD2F" then
 		if sig == "[Inf" then --legacy support, ENGAGE (AD1 dupe detected)
 			local success, tbl, info, moreinfo = pcall(AdvDupe2.LegacyDecoders[0], encodedDupe)
@@ -455,13 +456,13 @@ function AdvDupe2.Decode(encodedDupe)
 		return false, format("attempt to use an invalid format revision (rev %d)", rev)
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
-		
+
 		if success then
 			info.revision = rev
 		else
 			ErrorNoHalt(tbl)
 		end
-		
+
 		return success, tbl, info
 	end
 end
