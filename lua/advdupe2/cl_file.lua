@@ -97,6 +97,8 @@ function AdvDupe2.UploadFile(ReadPath, ReadArea)
 			AdvDupe2.RemoveProgressBar()
 		end)
 		net.SendToServer()
+		
+		AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
 	else
 		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)
 	end
