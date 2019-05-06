@@ -16,7 +16,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 			path = AdvDupe2.GetFilename(AdvDupe2.SavePath)
 		end
 
-		local dupefile = file.Open(path..".txt", "wb", "DATA")
+		local dupefile = file.Open(path, "wb", "DATA")
 		if(!dupefile)then
 			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
 			return
@@ -26,9 +26,9 @@ local function AdvDupe2_ReceiveFile(len, ply)
 		
 		local errored = false
 		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
-			if(not file.Exists(path..".txt", "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+			if(not file.Exists(path, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 			
-			local readFile = file.Open(path..".txt", "rb", "DATA")
+			local readFile = file.Open(path, "rb", "DATA")
 			if not readFile then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
 			local readData = readFile:Read(readFile:Size())
 			readFile:Close()
@@ -41,8 +41,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 			end
 		end
 		
-		local filename = string.Explode("/", path)
-		filename = filename[#filename]
+		local filename = string.StripExtension(string.GetFileFromFilename( path ))
 		if(AutoSave)then
 			if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
 				local add = true
