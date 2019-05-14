@@ -168,7 +168,7 @@ function BROWSER:DoNodeLeftClick(node)
 				node:SetExpanded()												//It's a folder, expand/collapse it
 			end
 		else
-			AdvDupe2.InitializeUpload(GetNodePath(node))
+			AdvDupe2.UploadFile(GetNodePath(node))
 		end
 	else
 		self:SetSelected(node)													//A node was clicked, select it
@@ -235,7 +235,7 @@ local function CollapseParentsComplete(node)
 	CollapseParentsComplete(node.ParentNode)
 end
 
-local function CheckFileNameCl(path)
+function AdvDupe2.GetFilename(path)
 	if file.Exists(path..".txt", "DATA") then
 		for i = 1, AdvDupe2.FileRenameTryLimit do
 			if not file.Exists(path.."_"..i..".txt", "DATA") then
@@ -283,7 +283,7 @@ local function RenameFileCl(node, name)
 	end
 	
 	File = file.Read(tempFilePath..".txt")
-	FilePath = CheckFileNameCl(string.sub(tempFilePath, 1, #tempFilePath-#node.Label:GetText())..name)
+	FilePath = AdvDupe2.GetFilename(string.sub(tempFilePath, 1, #tempFilePath-#node.Label:GetText())..name)
 
 	if(not FilePath)then AdvDupe2.Notify("Rename limit exceeded, could not rename.", NOTIFY_ERROR) return end
 	file.Write(FilePath, File)
@@ -314,7 +314,7 @@ local function MoveFileClient(node)
 	if(area~=area2 or path==path2)then AdvDupe2.Notify("Cannot move files between these directories.", NOTIFY_ERROR) return end
 	if(area==2)then base = "adv_duplicator" end
 
-	local savepath = CheckFileNameCl(base.."/"..path2.."/"..node2.Label:GetText())
+	local savepath = AdvDupe2.GetFilename(base.."/"..path2.."/"..node2.Label:GetText())
 	local OldFile = base.."/"..path..".txt"
 	
 	local ReFile = file.Read(OldFile)
@@ -384,7 +384,7 @@ function BROWSER:DoNodeRightClick(node)
 	if(node.Derma.ClassName=="advdupe2_browser_file")then
 		if(node.Control.Search)then
 			Menu:AddOption("Open", 	function()
-										AdvDupe2.InitializeUpload(GetNodePath(node.Ref))
+										AdvDupe2.UploadFile(GetNodePath(node.Ref))
 									end)
 			Menu:AddOption("Preview", 	function() 
 											local ReadPath, ReadArea = GetNodePath(node.Ref)
@@ -406,7 +406,7 @@ function BROWSER:DoNodeRightClick(node)
 										end)
 		else
 			Menu:AddOption("Open", 	function()
-										AdvDupe2.InitializeUpload(GetNodePath(node))
+										AdvDupe2.UploadFile(GetNodePath(node))
 									end)
 			Menu:AddOption("Preview", 	function() 
 											local ReadPath, ReadArea = GetNodePath(node)

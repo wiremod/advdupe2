@@ -9,15 +9,15 @@ AdvDupe2.FileRenameTryLimit = 256
 
 include "advdupe2/sv_clipboard.lua"
 include "advdupe2/sh_codec.lua"
-include "advdupe2/sv_file.lua"
-include "advdupe2/sv_networking.lua"
+include "advdupe2/sh_netstream.lua"
 include "advdupe2/sv_misc.lua"
+include "advdupe2/sv_file.lua"
 
 AddCSLuaFile "autorun/client/advdupe2_cl_init.lua"
-AddCSLuaFile "advdupe2/cl_networking.lua"
-AddCSLuaFile "advdupe2/cl_file.lua"
 AddCSLuaFile "advdupe2/file_browser.lua"
 AddCSLuaFile "advdupe2/sh_codec.lua"
+AddCSLuaFile "advdupe2/sh_netstream.lua"
+AddCSLuaFile "advdupe2/cl_file.lua"
 
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	umsg.Start("AdvDupe2Notify",ply)
@@ -35,9 +35,6 @@ CreateConVar("AdvDupe2_SpawnRate", "1", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxFileSize", "200", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxEntities", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxConstraints", "0", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_AllowUploading", "true", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_AllowDownloading", "true", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_AllowPublicFolder", "true", {FCVAR_ARCHIVE})
 
 CreateConVar("AdvDupe2_MaxContraptionEntities", "10", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxContraptionConstraints", "15", {FCVAR_ARCHIVE})
@@ -52,23 +49,18 @@ CreateConVar("AdvDupe2_MaxAreaCopySize", "2500", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_FileModificationDelay", "5", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_UpdateFilesDelay", "10", {FCVAR_ARCHIVE})
 
-CreateConVar("AdvDupe2_MaxDownloadBytes2", "10000", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_MaxUploadBytes2", "10000", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_ServerSendRate", "1", {FCVAR_ARCHIVE})
-CreateConVar("AdvDupe2_ClientSendRate", "1", {FCVAR_ARCHIVE})
-
 CreateConVar("AdvDupe2_LoadMap", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MapFileName", "", {FCVAR_ARCHIVE})
 
 cvars.AddChangeCallback("AdvDupe2_SpawnRate",
-	function(cvar, preval, newval)
-		newval = tonumber(newval)
-		if(newval~=nil and newval>0)then
-			AdvDupe2.SpawnRate = newval
-		else
-			print("[AdvDupe2Notify]\tINVALID SPAWN RATE")
-		end
-	end)
+function(cvar, preval, newval)
+	newval = tonumber(newval)
+	if(newval~=nil and newval>0)then
+		AdvDupe2.SpawnRate = newval
+	else
+		print("[AdvDupe2Notify]\tINVALID SPAWN RATE")
+	end
+end)
 	
 local function PasteMap()
 	if(GetConVarString("AdvDupe2_LoadMap")=="0")then return end
@@ -128,22 +120,11 @@ local function PasteMap()
 	print("[AdvDupe2Notify]\tMap save pasted.")
 end
 
-util.AddNetworkString("AdvDupe2_AddFile")
-util.AddNetworkString("AdvDupe2_AddFolder")
-util.AddNetworkString("AdvDupe2_RenameFile")
-util.AddNetworkString("AdvDupe2_MoveFile")
-util.AddNetworkString("AdvDupe2_DeleteNode")
-util.AddNetworkString("AdvDupe2_SendFiles")
 util.AddNetworkString("AdvDupe2_SetDupeInfo")
-util.AddNetworkString("AdvDupe2_RecieveFile")
-util.AddNetworkString("AdvDupe2_InitRecieveFile")
-util.AddNetworkString("AdvDupe2_RecieveFile")
-util.AddNetworkString("AdvDupe2_DownloadFile")
 util.AddNetworkString("AdvDupe2_ReceiveFile")
 util.AddNetworkString("AdvDupe2_SendGhosts")
 util.AddNetworkString("AdvDupe2_AddGhost")
 util.AddNetworkString("AdvDupe2_CanAutoSave")
-util.AddNetworkString("AdvDupe2_SendContraptionGhost")
 
 hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
 hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
@@ -155,3 +136,8 @@ hook.Add("Initialize", "AdvDupe2_CheckServerSettings",function()
 		print("[AdvDupe2Notify]\tINVALID SPAWN RATE DEFAULTING VALUE")
 	end
 end)
+
+hook.Add("PlayerInitialSpawn","AdvDupe2_AddPlayerTable",function(ply)
+	ply.AdvDupe2 = {}
+end)
+

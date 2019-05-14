@@ -1,63 +1,104 @@
---[[
-	Title: Adv. Dupe 2 Filing Clerk (Clientside)
-	
-	Desc: Reads/writes AdvDupe2 files.
-	
-	Author: AD2 Team
-	
-	Version: 1.0
-]]
+local function AdvDupe2_ReceiveFile(len, ply)
+	local Autosave = net.ReadUInt(8) == 1
 
---[[
-	Name:	WriteAdvDupe2File
-	Desc:	Writes a dupe file to the dupe folder.
-	Params:	<string> dupe, <string> name
-	Return:	<boolean> success/<string> path
-]]
-function AdvDupe2.WriteFile(name, dupe)
+	net.ReadStream(nil, function(data)
+		AdvDupe2.RemoveProgressBar()
+		if(!data)then
+			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+			return
+		end
+		local path = ""
+		if(AutoSave)then
+			if(LocalPlayer():GetInfo("advdupe2_auto_save_overwrite")~="1")then
+				path = AdvDupe2.GetFilename(AdvDupe2.AutoSavePath)
+			end
+		else
+			path = AdvDupe2.GetFilename(AdvDupe2.SavePath)
+		end
 
-	name = name:lower()
-	
-	if name:find("[<>:\\\"|%?%*%.]") then return false end
-	
-	name = name:gsub("//","/")
-	
-	local path = string.format("%q/%q", self.DataFolder, name)
-	
-	--if a file with this name already exists, we have to come up with a different name
-	if file.Exists(path..".txt", "DATA") then
-		for i = 1, AdvDupe2.FileRenameTryLimit do
-			--check if theres already a file with the name we came up with, and retry if there is
-			--otherwise, we can exit the loop and write the file
-			if not file.Exists(path.."_"..i..".txt", "DATA") then
-				path = path.."_"..i
-				break
+		local dupefile = file.Open(path, "wb", "DATA")
+		if(!dupefile)then
+			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+			return
+		end
+		dupefile:Write(data)
+		dupefile:Close()
+		
+		local errored = false
+		if(LocalPlayer():GetInfo("advdupe2_debug_openfile")=="1")then
+			if(not file.Exists(path, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+			
+			local readFile = file.Open(path, "rb", "DATA")
+			if not readFile then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
+			local readData = readFile:Read(readFile:Size())
+			readFile:Close()
+			local success,dupe,info,moreinfo = AdvDupe2.Decode(readData)
+			if(success)then
+				AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
+			else
+				AdvDupe2.Notify("DEBUG CHECK: " .. dupe, NOTIFY_ERROR)
+				errored = true
 			end
 		end
-		--if we still can't find a unique name we give up
-		if file.Exists(path..".txt", "DATA") then return false end
+		
+		local filename = string.StripExtension(string.GetFileFromFilename( path ))
+		if(AutoSave)then
+			if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
+				local add = true
+				for i=1, #AdvDupe2.FileBrowser.AutoSaveNode.Files do
+					if(filename==AdvDupe2.FileBrowser.AutoSaveNode.Files[i].Label:GetText())then
+						add=false
+						break
+					end
+				end
+				if(add)then
+					AdvDupe2.FileBrowser.AutoSaveNode:AddFile(filename)
+					AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
+				end
+			end
+		else
+			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(filename)
+			AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
+		end
+		if(!errored)then
+			AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
+		end
+	end)
+end
+net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
+
+local uploading = nil
+function AdvDupe2.UploadFile(ReadPath, ReadArea)
+	if uploading then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
+	if(ReadArea==0)then
+		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
+	elseif(ReadArea==1)then
+		ReadPath = AdvDupe2.DataFolder.."/-Public-/"..ReadPath..".txt"
+	else
+		ReadPath = "adv_duplicator/"..ReadPath..".txt"
 	end
 	
-	--write the file
-	file.Write(path..".txt", dupe)
+	if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 	
-	--returns if the write was successful and the name the path ended up being saved under
-	return path..".txt", path:match("[^/]-$")
+	local read = file.Read(ReadPath)
+	if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
+	local name = string.Explode("/", ReadPath)
+	name = name[#name]
+	name = string.sub(name, 1, #name-4)
 	
-end
-
---[[
-	Name:	ReadAdvDupe2File
-	Desc:	Reads a dupe file from the dupe folder.
-	Params:	<string> name
-	Return:	<string> contents
-]]
-function AdvDupe2.ReadFile(name, dirOverride)
-	
-	--infinitely simpler than WriteAdvDupe2 :3
-	local buff = file.Open(string.format("%q/%q.txt", dirOverride or AdvDupe2.DataFolder, name), "rb", "DATA")
-	local read = buff:Read(buff:Size())
-	buff:Close()
-	return read
-	
+	local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
+	if(success)then
+		net.Start("AdvDupe2_ReceiveFile")
+		net.WriteString(name)
+		uploading = net.WriteStream(read, function()
+			uploading = nil
+			AdvDupe2.File = nil
+			AdvDupe2.RemoveProgressBar()
+		end)
+		net.SendToServer()
+		
+		AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
+	else
+		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)
+	end
 end
