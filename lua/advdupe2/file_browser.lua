@@ -238,8 +238,9 @@ end
 function AdvDupe2.GetFilename(path)
 	if file.Exists(path..".txt", "DATA") then
 		for i = 1, AdvDupe2.FileRenameTryLimit do
-			if not file.Exists(path.."_"..i..".txt", "DATA") then
-				return path.."_"..i..".txt"
+			local p = string.format("%s_%03d.txt", path, i)
+			if not file.Exists(p, "DATA") then
+				return p
 			end
 		end
 		return false
