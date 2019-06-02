@@ -10,12 +10,14 @@ include "advdupe2/sh_codec.lua"
 include "advdupe2/sh_netstream.lua"
 include "advdupe2/sv_misc.lua"
 include "advdupe2/sv_file.lua"
+include "advdupe2/sv_ghost.lua"
 
 AddCSLuaFile "autorun/client/advdupe2_cl_init.lua"
 AddCSLuaFile "advdupe2/file_browser.lua"
 AddCSLuaFile "advdupe2/sh_codec.lua"
 AddCSLuaFile "advdupe2/sh_netstream.lua"
 AddCSLuaFile "advdupe2/cl_file.lua"
+AddCSLuaFile "advdupe2/cl_ghost.lua"
 
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	umsg.Start("AdvDupe2Notify",ply)
@@ -120,8 +122,6 @@ end
 
 util.AddNetworkString("AdvDupe2_SetDupeInfo")
 util.AddNetworkString("AdvDupe2_ReceiveFile")
-util.AddNetworkString("AdvDupe2_SendGhosts")
-util.AddNetworkString("AdvDupe2_AddGhost")
 util.AddNetworkString("AdvDupe2_CanAutoSave")
 
 hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)

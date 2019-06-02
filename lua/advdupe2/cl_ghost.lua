@@ -1,0 +1,294 @@
+function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
+
+	AdvDupe2.RemoveGhosts()
+	AdvDupe2.Ghosting = true
+
+	AdvDupe2.GhostToSpawn = {}
+	local count = 0
+
+	local time
+	local desc
+	local date
+	local creator
+
+	if(info.ad1)then
+		time = moreinfo["Time"] or ""
+		desc = info["Description"] or ""
+		date = info["Date"] or ""
+		creator = info["Creator"] or ""
+
+		AdvDupe2.HeadEnt = tonumber(moreinfo.Head)
+		local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
+		AdvDupe2.HeadPos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+		local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+		AdvDupe2.HeadZPos = z
+		AdvDupe2.HeadPos.Z = AdvDupe2.HeadPos.Z + z
+
+		local Pos
+		local Ang
+		for k,v in pairs(dupe["Entities"])do
+
+			if(v.SavedParentIdx)then
+				if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
+				v.BuildDupeInfo.DupeParentID = v.SavedParentIdx
+				Pos = v.LocalPos*1
+				Ang = v.LocalAngle*1
+			else
+				Pos = nil
+				Ang = nil
+			end
+			for i,p in pairs(v.PhysicsObjects)do
+				p.Pos = Pos or (p.LocalPos*1)
+				p.Pos.Z = p.Pos.Z - z
+				p.Angle = Ang or (p.LocalAngle*1)
+				p.LocalPos = nil
+				p.LocalAngle = nil
+			end
+			v.LocalPos = nil
+			v.LocalAngle = nil
+			AdvDupe2.GhostToSpawn[count] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+			if(AdvDupe2.HeadEnt == k)then
+				AdvDupe2.HeadEnt = count
+			end
+			count = count + 1
+		end
+
+		AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+		AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+
+	else
+		time = info["time"]
+		desc = dupe["Description"]
+		date = info["date"]
+		creator = info["name"]
+
+		AdvDupe2.HeadEnt = dupe["HeadEnt"].Index
+		AdvDupe2.HeadZPos = dupe["HeadEnt"].Z
+		AdvDupe2.HeadPos = dupe["HeadEnt"].Pos
+		AdvDupe2.HeadOffset = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+		AdvDupe2.HeadAngle = dupe["Entities"][AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+
+		for k,v in pairs(dupe["Entities"])do
+			AdvDupe2.GhostToSpawn[count] = {Model=v.Model, PhysicsObjects=v.PhysicsObjects}
+			if(AdvDupe2.HeadEnt == k)then
+				AdvDupe2.HeadEnt = count
+			end
+			count = count + 1
+		end
+	end
+
+	if(not preview)then
+		AdvDupe2.Info.File:SetText("File: "..name)
+		AdvDupe2.Info.Creator:SetText("Creator: "..creator)
+		AdvDupe2.Info.Date:SetText("Date: "..date)
+		AdvDupe2.Info.Time:SetText("Time: "..time)
+		AdvDupe2.Info.Size:SetText("Size: "..string.NiceSize(tonumber(info.size) or 0))
+		AdvDupe2.Info.Desc:SetText("Desc: "..(desc or ""))
+		AdvDupe2.Info.Entities:SetText("Entities: "..table.Count(dupe["Entities"]))
+		AdvDupe2.Info.Constraints:SetText("Constraints: "..table.Count(dupe["Constraints"]))
+	end
+
+	AdvDupe2.StartGhosting()
+	AdvDupe2.Preview = preview
+
+end
+
+function AdvDupe2.RemoveGhosts()
+
+	if(AdvDupe2.Ghosting)then
+		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
+		AdvDupe2.Ghosting = false
+		if(not AdvDupe2.BusyBar)then
+			AdvDupe2.RemoveProgressBar()
+		end
+	end
+
+	if(AdvDupe2.GhostEntities)then
+		for k,v in pairs(AdvDupe2.GhostEntities)do
+			if(IsValid(v))then
+				v:Remove()
+			end
+		end
+	end
+
+	if(IsValid(AdvDupe2.HeadGhost))then
+		AdvDupe2.HeadGhost:Remove()
+	end
+	AdvDupe2.HeadGhost = nil
+	AdvDupe2.CurrentGhost = 1
+	AdvDupe2.GhostEntities = nil
+	AdvDupe2.Preview = false
+end
+
+--Creates a ghost from the given entity's table
+local function MakeGhostsFromTable(EntTable, gParent)
+
+	if(not EntTable)then return end
+	if(not EntTable.Model or EntTable.Model=="" or EntTable.Model[#EntTable.Model-3]~=".")then EntTable.Model="models/error.mdl" end
+
+	local GhostEntity = ClientsideModel(EntTable.Model, RENDERGROUP_TRANSLUCENT)
+
+	-- If there are too many entities we might not spawn..
+	if not IsValid(GhostEntity) then
+		AdvDupe2.RemoveGhosts()
+		AdvDupe2.Notify("Too many entities to spawn ghosts", NOTIFY_ERROR)
+		return
+	end
+
+	local Phys = EntTable.PhysicsObjects[0]
+
+	GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	--Was broken, making ghosts invisible
+	GhostEntity:SetColor( Color(255, 255, 255, 150) )
+
+	-- If we're a ragdoll send our bone positions
+	/*if (EntTable.R) then
+		for k, v in pairs( EntTable.PhysicsObjects ) do
+			if(k==0)then
+				GhostEntity:SetNetworkedBonePosition( k, Vector(0,0,0), v.Angle )
+			else
+				GhostEntity:SetNetworkedBonePosition( k, v.Pos, v.Angle )
+			end
+		end
+		Phys.Angle = Angle(0,0,0)
+	end*/
+
+	if ( gParent ) then
+		local Parent = AdvDupe2.HeadGhost
+		local temp = Parent:GetAngles()
+		GhostEntity:SetPos(Parent:GetPos() + Phys.Pos - AdvDupe2.HeadOffset)
+		GhostEntity:SetAngles(Phys.Angle)
+		Parent:SetAngles(AdvDupe2.HeadAngle)
+		GhostEntity:SetParent(Parent)
+		Parent:SetAngles(temp)
+	else
+		GhostEntity:SetAngles(Phys.Angle)
+	end
+
+	return GhostEntity
+end
+
+local function SpawnGhosts()
+	if AdvDupe2.CurrentGhost==AdvDupe2.HeadEnt then AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1 end
+
+	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
+	if g then
+		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g, true)
+		if(not AdvDupe2.BusyBar)then
+			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
+		end
+		AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
+	else
+		AdvDupe2.Ghosting = false
+		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
+		if(not AdvDupe2.BusyBar)then
+			AdvDupe2.RemoveProgressBar()
+		end
+	end
+end
+
+net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
+	AdvDupe2.RemoveGhosts()
+	AdvDupe2.GhostToSpawn = {}
+	AdvDupe2.HeadEnt = net.ReadInt(16)
+	AdvDupe2.HeadZPos = net.ReadFloat()
+	AdvDupe2.HeadPos = net.ReadVector()
+	local cache = {}
+	for i=1, net.ReadInt(16) do
+		cache[i] = net.ReadString()
+	end
+
+	for i=1, net.ReadInt(16) do
+		AdvDupe2.GhostToSpawn[i] = {R = net.ReadBit()==1, Model = cache[net.ReadInt(16)], PhysicsObjects = {}}
+		for k=0, net.ReadInt(8) do
+			AdvDupe2.GhostToSpawn[i].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
+		end
+	end
+
+	AdvDupe2.GhostEntities = {}
+	AdvDupe2.HeadGhost = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
+	AdvDupe2.HeadOffset = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
+	AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+	AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
+	AdvDupe2.CurrentGhost = 1
+	AdvDupe2.TotalGhosts = #AdvDupe2.GhostToSpawn
+
+	if(AdvDupe2.TotalGhosts>1)then
+		AdvDupe2.Ghosting = true
+		if(not AdvDupe2.BusyBar)then
+			AdvDupe2.InitProgressBar("Ghosting: ")
+			AdvDupe2.BusyBar = false
+		end
+		hook.Add("Tick", "AdvDupe2_SpawnGhosts", SpawnGhosts)
+	else
+		AdvDupe2.Ghosting = false
+	end
+end)
+
+net.Receive("AdvDupe2_AddGhost", function(len, ply, len2)
+	local ghost = {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}}
+	for k=0, net.ReadInt(8) do
+		ghost.PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
+	end
+	AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(ghost, true)
+	AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
+end)
+
+function AdvDupe2.StartGhosting()
+	AdvDupe2.RemoveGhosts()
+	if(not AdvDupe2.GhostToSpawn)then return end
+	AdvDupe2.Ghosting = true
+	AdvDupe2.GhostEntities = {}
+	AdvDupe2.HeadGhost = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
+	AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
+	AdvDupe2.CurrentGhost = 0
+	AdvDupe2.TotalGhosts = #AdvDupe2.GhostToSpawn
+
+	if(AdvDupe2.TotalGhosts  > 1)then
+		gTemp = 0
+		gPerc = AdvDupe2.TotalGhosts*(GetConVarNumber("advdupe2_limit_ghost")*0.01) - 1
+		if(gPerc>0)then
+			gPerc = AdvDupe2.TotalGhosts / gPerc
+			if(not AdvDupe2.BusyBar)then
+				AdvDupe2.InitProgressBar("Ghosting: ")
+				AdvDupe2.BusyBar = false
+			end
+			hook.Add("Tick", "AdvDupe2_SpawnGhosts", SpawnGhosts)
+		else
+			AdvDupe2.Ghosting = false
+		end
+	else
+		AdvDupe2.Ghosting = false
+	end
+end
+usermessage.Hook("AdvDupe2_StartGhosting", function()
+	AdvDupe2.StartGhosting()
+end)
+
+usermessage.Hook("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
+
+--Update the ghost's postion and angles based on where the player is looking and the offsets
+local Utrace, UGhostEnt, UEntAngle, UPos, UAngle
+function AdvDupe2.UpdateGhost()
+	Utrace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
+	if (not Utrace.Hit) then return end
+
+	UGhostEnt = AdvDupe2.HeadGhost
+
+	if(not IsValid(UGhostEnt))then
+		AdvDupe2.RemoveGhosts()
+		AdvDupe2.Notify("Invalid ghost parent.", NOTIFY_ERROR)
+		return
+	end
+
+	if(tobool(GetConVarNumber("advdupe2_original_origin")))then
+		UGhostEnt:SetPos(AdvDupe2.HeadPos + AdvDupe2.HeadOffset)
+		UGhostEnt:SetAngles(AdvDupe2.HeadAngle)
+	else
+		UEntAngle = AdvDupe2.HeadAngle
+		if(tobool(GetConVarNumber("advdupe2_offset_world")))then UEntAngle = Angle(0,0,0) end
+		Utrace.HitPos.Z = Utrace.HitPos.Z + math.Clamp(AdvDupe2.HeadZPos + GetConVarNumber("advdupe2_offset_z") or 0, -16000, 16000)
+		UPos, UAngle = LocalToWorld(AdvDupe2.HeadOffset, UEntAngle, Utrace.HitPos, Angle(math.Clamp(GetConVarNumber("advdupe2_offset_pitch") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_yaw") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_roll") or 0,-180,180)))
+		UGhostEnt:SetPos(UPos)
+		UGhostEnt:SetAngles(UAngle)
+	end
+end
