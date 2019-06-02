@@ -121,7 +121,7 @@ function AdvDupe2.RemoveGhosts()
 end
 
 --Creates a ghost from the given entity's table
-local function MakeGhostsFromTable(EntTable, gParent)
+local function MakeGhostsFromTable(EntTable)
 
 	if(not EntTable)then return end
 	if(not EntTable.Model or EntTable.Model=="" or EntTable.Model[#EntTable.Model-3]~=".")then EntTable.Model="models/error.mdl" end
@@ -135,10 +135,9 @@ local function MakeGhostsFromTable(EntTable, gParent)
 		return
 	end
 
-	local Phys = EntTable.PhysicsObjects[0]
-
 	GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	--Was broken, making ghosts invisible
 	GhostEntity:SetColor( Color(255, 255, 255, 150) )
+	GhostEntity.Phys = EntTable.PhysicsObjects[0]
 
 	if (EntTable.R) then
 		GhostEntity:SetupBones()
@@ -170,15 +169,6 @@ local function MakeGhostsFromTable(EntTable, gParent)
 			end
 		end
 	end
-	
-	if ( gParent ) then
-		local Parent = AdvDupe2.HeadGhost
-		GhostEntity:SetPos(Parent:GetPos() + Phys.Pos - AdvDupe2.HeadOffset)
-		GhostEntity:SetAngles(Phys.Angle)
-		GhostEntity:SetParent(Parent)
-	else
-		GhostEntity:SetAngles(Phys.Angle)
-	end
 
 	return GhostEntity
 end
@@ -188,7 +178,7 @@ local function SpawnGhosts()
 
 	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
 	if g then
-		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g, true)
+		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g)
 		if(not AdvDupe2.BusyBar)then
 			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
 		end
@@ -245,7 +235,7 @@ net.Receive("AdvDupe2_AddGhost", function(len, ply, len2)
 	for k=0, net.ReadInt(8) do
 		ghost.PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 	end
-	AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(ghost, true)
+	AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(ghost)
 	AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
 end)
 
@@ -276,28 +266,47 @@ end)
 usermessage.Hook("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
 
 --Update the ghost's postion and angles based on where the player is looking and the offsets
-local Utrace, UGhostEnt, UEntAngle, UPos, UAngle
+local Lheadpos, Lheadang = Vector(), Angle()
 function AdvDupe2.UpdateGhost()
-	Utrace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
-	if (not Utrace.Hit) then return end
-
-	UGhostEnt = AdvDupe2.HeadGhost
-
-	if(not IsValid(UGhostEnt))then
+	if not IsValid(AdvDupe2.HeadGhost) then
 		AdvDupe2.RemoveGhosts()
 		AdvDupe2.Notify("Invalid ghost parent.", NOTIFY_ERROR)
 		return
 	end
 
+	local trace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
+	if (not trace.Hit) then return end
+	
+	local headpos, headang
+
+	local offsetang
 	if(tobool(GetConVarNumber("advdupe2_original_origin")))then
-		UGhostEnt:SetPos(AdvDupe2.HeadPos + AdvDupe2.HeadOffset)
-		UGhostEnt:SetAngles(AdvDupe2.HeadAngle)
+		headpos = AdvDupe2.HeadPos + AdvDupe2.HeadOffset
+		headang = AdvDupe2.HeadAngle
+		offsetang = Angle()
 	else
-		UEntAngle = AdvDupe2.HeadAngle
-		if(tobool(GetConVarNumber("advdupe2_offset_world")))then UEntAngle = Angle(0,0,0) end
-		Utrace.HitPos.Z = Utrace.HitPos.Z + math.Clamp(AdvDupe2.HeadZPos + GetConVarNumber("advdupe2_offset_z") or 0, -16000, 16000)
-		UPos, UAngle = LocalToWorld(AdvDupe2.HeadOffset, UEntAngle, Utrace.HitPos, Angle(math.Clamp(GetConVarNumber("advdupe2_offset_pitch") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_yaw") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_roll") or 0,-180,180)))
-		UGhostEnt:SetPos(UPos)
-		UGhostEnt:SetAngles(UAngle)
+		local headangle = AdvDupe2.HeadAngle
+		if(tobool(GetConVarNumber("advdupe2_offset_world")))then headangle = Angle(0,0,0) end
+		trace.HitPos.Z = trace.HitPos.Z + math.Clamp(AdvDupe2.HeadZPos + GetConVarNumber("advdupe2_offset_z") or 0, -16000, 16000)
+		offsetang = Angle(math.Clamp(GetConVarNumber("advdupe2_offset_pitch") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_yaw") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_roll") or 0,-180,180))
+		headpos, headang = LocalToWorld(AdvDupe2.HeadOffset, headangle, trace.HitPos, offsetang)
+	end
+
+	if math.abs(Lheadpos.x - headpos.x)>0.01 or math.abs(Lheadpos.y - headpos.y)>0.01 or math.abs(Lheadpos.z - headpos.z)>0.01 or
+	   math.abs(Lheadang.p - headang.p)>0.01 or math.abs(Lheadang.y - headang.y)>0.01 or math.abs(Lheadang.r - headang.r) then
+	
+		Lheadpos = headpos
+		Lheadang = headang
+
+		AdvDupe2.HeadGhost:SetPos(headpos)
+		AdvDupe2.HeadGhost:SetAngles(headang)
+
+		for k, ghost in ipairs(AdvDupe2.GhostEntities) do
+			local phys = ghost.Phys
+			local pos, ang = LocalToWorld(phys.Pos, phys.Angle, headpos, offsetang)
+			ghost:SetPos(pos)
+			ghost:SetAngles(ang)
+		end
+
 	end
 end
