@@ -240,7 +240,7 @@ function AdvDupe2.StartGhosting()
 	AdvDupe2.GhostEntities = {}
 	AdvDupe2.HeadGhost = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
 	AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
-	AdvDupe2.CurrentGhost = 0
+	AdvDupe2.CurrentGhost = 1
 	AdvDupe2.TotalGhosts = #AdvDupe2.GhostToSpawn
 
 	if AdvDupe2.TotalGhosts > 1 then
