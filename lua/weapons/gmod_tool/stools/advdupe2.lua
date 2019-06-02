@@ -221,11 +221,7 @@ if(SERVER)then
 		local HeadEnt = {}
 		--If area copy is on
 		if(self:GetStage()==1)then
-			local area_size = tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50
-			if( not game.SinglePlayer() and area_size > tonumber(GetConVarString("AdvDupe2_MaxAreaCopySize")))then
-				AdvDupe2.Notify(ply,"Area copy size exceeds limit of "..GetConVarString("AdvDupe2_MaxAreaCopySize")..".",NOTIFY_ERROR)
-				return false 
-			end
+			local area_size = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 			local Pos = trace.HitNonWorld and trace.Entity:GetPos() or trace.HitPos
 			local T = (Vector(area_size,area_size,area_size)+Pos)
 			local B = (Vector(-area_size,-area_size,-area_size)+Pos)
@@ -388,13 +384,10 @@ if(SERVER)then
 		local ply = self:GetOwner()
 		
 		if(self:GetStage()==1)then
-			if( not game.SinglePlayer() and (tonumber(ply:GetInfo("advdupe2_area_copy_size"))or 50) > tonumber(GetConVarString("AdvDupe2_MaxAreaCopySize")))then
-				AdvDupe2.Notify(ply,"Area copy size exceeds limit of "..GetConVarString("AdvDupe2_MaxAreaCopySize")..".",NOTIFY_ERROR)
-				return false 
-			end
+			local areasize = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 			umsg.Start("AdvDupe2_CanAutoSave", ply)
 				umsg.Vector(trace.HitPos)
-				umsg.Short(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50)
+				umsg.Short(areasize)
 				if(trace.Entity)then
 					umsg.Short(trace.Entity:EntIndex())
 				else
@@ -404,7 +397,7 @@ if(SERVER)then
 			self:SetStage(0)
 			AdvDupe2.RemoveSelectBox(ply)
 			ply.AdvDupe2.TempAutoSavePos = trace.HitPos
-			ply.AdvDupe2.TempAutoSaveSize = tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50
+			ply.AdvDupe2.TempAutoSaveSize = areasize
 			ply.AdvDupe2.TempAutoSaveOutSide = tobool(ply:GetInfo("advdupe2_copy_outside"))
 			return true
 		end
@@ -858,8 +851,7 @@ if(CLIENT)then
 
 		if(bind=="invprev")then
 			if(ply:GetTool("advdupe2"):GetStage()==1)then
-				local size = tonumber(ply:GetInfo("advdupe2_area_copy_size")) + 25
-				if(size>GetConVarNumber("AdvDupe2_MaxAreaCopySize"))then return end
+				local size = math.min(tonumber(ply:GetInfo("advdupe2_area_copy_size")) + 25, 30720)
 				RunConsoleCommand("advdupe2_area_copy_size",size)
 			else
 				local Z = tonumber(ply:GetInfo("advdupe2_offset_z")) + 5
@@ -868,8 +860,7 @@ if(CLIENT)then
 			return true
 		elseif(bind=="invnext")then
 			if(ply:GetTool("advdupe2"):GetStage()==1)then
-				local size = tonumber(ply:GetInfo("advdupe2_area_copy_size")) - 25
-				if(size<50)then size = 50 end
+				local size = math.max(tonumber(ply:GetInfo("advdupe2_area_copy_size")) - 25, 25)
 				RunConsoleCommand("advdupe2_area_copy_size",size)
 			else
 				local Z = tonumber(ply:GetInfo("advdupe2_offset_z")) - 5
@@ -1157,9 +1148,7 @@ if(CLIENT)then
 		NumSlider:SetText( "Area Copy Size:" )
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
-		local size = GetConVarNumber("AdvDupe2_MaxAreaCopySize") or 2500
-		if(size == 0)then size = 2500 end
-		NumSlider:SetMax( size )
+		NumSlider:SetMax( 30720 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_area_copy_size" )
 		NumSlider:SetToolTip("Change the size of the area copy")
@@ -2006,7 +1995,7 @@ if(CLIENT)then
 	function AdvDupe2.DrawSelectionBox()
 			
 		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
-		local i = tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50
+		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 				
 		--Bottom Points
 		local B1 = (Vector(-i,-i,-i)+TraceRes.HitPos)
