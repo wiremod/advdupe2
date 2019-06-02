@@ -1044,16 +1044,7 @@ if(CLIENT)then
 		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
 		CPanel:AddItem(Check)
 
-		--If these funcs are not here, problems occur for each
-		local func = NumSlider.Slider.OnMouseReleased
-		NumSlider.Slider.OnMouseReleased = function(self, mcode) func(self, mcode) AdvDupe2.StartGhosting() end
-		local func2 = NumSlider.Slider.Knob.OnMouseReleased
-		NumSlider.Slider.Knob.OnMouseReleased = function(self, mcode) func2(self, mcode) AdvDupe2.StartGhosting() end
-		local func3 = NumSlider.Wang.Panel.OnLoseFocus
-		NumSlider.Wang.Panel.OnLoseFocus = function(txtBox) func3(txtBox) AdvDupe2.StartGhosting() end
-		CPanel:AddItem(NumSlider)
-
-		NumSlider = vgui.Create( "DNumSlider" )
+		local NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Area Copy Size:" )
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
