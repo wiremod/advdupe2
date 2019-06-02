@@ -140,26 +140,42 @@ local function MakeGhostsFromTable(EntTable, gParent)
 	GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	--Was broken, making ghosts invisible
 	GhostEntity:SetColor( Color(255, 255, 255, 150) )
 
-	-- If we're a ragdoll send our bone positions
-	/*if (EntTable.R) then
+	if (EntTable.R) then
+		GhostEntity:SetupBones()
+		local parents = {}
+		local angs = {}
+		local ref = {}
 		for k, v in pairs( EntTable.PhysicsObjects ) do
-			if(k==0)then
-				GhostEntity:SetNetworkedBonePosition( k, Vector(0,0,0), v.Angle )
+			local bone = GhostEntity:TranslatePhysBoneToBone(k)
+			local parentbone = GhostEntity:GetBoneParent(bone)
+			if parentbone == -1 then
+				ref[bone] = GhostEntity:GetBoneMatrix(bone):GetInverseTR()
 			else
-				GhostEntity:SetNetworkedBonePosition( k, v.Pos, v.Angle )
+				parentbone = GhostEntity:TranslatePhysBoneToBone(GhostEntity:TranslateBoneToPhysBone(parentbone))
+				parents[bone] = parentbone
+				ref[bone] = GhostEntity:GetBoneMatrix(bone):GetInverseTR() * GhostEntity:GetBoneMatrix(parentbone)
+			end
+			local m = Matrix() m:SetAngles(v.Angle)
+			angs[bone] = m
+		end
+		for bone, ang in pairs( angs ) do
+			if parents[bone] and angs[parents[bone]] then
+				local localrotation = angs[parents[bone]]:GetInverseTR() * ang
+				local m = ref[bone] * localrotation
+				GhostEntity:ManipulateBoneAngles(bone, m:GetAngles())
+			else
+				local pos = GhostEntity:GetBonePosition(bone)
+				GhostEntity:ManipulateBonePosition(bone, -pos)
+				GhostEntity:ManipulateBoneAngles(bone, ref[bone]:GetAngles())
 			end
 		end
-		Phys.Angle = Angle(0,0,0)
-	end*/
-
+	end
+	
 	if ( gParent ) then
 		local Parent = AdvDupe2.HeadGhost
-		local temp = Parent:GetAngles()
 		GhostEntity:SetPos(Parent:GetPos() + Phys.Pos - AdvDupe2.HeadOffset)
 		GhostEntity:SetAngles(Phys.Angle)
-		Parent:SetAngles(AdvDupe2.HeadAngle)
 		GhostEntity:SetParent(Parent)
-		Parent:SetAngles(temp)
 	else
 		GhostEntity:SetAngles(Phys.Angle)
 	end
