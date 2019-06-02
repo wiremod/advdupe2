@@ -183,6 +183,7 @@ local function SpawnGhosts()
 			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
 		end
 		AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
+		AdvDupe2.UpdateGhosts(true)
 	else
 		AdvDupe2.Ghosting = false
 		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
@@ -267,7 +268,7 @@ usermessage.Hook("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
 
 --Update the ghost's postion and angles based on where the player is looking and the offsets
 local Lheadpos, Lheadang = Vector(), Angle()
-function AdvDupe2.UpdateGhost()
+function AdvDupe2.UpdateGhosts(force)
 	if not IsValid(AdvDupe2.HeadGhost) then
 		AdvDupe2.RemoveGhosts()
 		AdvDupe2.Notify("Invalid ghost parent.", NOTIFY_ERROR)
@@ -294,8 +295,8 @@ function AdvDupe2.UpdateGhost()
 	end
 
 	if math.abs(Lheadpos.x - headpos.x)>0.01 or math.abs(Lheadpos.y - headpos.y)>0.01 or math.abs(Lheadpos.z - headpos.z)>0.01 or
-	   math.abs(Lheadang.p - headang.p)>0.01 or math.abs(Lheadang.y - headang.y)>0.01 or math.abs(Lheadang.r - headang.r) then
-	
+	   math.abs(Lheadang.p - headang.p)>0.01 or math.abs(Lheadang.y - headang.y)>0.01 or math.abs(Lheadang.r - headang.r)>0.01 or force then
+
 		Lheadpos = headpos
 		Lheadang = headang
 
