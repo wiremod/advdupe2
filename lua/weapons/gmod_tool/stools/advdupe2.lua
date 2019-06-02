@@ -777,6 +777,7 @@ if(CLIENT)then
 		AdvDupe2.RemoveSelectBox()
 		if(AdvDupe2.Rotation)then
 			hook.Remove("PlayerBindPress", "AdvDupe2_BindPress")
+			hook.Remove("CreateMove", "AdvDupe2_MouseControl")
 		end
 		return
 	end
@@ -889,7 +890,7 @@ if(CLIENT)then
 	function TOOL:Think()
 
 		if AdvDupe2.HeadGhost then
-			AdvDupe2.UpdateGhost()
+			AdvDupe2.UpdateGhosts()
 		end
 
 		if(LocalPlayer():KeyDown(IN_USE))then
