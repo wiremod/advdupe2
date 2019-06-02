@@ -243,19 +243,12 @@ function AdvDupe2.StartGhosting()
 	AdvDupe2.CurrentGhost = 0
 	AdvDupe2.TotalGhosts = #AdvDupe2.GhostToSpawn
 
-	if(AdvDupe2.TotalGhosts  > 1)then
-		gTemp = 0
-		gPerc = AdvDupe2.TotalGhosts*(GetConVarNumber("advdupe2_limit_ghost")*0.01) - 1
-		if(gPerc>0)then
-			gPerc = AdvDupe2.TotalGhosts / gPerc
-			if(not AdvDupe2.BusyBar)then
-				AdvDupe2.InitProgressBar("Ghosting: ")
-				AdvDupe2.BusyBar = false
-			end
-			hook.Add("Tick", "AdvDupe2_SpawnGhosts", SpawnGhosts)
-		else
-			AdvDupe2.Ghosting = false
+	if AdvDupe2.TotalGhosts > 1 then
+		if(not AdvDupe2.BusyBar)then
+			AdvDupe2.InitProgressBar("Ghosting: ")
+			AdvDupe2.BusyBar = false
 		end
+		hook.Add("Tick", "AdvDupe2_SpawnGhosts", SpawnGhosts)
 	else
 		AdvDupe2.Ghosting = false
 	end

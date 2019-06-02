@@ -940,7 +940,6 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_preserve_freeze", 0, false, true)
 	CreateClientConVar("advdupe2_copy_outside", 0, false, true)
 	CreateClientConVar("advdupe2_copy_only_mine", 1, false, true)
-	CreateClientConVar("advdupe2_limit_ghost", 100, false, true)
 	CreateClientConVar("advdupe2_area_copy_size", 300, false, true)
 	CreateClientConVar("advdupe2_auto_save_contraption", 0, false, true)
 	CreateClientConVar("advdupe2_auto_save_overwrite", 1, false, true)
@@ -1045,14 +1044,6 @@ if(CLIENT)then
 		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
 		CPanel:AddItem(Check)
 
-		local NumSlider = vgui.Create( "DNumSlider" )
-		NumSlider:SetText( "Ghost Percentage:" )
-		NumSlider.Label:SetDark(true)
-		NumSlider:SetMin( 0 )
-		NumSlider:SetMax( 100 )
-		NumSlider:SetDecimals( 0 )
-		NumSlider:SetConVar( "advdupe2_limit_ghost" )
-		NumSlider:SetToolTip("Change the percent of ghosts to spawn")
 		--If these funcs are not here, problems occur for each
 		local func = NumSlider.Slider.OnMouseReleased
 		NumSlider.Slider.OnMouseReleased = function(self, mcode) func(self, mcode) AdvDupe2.StartGhosting() end
