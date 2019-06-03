@@ -628,7 +628,11 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 end
 
 local function ApplyEntityModifiers( Player, Ent )
-	if(not Ent.EntityMods)then return end
+	if not Ent.EntityMods then return end
+	if Ent.EntityMods.trail then
+		Ent.EntityMods.trail.EndSize = math.Clamp(tonumber(Ent.EntityMods.trail.EndSize) or 0, 0, 1024)
+		Ent.EntityMods.trail.StartSize = math.Clamp(tonumber(Ent.EntityMods.trail.StartSize) or 0, 0, 1024)
+	end
 	local status, error
 	for Type, Data in SortedPairs( Ent.EntityMods ) do
 		local ModFunction = duplicator.EntityModifiers[ Type ]
