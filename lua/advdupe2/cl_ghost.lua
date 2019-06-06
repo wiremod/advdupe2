@@ -278,18 +278,17 @@ function AdvDupe2.UpdateGhosts(force)
 	local trace = util.TraceLine(util.GetPlayerTrace(LocalPlayer(), LocalPlayer():GetAimVector()))
 	if (not trace.Hit) then return end
 	
-	local origin = trace.HitPos
-	local headpos, headang
-
-	local offsetang
+	local origin, offsetang, headpos, headang
 	if(tobool(GetConVarNumber("advdupe2_original_origin")))then
 		headpos = AdvDupe2.HeadPos + AdvDupe2.HeadOffset
 		headang = AdvDupe2.HeadAngle
+		origin = AdvDupe2.HeadPos
 		offsetang = Angle()
 	else
 		local headangle = AdvDupe2.HeadAngle
 		if(tobool(GetConVarNumber("advdupe2_offset_world")))then headangle = Angle(0,0,0) end
 		trace.HitPos.Z = trace.HitPos.Z + math.Clamp(AdvDupe2.HeadZPos + GetConVarNumber("advdupe2_offset_z") or 0, -16000, 16000)
+		origin = trace.HitPos
 		offsetang = Angle(math.Clamp(GetConVarNumber("advdupe2_offset_pitch") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_yaw") or 0,-180,180), math.Clamp(GetConVarNumber("advdupe2_offset_roll") or 0,-180,180))
 		headpos, headang = LocalToWorld(AdvDupe2.HeadOffset, headangle, origin, offsetang)
 	end
