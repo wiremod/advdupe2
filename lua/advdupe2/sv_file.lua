@@ -111,18 +111,7 @@ end
 
 local function AdvDupe2_ReceiveFile(len, ply)
 	if(not IsValid(ply))then return end
-	
-	if ply.AdvDupe2.Uploading then
-		umsg.Start("AdvDupe2_UploadRejected", ply)
-			umsg.Bool(false)
-		umsg.End()
-		AdvDupe2.Notify(ply, "Duplicator is Busy!",NOTIFY_ERROR,5)
-		return
-	end
-	
-	ply.AdvDupe2.Uploading = true
-	AdvDupe2.InitProgressBar(ply, "Opening: ")
-	
+
 	local name = net.ReadString()
 	local _1, _2, _3 = string.find(name, "([%w_]+)")
 	if _3 then
@@ -131,13 +120,23 @@ local function AdvDupe2_ReceiveFile(len, ply)
 		ply.AdvDupe2.Name = "Advanced Duplication"
 	end
 
-	net.ReadStream(ply, function(data)
-		AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
+	local stream = net.ReadStream(ply, function(data)
+		if data then
+			AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
+		else
+			AdvDupe2.Notify(ply, "Duplicator Upload Failed!", NOTIFY_ERROR, 5)
+		end
 		ply.AdvDupe2.Uploading = false
-					
-		umsg.Start("AdvDupe2_UploadRejected", ply)
-			umsg.Bool(true)
-		umsg.End()
 	end)
+	
+	if ply.AdvDupe2.Uploading then
+		if stream then
+			stream:Remove()
+		end
+		AdvDupe2.Notify(ply, "Duplicator is Busy!", NOTIFY_ERROR, 5)
+	elseif stream then
+		ply.AdvDupe2.Uploading = true
+		AdvDupe2.InitProgressBar(ply, "Opening: ")
+	end
 end
 net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)
