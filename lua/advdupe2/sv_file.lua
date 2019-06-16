@@ -128,7 +128,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 		end
 		ply.AdvDupe2.Uploading = false
 	end)
-	
+
 	if ply.AdvDupe2.Uploading then
 		if stream then
 			stream:Remove()
