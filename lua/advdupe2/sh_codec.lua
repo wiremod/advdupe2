@@ -60,7 +60,172 @@ end
 local AD2FF = "AD2F%s\n%s\n%s"
 
 local tables
-local buff
+local buff = {
+	readbuffer = "",
+	writebuffer = {},
+	pos = 1
+}
+
+local function twos_compliment(x,bits)
+	local limit = math.ldexp(1, bits - 1)
+	if x>limit then return x - limit*2 else return x end
+end
+
+local function PackIEEE754Double(number)
+	if number == 0 then
+		return string.char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
+	elseif number == math.huge then
+		return string.char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F)
+	elseif number == -math.huge then
+		return string.char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF)
+	elseif number ~= number then
+		return string.char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0xFF)
+	else
+		local sign = 0x00
+		if number < 0 then
+			sign = 0x80
+			number = -number
+		end
+		local mantissa, exponent = math.frexp(number)
+		exponent = exponent + 0x3FF
+		if exponent <= 0 then
+			mantissa = math.ldexp(mantissa, exponent - 1)
+			exponent = 0
+		elseif exponent > 0 then
+			if exponent >= 0x7FF then
+				return string.char(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, sign + 0x7F)
+			elseif exponent == 1 then
+				exponent = 0
+			else
+				mantissa = mantissa * 2 - 1
+				exponent = exponent - 1
+			end
+		end
+		mantissa = math.floor(math.ldexp(mantissa, 52) + 0.5)
+		return string.char(mantissa % 0x100,
+				math.floor(mantissa / 0x100) % 0x100,
+				math.floor(mantissa / 0x10000) % 0x100,
+				math.floor(mantissa / 0x1000000) % 0x100,
+				math.floor(mantissa / 0x100000000) % 0x100,
+				math.floor(mantissa / 0x10000000000) % 0x100,
+				(exponent % 0x10) * 0x10 + math.floor(mantissa / 0x1000000000000),
+				sign + math.floor(exponent / 0x10))
+	end
+end
+
+local function UnpackIEEE754Double(str, i)
+	local b8, b7, b6, b5, b4, b3, b2, b1 = string.byte(str, i, i+7)
+	local exponent = (b1 % 0x80) * 0x10 + math.floor(b2 / 0x10)
+	local mantissa = math.ldexp(((((((b2 % 0x10) * 0x100 + b3) * 0x100 + b4) * 0x100 + b5) * 0x100 + b6) * 0x100 + b7) * 0x100 + b8, -52)
+	if exponent == 0x7FF then
+		if mantissa > 0 then
+			return 0 / 0
+		else
+			if b1 >= 0x80 then
+				return -math.huge
+			else
+				return math.huge
+			end
+		end
+	elseif exponent > 0 then
+		mantissa = mantissa + 1
+	else
+		exponent = exponent + 1
+	end
+	if b1 >= 0x80 then
+		mantissa = -mantissa
+	end
+	return math.ldexp(mantissa, exponent - 0x3FF)
+end
+
+function buff:Skip(i)
+	self.pos = self.pos + i
+end
+
+function buff:Tell()
+	return self.pos
+end
+
+function buff:Read(n)
+	n = math.max(n, 0)
+	local str = string.sub(self.readbuffer, self.pos, self.pos+n-1)
+	self.pos = self.pos + n
+	return str
+end
+
+function buff:ReadByte()
+	local ret = string.byte(self.readbuffer, self.pos)
+	self.pos = self.pos + 1
+	return ret
+end
+
+function buff:ReadUShort()
+	local a, b = string.byte(self.readbuffer, self.pos, self.pos+1)
+	self.pos = self.pos + 2
+	return b * 0x100 + a
+end
+
+function buff:ReadULong()
+	local a, b, c, d = string.byte(self.readbuffer, self.pos, self.pos+3)
+	self.pos = self.pos + 4
+	return d * 0x1000000 + c * 0x10000 + b * 0x100 + a
+end
+
+function buff:ReadInt8()
+	return twos_compliment(self:ReadByte(),8)
+end
+
+function buff:ReadShort()
+	return twos_compliment(self:ReadUShort(),16)
+end
+
+function buff:ReadLong()
+	return twos_compliment(self:ReadULong(),32)
+end
+
+function buff:ReadDouble()
+	local ret = UnpackIEEE754Double(self.readbuffer, self.pos)
+	self.pos = self.pos + 8
+	return ret
+end
+
+function buff:ReadUntil(byte)
+	local endpos = string.find(self.readbuffer, byte, self.pos, true)
+	endpos = endpos or (#self.readbuffer+1)
+	local str = string.sub(self.readbuffer, self.pos, endpos - 1)
+	self.pos = endpos
+	return str
+end
+
+function buff:ReadString()
+	local ret = self:ReadUntil("\0")
+	self.pos = self.pos + 1
+	return ret
+end
+
+function buff:Write(bytes)
+	self.writebuffer[#self.writebuffer + 1] = bytes
+end
+
+function buff:WriteByte(x)
+	self.writebuffer[#self.writebuffer + 1] = string.char(math.floor(x%256))
+end
+
+function buff:WriteShort(x)
+	self.writebuffer[#self.writebuffer + 1] = string.char(math.floor(x%256), math.floor(x/256)%256)
+end
+
+function buff:WriteLong(x)
+	self.writebuffer[#self.writebuffer + 1] = string.char(math.floor(x%256), math.floor(x/256)%256, math.floor(x/65536)%256, math.floor(x/16777216)%256)
+end
+
+function buff:WriteDouble(x)
+	self.writebuffer[#self.writebuffer + 1] = PackIEEE754Double(x)
+end
+
+function buff:GetString()
+	return table.concat(self.writebuffer)
+end
 
 local function noserializer() end
 
@@ -143,14 +308,14 @@ enc[TYPE_STRING] = function(obj) --string
 		buff:Write(obj)
 	else
 		buff:WriteByte(248)
-		buff:WriteULong(len)
+		buff:WriteLong(len)
 		buff:Write(obj)
 	end
 	
 end
 
 local function error_nodeserializer()
-	buff:Seek(buff:Tell()-1)
+	buff:Seek(-1)
 	error(format("couldn't find deserializer for type {typeid:%d}", buff:ReadByte()))
 end
 
@@ -221,20 +386,7 @@ do --Version 4
 		return Angle(buff:ReadDouble(),buff:ReadDouble(),buff:ReadDouble())
 	end
 	dec[248] = function() --null-terminated string
-		local start = buff:Tell()
-		local slen = 0
-		
-		while buff:ReadByte() != 0 do
-			slen = slen + 1
-		end
-		
-		buff:Seek(start)
-		
-		local retv = buff:Read(slen)
-		if(not retv)then retv="" end
-		buff:ReadByte()
-
-		return retv
+		return buff:ReadString()
 	end
 	dec[247] = function() --table reference
 		reference = reference + 1
@@ -319,13 +471,10 @@ local function serialize(tbl)
 	tables = 0
 	tablesLookup = {}
 
-	buff = file.Open("ad2temp.txt", "wb", "DATA")
 	write(tbl)
-	buff:Close()
+	local ret = buff:GetString()
+	buff.writebuffer = {}
 
-	buff = file.Open("ad2temp.txt","rb","DATA")
-	local ret = buff:Read(buff:Size())
-	buff:Close()
 	return ret
 end
 
@@ -339,14 +488,10 @@ local function deserialize(str, read)
 	
 	tables = {}
 	reference = 0
-	buff = file.Open("ad2temp.txt","wb","DATA")
-	buff:Write(str)
-	buff:Flush()
-	buff:Close()
-	
-	buff = file.Open("ad2temp.txt","rb", "DATA")
+	buff.readbuffer = str
+	buff.pos = 1
 	local success, tbl = pcall(read)
-	buff:Close()
+	buff.readbuffer = nil
 	
 	if success then
 		return tbl
