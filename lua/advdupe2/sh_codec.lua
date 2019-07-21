@@ -223,8 +223,15 @@ function buff:WriteDouble(x)
 	self.writebuffer[#self.writebuffer + 1] = PackIEEE754Double(x)
 end
 
+function buff:SetString(str)
+	self.readbuffer = str
+	self.pos = 1
+end
+
 function buff:GetString()
-	return table.concat(self.writebuffer)
+	local ret = table.concat(self.writebuffer)
+	self.writebuffer = {}
+	return ret
 end
 
 local function noserializer() end
@@ -315,7 +322,7 @@ enc[TYPE_STRING] = function(obj) --string
 end
 
 local function error_nodeserializer()
-	buff:Seek(-1)
+	buff:Skip(-1)
 	error(format("couldn't find deserializer for type {typeid:%d}", buff:ReadByte()))
 end
 
@@ -472,10 +479,8 @@ local function serialize(tbl)
 	tablesLookup = {}
 
 	write(tbl)
-	local ret = buff:GetString()
-	buff.writebuffer = {}
 
-	return ret
+	return buff:GetString()
 end
 
 
@@ -488,10 +493,9 @@ local function deserialize(str, read)
 	
 	tables = {}
 	reference = 0
-	buff.readbuffer = str
-	buff.pos = 1
+	buff:SetString(str)
 	local success, tbl = pcall(read)
-	buff.readbuffer = nil
+	buff:SetString("")
 	
 	if success then
 		return tbl
