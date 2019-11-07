@@ -26,20 +26,30 @@ local serializable = {
 	[TYPE_STRING] = true
 }
 
-local function FilterEntityTable(tab)
-	local varType
-	for k, v in pairs(tab) do
-		varType = TypeID(v)
-		if serializable[varType] then
-			if varType == TYPE_TABLE then
-				tab[k] = FilterEntityTable(v)
+local function CopyClassArgTable(tab)
+	local done = {}
+	local function recursiveCopy(oldtable)
+		local newtable = {}
+		for k, v in pairs(oldtable) do
+			local varType = TypeID(v)
+			if serializable[varType] then
+				if varType == TYPE_TABLE then
+					if done[v] then
+						newtable[k] = done[v]
+					else
+						newtable[k] = recursiveCopy(v)
+					end
+				else
+					newtable[k] = v
+				end
+			else
+				ErrorNoHalt("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
 			end
-		else
-			ErrorNoHalt("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported type \"".. type(v) .."\"!\n")
-			tab[k]=nil
 		end
+		done[oldtable] = newtable
+		return newtable
 	end
-	return tab
+	return recursiveCopy(tab)
 end
 
 --[[
@@ -78,12 +88,12 @@ local function CopyEntTable( Ent, Offset )
 				local varType=TypeID(EntTable[Key])
 				if serializable[varType] then
 					if varType == TYPE_TABLE then
-						Tab[Key] = FilterEntityTable(table.Copy(EntTable[Key]))
+						Tab[Key] = CopyClassArgTable(EntTable[Key])
 					else
 						Tab[Key] = EntTable[Key]
 					end
 				elseif varType ~= TYPE_NIL then
-					ErrorNoHalt("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"".. Ent:GetClass() .."\" has unsupported type \"".. type(EntTable[ Key ]) .."\"!\n")
+					ErrorNoHalt("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"".. Ent:GetClass() .."\" has unsupported value of type \"".. type(EntTable[ Key ]) .."\"!\n")
 				end
 			end
 		end
