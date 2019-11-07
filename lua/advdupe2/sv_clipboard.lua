@@ -881,14 +881,13 @@ local function CreateEntityFromTable(EntTable, Player)
 			// Special keys
 			if ( Key == "Data" ) then Arg = EntTable end
 
-			// If there's a missing argument then unpack will stop sending at that argument
-			ArgList[ iNumber ] = Arg or false
+			ArgList[ iNumber ] = Arg
 
 		end
 		
 		// Create and return the entity
 		if(EntTable.Class=="prop_physics")then
-			valid = MakeProp(Player, unpack(ArgList)) //Create prop_physics like this because if the model doesn't exist it will cause
+			valid = MakeProp(Player, unpack(ArgList, 1, #EntityClass.Args)) //Create prop_physics like this because if the model doesn't exist it will cause
 		elseif IsAllowed(Player, EntTable.Class, EntityClass) then
 			//Create sents using their spawn function with the arguments we stored earlier
 			sent = true
@@ -904,7 +903,7 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = true
 			end		
 			
-			status,valid = pcall(  EntityClass.Func, Player, unpack(ArgList) )
+			status,valid = pcall(  EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args) )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: "..EntTable.Class)
 			return nil
