@@ -30,6 +30,7 @@ local function CopyClassArgTable(tab)
 	local done = {}
 	local function recursiveCopy(oldtable)
 		local newtable = {}
+		done[oldtable] = newtable
 		for k, v in pairs(oldtable) do
 			local varType = TypeID(v)
 			if serializable[varType] then
@@ -46,7 +47,6 @@ local function CopyClassArgTable(tab)
 				ErrorNoHalt("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
 			end
 		end
-		done[oldtable] = newtable
 		return newtable
 	end
 	return recursiveCopy(tab)
