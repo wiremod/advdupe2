@@ -334,7 +334,8 @@ if(SERVER)then
 	function TOOL:Deploy()
 		local ply = self:GetOwner()
 
-		if(not ply.AdvDupe2.Entities)then return end
+		if not ply.AdvDupe2 then ply.AdvDupe2 = {} end
+		if not ply.AdvDupe2.Entities then return end
 
 		umsg.Start("AdvDupe2_StartGhosting", ply)
 		umsg.End()
