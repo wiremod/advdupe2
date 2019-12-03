@@ -110,7 +110,8 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 end
 
 local function AdvDupe2_ReceiveFile(len, ply)
-	if(not IsValid(ply))then return end
+	if not IsValid(ply) then return end
+	if not ply.AdvDupe2 then ply.AdvDupe2 = {} end
 
 	local name = net.ReadString()
 	local _1, _2, _3 = string.find(name, "([%w_]+)")
