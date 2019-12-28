@@ -17,18 +17,39 @@ AdvDupe2.JobManager.PastingHook = false
 AdvDupe2.JobManager.Queue = {}
 
 local constraints = {Weld=true,  Axis=true, Ballsocket=true, Elastic=true, Hydraulic=true, Motor=true, Muscle=true, Pulley=true, Rope=true, Slider=true, Winch=true}
+local serializable = {
+	[TYPE_BOOL] = true,
+	[TYPE_NUMBER] = true,
+	[TYPE_VECTOR] = true,
+	[TYPE_ANGLE] = true,
+	[TYPE_TABLE] = true,
+	[TYPE_STRING] = true
+}
 
-local function FilterEntityTable(tab)
-	local varType
-	for k,v in pairs(tab)do
-		varType=TypeID(v)
-		if(varType==5)then
-			tab[k] = FilterEntityTable(tab[k])
-		elseif(varType==6 or varType==9)then
-			tab[k]=nil
+local function CopyClassArgTable(tab)
+	local done = {}
+	local function recursiveCopy(oldtable)
+		local newtable = {}
+		done[oldtable] = newtable
+		for k, v in pairs(oldtable) do
+			local varType = TypeID(v)
+			if serializable[varType] then
+				if varType == TYPE_TABLE then
+					if done[v] then
+						newtable[k] = done[v]
+					else
+						newtable[k] = recursiveCopy(v)
+					end
+				else
+					newtable[k] = v
+				end
+			else
+				print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
+			end
 		end
+		return newtable
 	end
-	return tab
+	return recursiveCopy(tab)
 end
 
 --[[
@@ -61,25 +82,22 @@ local function CopyEntTable( Ent, Offset )
 	local EntTable = Ent:GetTable()
 	
 	if EntityClass then
-		local varType
 		for iNumber, Key in pairs( EntityClass.Args ) do
-			-- Translate keys from old system
-			if(Key=="Pos" or Key=="Model" or Key=="Ang" or Key=="Angle" or Key=="ang" or Key=="angle" or Key=="pos" or Key=="position" or Key=="model")then
-				continue
+			-- Ignore keys from old system
+			if Key~="Pos" and Key~="Model" and Key~="Ang" and Key~="Angle" and Key~="ang" and Key~="angle" and Key~="pos" and Key~="position" and Key~="model" then
+				local varType=TypeID(EntTable[Key])
+				if serializable[varType] then
+					if varType == TYPE_TABLE then
+						Tab[Key] = CopyClassArgTable(EntTable[Key])
+					else
+						Tab[Key] = EntTable[Key]
+					end
+				elseif varType ~= TYPE_NIL then
+					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"".. Ent:GetClass() .."\" has unsupported value of type \"".. type(EntTable[ Key ]) .."\"!\n")
+				end
 			end
-			
-			varType=TypeID(EntTable[Key])
-			if(varType==5)then
-				Tab[ Key ] = FilterEntityTable(table.Copy(EntTable[Key]))
-				continue
-			elseif(varType==9 || varType==6)then
-				continue
-			end
-
-			Tab[ Key ] = EntTable[ Key ]
 		end
-		
-	end	 
+	end
 
 	Tab.BoneMods = table.Copy( Ent.BoneMods )
 	if(Ent.EntityMods)then
