@@ -44,7 +44,7 @@ local function CopyClassArgTable(tab)
 					newtable[k] = v
 				end
 			else
-				ErrorNoHalt("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
+				print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
 			end
 		end
 		return newtable
@@ -93,7 +93,7 @@ local function CopyEntTable( Ent, Offset )
 						Tab[Key] = EntTable[Key]
 					end
 				elseif varType ~= TYPE_NIL then
-					ErrorNoHalt("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"".. Ent:GetClass() .."\" has unsupported value of type \"".. type(EntTable[ Key ]) .."\"!\n")
+					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"".. Ent:GetClass() .."\" has unsupported value of type \"".. type(EntTable[ Key ]) .."\"!\n")
 				end
 			end
 		end
