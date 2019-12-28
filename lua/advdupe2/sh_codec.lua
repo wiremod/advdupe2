@@ -417,6 +417,26 @@ versions[5] = function(encodedDupe)
 	return deserialize(decompress(dupestring), read5), info
 end
 
+
+function AdvDupe2.CheckValidDupe(dupe, info)
+	if not info.time then return false, "Missing time info" end
+	if not info.date then return false, "Missing date info" end
+	if not info.name then return false, "Missing name info" end
+
+	if not dupe.Description then return false, "Missing Description" end
+	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
+	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
+	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
+	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
+	if not dupe.Entities then return false, "Missing Entities table" end
+	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index from Entities table" end
+	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects then return false, "Missing PhysicsObject table from HeadEnt Entity table" end
+	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from HeadEnt Entity table" end
+	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from HeadEnt Entity table" end
+	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from HeadEnt Entity table" end
+	return true, dupe
+end
+
 --[[
 	Name:	Decode
 	Desc:	Generates the table for a dupe from the given string. Inverse of Encode
@@ -437,6 +457,8 @@ function AdvDupe2.Decode(encodedDupe)
 		if sig == "[Inf" then --legacy support, ENGAGE (AD1 dupe detected)
 			local success, tbl, info, moreinfo = pcall(AdvDupe2.LegacyDecoders[0], encodedDupe)
 
+			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+
 			if success then
 				info.size = #encodedDupe
 				info.revision = 0
@@ -455,13 +477,15 @@ function AdvDupe2.Decode(encodedDupe)
 		return false, format("attempt to use an invalid format revision (rev %d)", rev)
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
+
+		success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
 		
 		if success then
 			info.revision = rev
 		else
 			ErrorNoHalt(tbl)
 		end
-		
+
 		return success, tbl, info
 	end
 end
