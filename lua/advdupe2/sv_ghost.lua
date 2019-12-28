@@ -4,7 +4,6 @@ util.AddNetworkString("AdvDupe2_AddGhost")
 
 function AdvDupe2.SendGhost(ply, AddOne)
 	net.Start("AdvDupe2_AddGhost")
-		net.WriteBit(AddOne.Class=="prop_ragdoll")
 		net.WriteString(AddOne.Model)
 		net.WriteInt(#AddOne.PhysicsObjects, 8)
 		for i=0, #AddOne.PhysicsObjects do
@@ -59,7 +58,6 @@ function AdvDupe2.SendGhosts(ply)
 		end
 		net.WriteInt(cnt-1, 16)
 		for i=1, #temp do
-			net.WriteBit(temp[i].Class=="prop_ragdoll")
 			net.WriteInt(mdls[i], 16)
 			net.WriteInt(#temp[i].PhysicsObjects, 8)
 			for k=0, #temp[i].PhysicsObjects do

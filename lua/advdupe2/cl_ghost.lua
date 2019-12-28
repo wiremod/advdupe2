@@ -139,7 +139,7 @@ local function MakeGhostsFromTable(EntTable)
 	GhostEntity:SetColor( Color(255, 255, 255, 150) )
 	GhostEntity.Phys = EntTable.PhysicsObjects[0]
 
-	if (EntTable.R) then
+	if util.IsValidRagdoll(EntTable.Model) then
 		GhostEntity:SetupBones()
 		local parents = {}
 		local angs = {}
@@ -205,7 +205,7 @@ net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 	end
 
 	for i=1, net.ReadInt(16) do
-		AdvDupe2.GhostToSpawn[i] = {R = net.ReadBit()==1, Model = cache[net.ReadInt(16)], PhysicsObjects = {}}
+		AdvDupe2.GhostToSpawn[i] = {Model = cache[net.ReadInt(16)], PhysicsObjects = {}}
 		for k=0, net.ReadInt(8) do
 			AdvDupe2.GhostToSpawn[i].PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 		end
@@ -232,7 +232,7 @@ net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 end)
 
 net.Receive("AdvDupe2_AddGhost", function(len, ply, len2)
-	local ghost = {R = net.ReadBit()==1, Model = net.ReadString(), PhysicsObjects = {}}
+	local ghost = {Model = net.ReadString(), PhysicsObjects = {}}
 	for k=0, net.ReadInt(8) do
 		ghost.PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 	end
