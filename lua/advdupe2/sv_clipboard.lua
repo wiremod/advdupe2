@@ -1017,7 +1017,9 @@ function AdvDupe2.duplicator.Paste( Player, EntityList, ConstraintList, Position
 			v.BuildDupeInfo.AngleReset = v.Angle
 		end
 
+		AdvDupe2.SpawningEntity = true
 		local Ent = CreateEntityFromTable(v, Player)
+		AdvDupe2.SpawningEntity = false
 
 		if Ent then
 			if(Player)then Player:AddCleanup( "AdvDupe2", Ent ) end
@@ -1163,7 +1165,10 @@ local function AdvDupe2_Spawn()
 			v.BuildDupeInfo.AngleReset = v.Angle
 		end
 
+		AdvDupe2.SpawningEntity = true
 		local Ent = CreateEntityFromTable(v, Queue.Player)
+		AdvDupe2.SpawningEntity = false
+
 		if Ent then
 			Queue.Player:AddCleanup( "AdvDupe2", Ent )
 			Ent.BoneMods = table.Copy( v.BoneMods )
