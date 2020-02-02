@@ -139,7 +139,7 @@ local function MakeGhostsFromTable(EntTable)
 	GhostEntity:SetColor( Color(255, 255, 255, 150) )
 	GhostEntity.Phys = EntTable.PhysicsObjects[0]
 
-	if util.IsValidRagdoll(EntTable.Model) then
+	if EntTable.PhysicsObjects[1] then
 		GhostEntity:SetupBones()
 		local parents = {}
 		local angs = {}
