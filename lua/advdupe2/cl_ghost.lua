@@ -57,10 +57,10 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		AdvDupe2.HeadAngle = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
 
 	else
-		time = info["time"]
-		desc = dupe["Description"]
-		date = info["date"]
-		creator = info["name"]
+		time = info["time"] or ""
+		desc = dupe["Description"] or ""
+		date = info["date"] or ""
+		creator = info["name"] or ""
 
 		AdvDupe2.HeadEnt = dupe["HeadEnt"].Index
 		AdvDupe2.HeadZPos = dupe["HeadEnt"].Z

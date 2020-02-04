@@ -419,11 +419,6 @@ end
 
 
 function AdvDupe2.CheckValidDupe(dupe, info)
-	if not info.time then return false, "Missing time info" end
-	if not info.date then return false, "Missing date info" end
-	if not info.name then return false, "Missing name info" end
-
-	if not dupe.Description then return false, "Missing Description" end
 	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
 	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
 	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
