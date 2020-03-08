@@ -482,7 +482,9 @@ function AdvDupe2.Decode(encodedDupe)
 				ErrorNoHalt(tbl)
 			end
 
-			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+			if success then
+				success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+			end
 
 			return success, tbl, info, moreinfo
 		else
@@ -495,7 +497,9 @@ function AdvDupe2.Decode(encodedDupe)
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
 
-		success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+		if success then
+			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+		end
 		
 		if success then
 			info.revision = rev
