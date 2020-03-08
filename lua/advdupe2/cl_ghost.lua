@@ -17,10 +17,9 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		date = info["Date"] or ""
 		creator = info["Creator"] or ""
 
-		AdvDupe2.HeadEnt = tonumber(moreinfo.Head)
-		local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
-		AdvDupe2.HeadPos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
-		local z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+		AdvDupe2.HeadEnt = dupe.HeadEnt.Index
+		AdvDupe2.HeadPos = dupe.HeadEnt.Pos
+		local z = dupe.HeadEnt.Z
 		AdvDupe2.HeadZPos = z
 		AdvDupe2.HeadPos.Z = AdvDupe2.HeadPos.Z + z
 

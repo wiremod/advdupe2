@@ -420,13 +420,31 @@ end
 
 function AdvDupe2.CheckValidDupe(dupe, info)
 	if info.ad1 then
-		if not tonumber(info.Head) then return false, "Missing Head info" end
-	else
-		if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
-		if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
-		if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
-		if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
+		local index = tonumber(info.Head) or (istable(dupe.Entities) and next(dupe.Entities))
+		if not index then return false, "Missing head index" end
+		local pos
+		if isstring(info.StartPos) then
+			local spx,spy,spz = info.StartPos:match("^(.-),(.-),(.+)$")
+			pos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+		else
+			pos = Vector()
+		end
+		local z
+		if isstring(info.HoldPos) then
+			z = (tonumber(info.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+		else
+			z = 0
+		end
+		dupe.HeadEnt = {
+			Index = index,
+			Pos = pos,
+			Z = z
+		}
 	end
+	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
+	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
+	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
+	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.Entities then return false, "Missing Entities table" end
 	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index from Entities table" end
 	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects then return false, "Missing PhysicsObject table from HeadEnt Entity table" end
