@@ -452,14 +452,38 @@ function AdvDupe2.Decode(encodedDupe)
 		if sig == "[Inf" then --legacy support, ENGAGE (AD1 dupe detected)
 			local success, tbl, info, moreinfo = pcall(AdvDupe2.LegacyDecoders[0], encodedDupe)
 
-			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
-
 			if success then
 				info.size = #encodedDupe
 				info.revision = 0
 				info.ad1 = true
+
+				local index = tonumber(info.Head) or (istable(tbl.Entities) and next(tbl.Entities))
+				if not index then return false, "Missing head index" end
+				local pos
+				if isstring(info.StartPos) then
+					local spx,spy,spz = info.StartPos:match("^(.-),(.-),(.+)$")
+					pos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
+				else
+					pos = Vector()
+				end
+				local z
+				if isstring(info.HoldPos) then
+					z = (tonumber(info.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+				else
+					z = 0
+				end
+				tbl.HeadEnt = {
+					Index = index,
+					Pos = pos,
+					Z = z
+				}
+
 			else
 				ErrorNoHalt(tbl)
+			end
+
+			if success then
+				success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
 			end
 
 			return success, tbl, info, moreinfo
@@ -473,7 +497,9 @@ function AdvDupe2.Decode(encodedDupe)
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
 
-		success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+		if success then
+			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+		end
 		
 		if success then
 			info.revision = rev
