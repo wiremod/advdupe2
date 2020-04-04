@@ -425,10 +425,12 @@ function AdvDupe2.CheckValidDupe(dupe, info)
 	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.Entities then return false, "Missing Entities table" end
 	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index from Entities table" end
-	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects then return false, "Missing PhysicsObject table from HeadEnt Entity table" end
-	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from HeadEnt Entity table" end
-	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from HeadEnt Entity table" end
-	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from HeadEnt Entity table" end
+	if not info.ad1 then
+		if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects then return false, "Missing PhysicsObject table from HeadEnt Entity table" end
+		if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from HeadEnt Entity table" end
+		if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from HeadEnt Entity table" end
+		if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from HeadEnt Entity table" end
+	end
 	return true, dupe
 end
 
@@ -457,18 +459,18 @@ function AdvDupe2.Decode(encodedDupe)
 				info.revision = 0
 				info.ad1 = true
 
-				local index = tonumber(info.Head) or (istable(tbl.Entities) and next(tbl.Entities))
+				local index = tonumber(moreinfo.Head) or (istable(tbl.Entities) and next(tbl.Entities))
 				if not index then return false, "Missing head index" end
 				local pos
-				if isstring(info.StartPos) then
-					local spx,spy,spz = info.StartPos:match("^(.-),(.-),(.+)$")
+				if isstring(moreinfo.StartPos) then
+					local spx,spy,spz = moreinfo.StartPos:match("^(.-),(.-),(.+)$")
 					pos = Vector(tonumber(spx) or 0, tonumber(spy) or 0, tonumber(spz) or 0)
 				else
 					pos = Vector()
 				end
 				local z
-				if isstring(info.HoldPos) then
-					z = (tonumber(info.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
+				if isstring(moreinfo.HoldPos) then
+					z = (tonumber(moreinfo.HoldPos:match("^.-,.-,(.+)$")) or 0)*-1
 				else
 					z = 0
 				end
