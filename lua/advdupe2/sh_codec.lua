@@ -425,6 +425,8 @@ function AdvDupe2.CheckValidDupe(dupe, info)
 	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.Entities then return false, "Missing Entities table" end
 	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index from Entities table" end
+	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects then return false, "Missing PhysicsObject table from HeadEnt Entity table" end
+	if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from HeadEnt Entity table" end
 	if info.ad1 then
 		if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].LocalPos then return false, "Missing PhysicsObject[0].LocalPos from HeadEnt Entity table" end
 		if not dupe.Entities[dupe.HeadEnt.Index].PhysicsObjects[0].LocalAngle then return false, "Missing PhysicsObject[0].LocalAngle from HeadEnt Entity table" end
