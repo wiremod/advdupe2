@@ -910,7 +910,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			//Create sents using their spawn function with the arguments we stored earlier
 			sent = true
 
-			if(not EntTable.BuildDupeInfo.IsVehicle and not EntTable.BuildDupeInfo.IsNPC and EntTable.Class~="prop_ragdoll")then	//These three are auto done
+			if(not EntTable.BuildDupeInfo.IsVehicle and not EntTable.BuildDupeInfo.IsNPC and EntTable.Class ~= "prop_ragdoll" and EntTable.Class ~= "prop_effect") then	//These four are auto done
 				sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
 			end
 
