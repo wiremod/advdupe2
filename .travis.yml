@@ -1,4 +1,4 @@
-dist: trusty
+dist: bionic
 sudo: false
 language: minimal
 
@@ -10,11 +10,8 @@ branches:
 notifications:
   email: false
 
-script:
-  - git diff --check $TRAVIS_COMMIT_RANGE
-
 before_deploy:
-  - curl -L "https://github.com/AbigailBuccaneer/gmad-build/releases/download/v20180201/gmad_linux" -o "$HOME/gmad_linux"
+  - curl -L "https://github.com/wiremod/gmad-build/releases/latest/download/gmad_linux" -o "$HOME/gmad_linux"
   - chmod +x "$HOME/gmad_linux"
   - $HOME/gmad_linux create -folder . -out advdupe2.gma
 
