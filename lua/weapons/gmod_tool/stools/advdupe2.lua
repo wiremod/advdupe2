@@ -8,7 +8,7 @@
 	Version: 1.0
 ]]
 TOOL.Category = "Construction"
-TOOL.Name = "#Tool.advdupe2.name"
+TOOL.Name = "#tool.advdupe2.name"
 cleanup.Register( "AdvDupe2" )
 require "controlpanel"
 
@@ -910,15 +910,6 @@ if(CLIENT)then
 	function TOOL:FreezeMovement()
 		return AdvDupe2.Rotation
 	end
-
-	language.Add( "Tool.advdupe2.name",	"Advanced Duplicator 2" )
-	language.Add( "Tool.advdupe2.desc",	"Duplicate things." )
-	language.Add( "Tool.advdupe2.0",		"Primary: Paste, Secondary: Copy, Secondary+World: Select/Deselect All, Secondary+Shift: Area copy." )
-	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area, Secondary+Shift: Cancel." )
-	language.Add( "Undone.AdvDupe2",	"Undone AdvDupe2 paste" )
-	language.Add( "Cleanup.AdvDupe2",	"Adv. Duplications" )
-	language.Add( "Cleaned.AdvDupe2",	"Cleaned up all Adv. Duplications" )
-	language.Add( "SBoxLimit.AdvDupe2",	"You've reached the Adv. Duplicator limit!" )
 
 	CreateClientConVar("advdupe2_offset_world", 0, false, true)
 	CreateClientConVar("advdupe2_offset_z", 0, false, true)
