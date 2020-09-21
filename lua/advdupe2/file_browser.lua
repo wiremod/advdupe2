@@ -1,10 +1,10 @@
 --[[
 	Title: Adv. Dupe 2 File Browser
-	
+
 	Desc: Displays and interfaces with duplication files.
-	
+
 	Author: TB
-	
+
 	Version: 1.0
 ]]
 
@@ -28,7 +28,7 @@ local function AddHistory(txt)
 			break
 		end
 	end
-	
+
 	table.insert(History, txt)
 	table.sort(History, function(a, b) return a < b end)
 end
@@ -67,7 +67,7 @@ local function NarrowHistory(txt, last)
 			end
 		end
 	end
-	
+
 	Narrow = temp
 end
 
@@ -116,7 +116,7 @@ function BROWSER:Init()
 	self:SetTall(0)
 	origSetTall = self.SetTall
 	self.SetTall = SetTall
-	
+
 	self.VBar = vgui.Create( "DVScrollBar", self:GetParent() )
 	self.VBar:Dock(RIGHT)
 	self.Nodes = 0
@@ -141,9 +141,9 @@ local function GetNodePath(node)
 		end
 		return "", area
 	end
-	
+
 	while(true)do
-		
+
 		name = node.Label:GetText()
 		if(name == "-Advanced Duplicator 2-")then
 			break
@@ -157,7 +157,7 @@ local function GetNodePath(node)
 		path = name.."/"..path
 		node = node.ParentNode
 	end
-	
+
 	return path, area
 end
 
@@ -178,14 +178,14 @@ end
 
 local function AddNewFolder(node)
 	local Controller = node.Control:GetParent():GetParent()
-	local name = Controller.FileName:GetValue() 
-	if(name=="" or name=="Folder_Name...")then 
-		AdvDupe2.Notify("Name is blank!", NOTIFY_ERROR) 
+	local name = Controller.FileName:GetValue()
+	if(name=="" or name=="Folder_Name...")then
+		AdvDupe2.Notify("Name is blank!", NOTIFY_ERROR)
 		Controller.FileName:SelectAllOnFocus(true)
 		Controller.FileName:OnGetFocus()
 		Controller.FileName:RequestFocus()
-		return 
-	end 
+		return
+	end
 	name = name:gsub("%W","")
 	local path, area = GetNodePath(node)
 	if(area==0)then
@@ -196,22 +196,22 @@ local function AddNewFolder(node)
 		path = "adv_duplicator/"..path.."/"..name
 	end
 
-	if(file.IsDir(path, "DATA"))then 
+	if(file.IsDir(path, "DATA"))then
 		AdvDupe2.Notify("Folder name already exists.", NOTIFY_ERROR)
 		Controller.FileName:SelectAllOnFocus(true)
 		Controller.FileName:OnGetFocus()
 		Controller.FileName:RequestFocus()
-		return 
+		return
 	end
 	file.CreateDir(path)
-	
+
 	local Folder = node:AddFolder(name)
 	node.Control:Sort(node)
-	
+
 	if(not node.m_bExpanded)then
 		node:SetExpanded()
 	end
-	
+
 	node.Control:SetSelected(Folder)
 	if(Controller.Expanded)then
 		AdvDupe2.FileBrowser:Slide(false)
@@ -253,7 +253,7 @@ local function GetFullPath(node)
 	if(area==0)then
 		path = AdvDupe2.DataFolder.."/"..path.."/"
 	elseif(area==1)then
-	
+
 	else
 		path = "adv_duplicator/"..path.."/"
 	end
@@ -282,7 +282,7 @@ local function RenameFileCl(node, name)
 	elseif(area==2)then
 		tempFilePath = "adv_duplicator/"..path
 	end
-	
+
 	File = file.Read(tempFilePath..".txt")
 	FilePath = AdvDupe2.GetFilename(string.sub(tempFilePath, 1, #tempFilePath-#node.Label:GetText())..name)
 
@@ -298,7 +298,7 @@ local function RenameFileCl(node, name)
 	else
 		AdvDupe2.Notify("File was not renamed.", NOTIFY_ERROR)
 	end
-	
+
 	node.Control:Sort(node.ParentNode)
 end
 
@@ -311,13 +311,13 @@ local function MoveFileClient(node)
 	local node2 = node.Control.ActionNode
 	local path, area = GetNodePath(node2)
 	local path2, area2 = GetNodePath(node)
-	
+
 	if(area~=area2 or path==path2)then AdvDupe2.Notify("Cannot move files between these directories.", NOTIFY_ERROR) return end
 	if(area==2)then base = "adv_duplicator" end
 
 	local savepath = AdvDupe2.GetFilename(base.."/"..path2.."/"..node2.Label:GetText())
 	local OldFile = base.."/"..path..".txt"
-	
+
 	local ReFile = file.Read(OldFile)
 	file.Write(savepath, ReFile)
 	file.Delete(OldFile)
@@ -351,13 +351,13 @@ local function SearchNodes(node, name)
 			table.insert(tab, v)
 		end
 	end
-	
+
 	for k,v in pairs(node.Folders) do
 		for i,j in pairs(SearchNodes(v, name)) do
 			table.insert(tab, j)
 		end
 	end
-	
+
 	return tab
 end
 
@@ -376,7 +376,7 @@ end
 
 function BROWSER:DoNodeRightClick(node)
 	self:SetSelected(node)
-	
+
 	local parent = self:GetParent():GetParent()
 	parent.FileName:KillFocus()
 	parent.Desc:KillFocus()
@@ -387,7 +387,7 @@ function BROWSER:DoNodeRightClick(node)
 			Menu:AddOption("Open", 	function()
 										AdvDupe2.UploadFile(GetNodePath(node.Ref))
 									end)
-			Menu:AddOption("Preview", 	function() 
+			Menu:AddOption("Preview", 	function()
 											local ReadPath, ReadArea = GetNodePath(node.Ref)
 											if(ReadArea==0)then
 												ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
@@ -397,7 +397,7 @@ function BROWSER:DoNodeRightClick(node)
 												ReadPath = "adv_duplicator/"..ReadPath..".txt"
 											end
 											if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
-											
+
 											local read = file.Read(ReadPath)
 											local name = string.Explode("/", ReadPath)
 											name = name[#name]
@@ -409,7 +409,7 @@ function BROWSER:DoNodeRightClick(node)
 			Menu:AddOption("Open", 	function()
 										AdvDupe2.UploadFile(GetNodePath(node))
 									end)
-			Menu:AddOption("Preview", 	function() 
+			Menu:AddOption("Preview", 	function()
 											local ReadPath, ReadArea = GetNodePath(node)
 											if(ReadArea==0)then
 												ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
@@ -419,7 +419,7 @@ function BROWSER:DoNodeRightClick(node)
 												ReadPath = "adv_duplicator/"..ReadPath..".txt"
 											end
 											if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
-											
+
 											local read = file.Read(ReadPath)
 											local name = string.Explode("/", ReadPath)
 											name = name[#name]
@@ -438,7 +438,7 @@ function BROWSER:DoNodeRightClick(node)
 											parent.FileName.PrevText = parent.FileName:GetValue()
 											parent.FileName:SetVisible(true)
 											parent.FileName:SetText(node.Label:GetText())
-											parent.FileName:SelectAllOnFocus(true) 
+											parent.FileName:SelectAllOnFocus(true)
 											parent.FileName:OnMousePressed()
 											parent.FileName:RequestFocus()
 											parent.Expanding=true
@@ -450,8 +450,8 @@ function BROWSER:DoNodeRightClick(node)
 																			parent.FileName:SelectAllOnFocus(true)
 																			parent.FileName:OnGetFocus()
 																			parent.FileName:RequestFocus()
-																			return 
-																		end 
+																			return
+																		end
 																		AddHistory(name)
 																		RenameFileCl(node, name)
 																		AdvDupe2.FileBrowser:Slide(false)
@@ -470,7 +470,7 @@ function BROWSER:DoNodeRightClick(node)
 												node.Control.ActionNode = node
 												parent.Submit.DoClick = function() MoveFileClient(node.Control.m_pSelectedItem) end
 											end)
-			Menu:AddOption("Delete", 	function() 
+			Menu:AddOption("Delete", 	function()
 												parent.Submit:SetMaterial("icon16/bin_empty.png")
 												parent.Submit:SetTooltip("Delete File")
 												parent.FileName:SetVisible(false)
@@ -511,7 +511,7 @@ function BROWSER:DoNodeRightClick(node)
 										parent.FileName.FirstChar = true
 										parent.FileName.PrevText = parent.FileName:GetValue()
 										parent.FileName:SetVisible(true)
-										parent.FileName:SelectAllOnFocus(true) 
+										parent.FileName:SelectAllOnFocus(true)
 										parent.FileName:OnMousePressed()
 										parent.FileName:RequestFocus()
 										node.Control.ActionNode = node
@@ -524,8 +524,8 @@ function BROWSER:DoNodeRightClick(node)
 																		parent.FileName:SelectAllOnFocus(true)
 																		parent.FileName:OnGetFocus()
 																		parent.FileName:RequestFocus()
-																		return 
-																	end 
+																		return
+																	end
 																	local desc = parent.Desc:GetValue()
 																	if(desc=="Description...")then desc="" end
 																	AdvDupe2.SavePath = GetFullPath(node)..name
@@ -558,7 +558,7 @@ function BROWSER:DoNodeRightClick(node)
 											parent.FileName.FirstChar = true
 											parent.FileName.PrevText = parent.FileName:GetValue()
 											parent.FileName:SetVisible(true)
-											parent.FileName:SelectAllOnFocus(true) 
+											parent.FileName:SelectAllOnFocus(true)
 											parent.FileName:OnMousePressed()
 											parent.FileName:RequestFocus()
 											parent.Expanding=true
@@ -577,12 +577,12 @@ function BROWSER:DoNodeRightClick(node)
 										parent.FileName.FirstChar = true
 										parent.FileName.PrevText = parent.FileName:GetValue()
 										parent.FileName:SetVisible(true)
-										parent.FileName:SelectAllOnFocus(true) 
+										parent.FileName:SelectAllOnFocus(true)
 										parent.FileName:OnMousePressed()
 										parent.FileName:RequestFocus()
 										parent.Expanding=true
 										AdvDupe2.FileBrowser:Slide(true)
-										parent.Submit.DoClick = function() 
+										parent.Submit.DoClick = function()
 																	Search(node, string.lower(parent.FileName:GetValue()))
 																	AddHistory(parent.FileName:GetValue())
 																	parent.FileName:SetVisible(false)
@@ -602,8 +602,8 @@ function BROWSER:DoNodeRightClick(node)
 																end
 										parent.FileName.OnEnter = parent.Submit.DoClick
 									end)
-		if(node.Label:GetText()[1]~="-")then 
-			Menu:AddOption("Delete", 	function() 
+		if(node.Label:GetText()[1]~="-")then
+			Menu:AddOption("Delete", 	function()
 											parent.Submit:SetMaterial("icon16/bin_empty.png")
 											parent.Submit:SetTooltip("Delete Folder")
 											parent.FileName:SetVisible(false)
@@ -637,7 +637,7 @@ function BROWSER:DoNodeRightClick(node)
 		Menu:AddOption("Collapse Root", function() CollapseParentsComplete(node) end)
 		if(parent.Expanded)then Menu:AddOption("Cancel Action", function() parent.Cancel:DoClick() end) end
 	end
-	
+
 	Menu:Open()
 end
 
@@ -698,7 +698,7 @@ end
 function BROWSER:AddFolder( text )
 	local node = vgui.Create("advdupe2_browser_folder", self)
 	node.Control = self
-	
+
 	node.Offset = 0
 	node.ChildrenExpanded = {}
 	node.Icon:SetPos(18, 1)
@@ -712,7 +712,7 @@ function BROWSER:AddFolder( text )
 	node.Files = {}
 	table.insert(self.Folders, node)
 	self:SetTall(self:GetTall()+20)
-	
+
 	return node
 end
 
@@ -728,12 +728,12 @@ function BROWSER:AddFile( text )
 	self.Nodes = self.Nodes + 1
 	table.insert(self.Files, node)
 	self:SetTall(self:GetTall()+20)
-	
+
 	return node
 end
 
 function BROWSER:Sort(node)
-	table.sort(node.Folders, function(a, b) return a.Label:GetText() < b.Label:GetText() end)	
+	table.sort(node.Folders, function(a, b) return a.Label:GetText() < b.Label:GetText() end)
 	table.sort(node.Files, function(a, b) return a.Label:GetText() < b.Label:GetText() end)
 
 	for i=1, #node.Folders do
@@ -816,29 +816,27 @@ Derma_Hook( FOLDER, "Paint", "Paint", "Panel" )
 
 function FOLDER:Init()
 	self:SetMouseInputEnabled( true )
-	
+
 	self:SetTall(20)
 	self:SetPaintBackground( true )
 	self:SetPaintBackgroundEnabled( false )
 	self:SetPaintBorderEnabled( false )
 	self:SetBackgroundColor(Color(0,0,0,0))
-	
 
 	self.Icon = vgui.Create( "DImage", self )
 	self.Icon:SetImage( "icon16/folder.png" )
-	
+
 	self.Icon:SizeToContents()
-	
+
 	self.Label = vgui.Create("DLabel", self)
 	self.Label:SetDark(true)
-	
 
 	self.m_bExpanded = false
 	self.Nodes = 0
 	self.ChildrenExpanded = {}
-	
+
 	self:Dock(TOP)
-	
+
 	self.ChildList = vgui.Create("Panel", self:GetParent())
 	self.ChildList:Dock(TOP)
 	self.ChildList:SetTall(0)
@@ -854,10 +852,10 @@ function FOLDER:AddFolder(text)
 		self.Expander.DoClick = ExpandNode
 		self.Expander:SetPos(self.Offset, 2)
 	end
-	
+
 	local node = vgui.Create("advdupe2_browser_folder", self.ChildList)
 	node.Control = self.Control
-	
+
 	node.Offset = self.Offset+20
 
 	node.Icon:SetPos(18 + node.Offset, 1)
@@ -868,14 +866,14 @@ function FOLDER:AddFolder(text)
 	node.IsFolder = true
 	node.Folders = {}
 	node.Files = {}
-	
+
 	self.Nodes = self.Nodes + 1
 	table.insert(self.Folders, node)
-	
+
 	if(self.m_bExpanded)then
 		self.Control:Extend(self)
 	end
-	
+
 	return node
 end
 
@@ -894,14 +892,14 @@ function FOLDER:AddFile(text)
 	node.Label:SetText(text)
 	node.Label:SizeToContents()
 	node.ParentNode = self
-	
+
 	self.Nodes = self.Nodes + 1
 	table.insert(self.Files, node)
-	
+
 	if(self.m_bExpanded)then
 		self.Control:Extend(self)
 	end
-	
+
 	return node
 end
 
@@ -934,11 +932,6 @@ end
 
 derma.DefineControl( "advdupe2_browser_folder", "AD2 Browser Folder node", FOLDER, "Panel" )
 
-
-
-
-
-
 local FILE = {}
 
 AccessorFunc( FILE, "m_bBackground", "PaintBackground",	FORCE_BOOL )
@@ -947,7 +940,7 @@ Derma_Hook( FILE, "Paint", "Paint", "Panel" )
 
 function FILE:Init()
 	self:SetMouseInputEnabled( true )
-	
+
 	self:SetTall(20)
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
@@ -956,9 +949,9 @@ function FILE:Init()
 
 	self.Icon = vgui.Create( "DImage", self )
 	self.Icon:SetImage( "icon16/page.png" )
-	
+
 	self.Icon:SizeToContents()
-	
+
 	self.Label = vgui.Create("DLabel", self)
 	self.Label:SetDark(true)
 
@@ -980,6 +973,7 @@ function FILE:OnMousePressed(code)
 		self.Control:DoNodeRightClick(self)
 	end
 end
+
 derma.DefineControl( "advdupe2_browser_file", "AD2 Browser File node", FILE, "Panel" )
 
 local PANEL = {}
@@ -991,50 +985,50 @@ Derma_Hook( PANEL, "PerformLayout", "Layout", "Panel" )
 function PANEL:PerformLayout()
 	if(self:GetWide()==self.LastX)then return end
 	local x = self:GetWide()
-	
+
 	if(self.Search)then
 		self.Search:SetWide(x)
 	end
-	
+
 	self.Browser:SetWide(x)
 	local x2, y2 = self.Browser:GetPos()
 	local BtnX = x - self.Help:GetWide() - 5
 	self.Help:SetPos(BtnX, 3)
 	BtnX = BtnX - self.Refresh:GetWide() - 5
 	self.Refresh:SetPos(BtnX, 3)
-	
+
 	BtnX = x - self.Submit:GetWide() - 15
 	self.Cancel:SetPos(BtnX, self.Browser:GetTall()+20)
 	BtnX = BtnX - self.Submit:GetWide() - 5
 	self.Submit:SetPos(BtnX, self.Browser:GetTall()+20)
-	
+
 	self.FileName:SetWide(BtnX - 10)
 	self.FileName:SetPos(5, self.Browser:GetTall()+20)
 	self.Desc:SetWide(x-10)
 	self.Desc:SetPos(5, self.Browser:GetTall()+39)
 	self.Info:SetPos(5, self.Browser:GetTall()+20)
-	
+
 	self.LastX = x
 end
 
 local pnlorigsetsize
-local function PanelSetSize(self, x, y)	
+local function PanelSetSize(self, x, y)
 	if(not self.LaidOut)then
 		pnlorigsetsize(self, x, y)
-		
+
 		self.Browser:SetSize(x, y-20)
 		self.Browser:SetPos(0, 20)
-		
+
 		if(self.Search)then
 			self.Search:SetSize(x, y-20)
 			self.Search:SetPos(0, 20)
 		end
-		
+
 		self.LaidOut = true
 	else
 		pnlorigsetsize(self, x, y)
 	end
-	
+
 end
 
 local function PurgeFiles(path, curParent)
@@ -1046,7 +1040,7 @@ local function PurgeFiles(path, curParent)
 			curParent = curParent.ParentNode
 		end
 	end
-	
+
 	if(files)then
 		for k,v in pairs(files)do
 			curParent:AddFile(string.sub(v, 1, #v-4))
@@ -1056,25 +1050,27 @@ end
 
 local function UpdateClientFiles()
 
+	local pnlCanvas = AdvDupe2.FileBrowser.Browser.pnlCanvas
+
 	for i=1,2 do
-		if(AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[1])then
-			AdvDupe2.FileBrowser.Browser.pnlCanvas:RemoveNode(AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[1])
+		if(pnlCanvas.Folders[1])then
+			pnlCanvas:RemoveNode(pnlCanvas.Folders[1])
 		end
 	end
 
-	PurgeFiles("advdupe2/", AdvDupe2.FileBrowser.Browser.pnlCanvas:AddFolder("-Advanced Duplicator 2-"))
+	PurgeFiles("advdupe2/", pnlCanvas:AddFolder("-Advanced Duplicator 2-"))
 
-	PurgeFiles("adv_duplicator/", AdvDupe2.FileBrowser.Browser.pnlCanvas:AddFolder("-Advanced Duplicator 1-"))
+	PurgeFiles("adv_duplicator/", pnlCanvas:AddFolder("-Advanced Duplicator 1-"))
 
-	if(AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[2])then
-		if(#AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[2].Folders == 0 and #AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[2].Files == 0)then
-			AdvDupe2.FileBrowser.Browser.pnlCanvas:RemoveNode(AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[2])
+	if(pnlCanvas.Folders[2])then
+		if(#pnlCanvas.Folders[2].Folders == 0 and #pnlCanvas[2].Files == 0)then
+			pnlCanvas:RemoveNode(pnlCanvas.Folders[2])
 		end
-		
-		AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[1]:SetParent(nil)
-		AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[1]:SetParent(AdvDupe2.FileBrowser.Browser.pnlCanvas.ChildList)
-		AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[1].ChildList:SetParent(nil)
-		AdvDupe2.FileBrowser.Browser.pnlCanvas.Folders[1].ChildList:SetParent(AdvDupe2.FileBrowser.Browser.pnlCanvas.ChildList)
+
+		pnlCanvas.Folders[1]:SetParent(nil)
+		pnlCanvas.Folders[1]:SetParent(pnlCanvas.ChildList)
+		pnlCanvas.Folders[1].ChildList:SetParent(nil)
+		pnlCanvas.Folders[1].ChildList:SetParent(pnlCanvas.ChildList)
 	end
 
 end
@@ -1088,11 +1084,11 @@ function PANEL:Init()
 	self.LastY = 0
 	pnlorigsetsize = self.SetSize
 	self.SetSize = PanelSetSize
-	
+
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetBackgroundColor(self:GetSkin().bg_color_bright)
-	
+
 	self.Browser = vgui.Create("advdupe2_browser_panel", self)
 	UpdateClientFiles()
 	self.Refresh = vgui.Create("DImageButton", self)
@@ -1102,7 +1098,7 @@ function PANEL:Init()
 	self.Refresh.DoClick = 	function(button)
 								UpdateClientFiles()
 							end
-	
+
 	self.Help = vgui.Create("DImageButton", self)
 	self.Help:SetMaterial( "icon16/help.png" )
 	self.Help:SizeToContents()
@@ -1114,16 +1110,16 @@ function PANEL:Init()
 		Menu:AddOption("Commands", function() gui.OpenURL("https://github.com/wiremod/advdupe2/wiki/Server-settings") end)
 		Menu:Open()
 	end
-						
+
 	self.Submit = vgui.Create("DImageButton", self)
 	self.Submit:SetMaterial( "icon16/page_save.png" )
 	self.Submit:SizeToContents()
 	self.Submit:SetTooltip("Confirm Action")
 	self.Submit.DoClick = 	function()
-								self.Expanding=true 
+								self.Expanding=true
 								AdvDupe2.FileBrowser:Slide(false)
 							end
-	
+
 	self.Cancel = vgui.Create("DImageButton", self)
 	self.Cancel:SetMaterial( "icon16/cross.png" )
 	self.Cancel:SizeToContents()
@@ -1134,21 +1130,22 @@ function PANEL:Init()
 	self.FileName:SetAllowNonAsciiCharacters( true )
 	self.FileName:SetText("File_Name...")
 	self.FileName.Last = 0
+
 	self.FileName.OnEnter = function()
 								self.FileName:KillFocus()
 								self.Desc:SelectAllOnFocus(true)
 								self.Desc.OnMousePressed()
 								self.Desc:RequestFocus()
 							end
-	self.FileName.OnMousePressed = 	function() 
-										self.FileName:OnGetFocus() 
-										if(self.FileName:GetValue()=="File_Name..." or self.FileName:GetValue()=="Folder_Name...")then 
-											self.FileName:SelectAllOnFocus(true) 
-										end 
+	self.FileName.OnMousePressed = 	function()
+										self.FileName:OnGetFocus()
+										if(self.FileName:GetValue()=="File_Name..." or self.FileName:GetValue()=="Folder_Name...")then
+											self.FileName:SelectAllOnFocus(true)
+										end
 									end
 	self.FileName:SetUpdateOnType(true)
-	self.FileName.OnTextChanged = 	function() 
-	
+	self.FileName.OnTextChanged = 	function()
+
 										if(self.FileName.FirstChar)then
 											if(string.lower(self.FileName:GetValue()[1]) == string.lower(input.LookupBinding( "menu" )))then
 												self.FileName:SetText(self.FileName.PrevText)
@@ -1158,7 +1155,7 @@ function PANEL:Init()
 												self.FileName.FirstChar = false
 											end
 										end
-										
+
 										local new, changed = self.FileName:GetValue():gsub("[^%w_ ]","")
 										if changed > 0 then
 											self.FileName:SetText(new)
@@ -1189,14 +1186,14 @@ function PANEL:Init()
 									end
 	self.FileName.OnKeyCodeTyped = 	function(txtbox, code)
 										txtbox:OnKeyCode( code )
-										
+
 										if ( code == KEY_ENTER && !txtbox:IsMultiline() && txtbox:GetEnterAllowed() ) then
 											if(txtbox.HistoryPos == 5 and txtbox.Menu:ChildCount()==5)then
 												if((txtbox.Menu.Attempts+1)*4<#Narrow)then
 													for i=1,4 do
 														txtbox.Menu:GetChild(i):SetText(Narrow[i+txtbox.Menu.Attempts*4])
 													end
-												else	
+												else
 													txtbox.Menu:GetChild(5):Remove()
 													for i=4, (txtbox.Menu.Attempts*4-#Narrow)*-1+1, -1 do
 														txtbox.Menu:GetChild(i):Remove()
@@ -1212,7 +1209,7 @@ function PANEL:Init()
 												txtbox.Menu.Attempts = txtbox.Menu.Attempts+1
 												return true
 											end
-											
+
 											if ( IsValid( txtbox.Menu ) ) then
 												txtbox.Menu:Remove()
 											end
@@ -1220,23 +1217,23 @@ function PANEL:Init()
 											txtbox:OnEnter()
 											txtbox.HistoryPos = 0
 										end
-										
+
 										if ( txtbox.m_bHistory || IsValid( txtbox.Menu ) ) then
 											if ( code == KEY_UP ) then
 												txtbox.HistoryPos = txtbox.HistoryPos - 1;
-												if(txtbox.HistoryPos~=-1 || txtbox.Menu:ChildCount()~=5)then 
-													txtbox:UpdateFromHistory() 
-												else 
+												if(txtbox.HistoryPos~=-1 || txtbox.Menu:ChildCount()~=5)then
+													txtbox:UpdateFromHistory()
+												else
 													txtbox.Menu:ClearHighlights()
 													txtbox.Menu:HighlightItem( txtbox.Menu:GetChild(5) )
 													txtbox.HistoryPos=5
 												end
 											end
-											if ( code == KEY_DOWN || code == KEY_TAB ) then	
+											if ( code == KEY_DOWN || code == KEY_TAB ) then
 												txtbox.HistoryPos = txtbox.HistoryPos + 1;
-												if(txtbox.HistoryPos~=5 || txtbox.Menu:ChildCount()~=5)then 
-													txtbox:UpdateFromHistory() 
-												else 
+												if(txtbox.HistoryPos~=5 || txtbox.Menu:ChildCount()~=5)then
+													txtbox:UpdateFromHistory()
+												else
 													txtbox.Menu:ClearHighlights()
 													txtbox.Menu:HighlightItem( txtbox.Menu:GetChild(5) )
 												end
@@ -1253,17 +1250,17 @@ function PANEL:Init()
 											end
 										end
 									end
-	
+
 	self.Desc = vgui.Create("DTextEntry", self)
 	self.Desc.OnEnter = self.Submit.DoClick
 	self.Desc:SetText("Description...")
-	self.Desc.OnMousePressed = 	function() 					
+	self.Desc.OnMousePressed = 	function()
 									self.Desc:OnGetFocus()
-									if(self.Desc:GetValue()=="Description...")then 
-										self.Desc:SelectAllOnFocus(true) 
-									end 
+									if(self.Desc:GetValue()=="Description...")then
+										self.Desc:SelectAllOnFocus(true)
+									end
 								end
-								
+
 	self.Info = vgui.Create("DLabel", self)
 	self.Info:SetVisible(false)
 
@@ -1271,13 +1268,13 @@ end
 
 function PANEL:Slide(expand)
 	if(expand)then
-		if(self.Expanded)then 
+		if(self.Expanded)then
 			self:SetTall(self:GetTall()-40) self.Expanded=false
 		else
 			self:SetTall(self:GetTall()+5)
 		end
 	else
-		if(not self.Expanded)then 
+		if(not self.Expanded)then
 			self:SetTall(self:GetTall()+40) self.Expanded=true
 		else
 			self:SetTall(self:GetTall()-5)
@@ -1306,7 +1303,7 @@ function PANEL:GetNodePath(node)
 end
 
 if(game.SinglePlayer())then
-	usermessage.Hook("AdvDupe2_AddFile", function(um) 
+	usermessage.Hook("AdvDupe2_AddFile", function(um)
 		if(um:ReadBool())then
 			if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
 				local name = um:ReadString()
@@ -1315,14 +1312,15 @@ if(game.SinglePlayer())then
 						return
 					end
 				end
-				
+
 				AdvDupe2.FileBrowser.AutoSaveNode:AddFile(name)
 				AdvDupe2.FileBrowser.AutoSaveNode.Control:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
 			end
 		else
 			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(um:ReadString())
-			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode.Control:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)		
+			AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode.Control:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
 		end
 	end)
 end
+
 vgui.Register("advdupe2_browser", PANEL, "Panel")
