@@ -366,7 +366,9 @@ local function SearchNodes(node, name)
 	end
 
 	for k, v in pairs(node.Folders) do
-		for i, j in pairs(SearchNodes(v, name)) do table.insert(tab, j) end
+		for i, j in pairs(SearchNodes(v, name)) do
+			table.insert(tab, j)
+		end
 	end
 
 	return tab
@@ -374,7 +376,7 @@ end
 
 local function Search(node, name)
 	local pnFileBr = AdvDupe2.FileBrowser
-	local pnFileBr.Search = vgui.Create("advdupe2_browser_panel", pnFileBr)
+	pnFileBr.Search = vgui.Create("advdupe2_browser_panel", pnFileBr)
 	pnFileBr.Search:SetPos(pnFileBr.Browser:GetPos())
 	pnFileBr.Search:SetSize(pnFileBr.Browser:GetSize())
 	pnFileBr.Search.pnlCanvas.Search = true
