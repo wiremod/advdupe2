@@ -373,16 +373,16 @@ local function SearchNodes(node, name)
 end
 
 local function Search(node, name)
-	local fbrSearch = vgui.Create("advdupe2_browser_panel", AdvDupe2.FileBrowser)
-	AdvDupe2.FileBrowser.Search = fbrSearch -- Write the reference and use local var
-	fbrSearch:SetPos(AdvDupe2.FileBrowser.Browser:GetPos())
-	fbrSearch:SetSize(AdvDupe2.FileBrowser.Browser:GetSize())
-	fbrSearch.pnlCanvas.Search = true
-	AdvDupe2.FileBrowser.Browser:SetVisible(false)
+	local pnFileBr = AdvDupe2.FileBrowser
+	local pnFileBr.Search = vgui.Create("advdupe2_browser_panel", pnFileBr)
+	pnFileBr.Search:SetPos(pnFileBr.Browser:GetPos())
+	pnFileBr.Search:SetSize(pnFileBr.Browser:GetSize())
+	pnFileBr.Search.pnlCanvas.Search = true
+	pnFileBr.Browser:SetVisible(false)
 	local Files = SearchNodes(node, name)
 	table.sort(Files, function(a, b) return a.Label:GetText() < b.Label:GetText() end)
 	for k, v in pairs(Files) do
-		fbrSearch.pnlCanvas:AddFile(v.Label:GetText()).Ref = v
+		pnFileBr.Search.pnlCanvas:AddFile(v.Label:GetText()).Ref = v
 	end
 end
 
@@ -1359,9 +1359,13 @@ function PANEL:Slide(expand)
 	end
 end
 
-function PANEL:GetFullPath(node) return GetFullPath(node) end
+function PANEL:GetFullPath(node)
+	return GetFullPath(node)
+end
 
-function PANEL:GetNodePath(node) return GetNodePath(node) end
+function PANEL:GetNodePath(node)
+	return GetNodePath(node)
+end
 
 if (game.SinglePlayer()) then
 	usermessage.Hook("AdvDupe2_AddFile", function(um)
