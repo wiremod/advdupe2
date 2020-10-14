@@ -630,7 +630,7 @@ if(SERVER)then
 		ply.AdvDupe2.AutoSaveContr = ply:GetInfo("advdupe2_auto_save_contraption")=="1"
 		ply.AdvDupe2.AutoSaveDesc = desc
 
-		local time = math.Clamp(tonumber(ply:GetInfo("advdupe2_auto_save_time")) or 5, 1, 30)
+		local time = math.Clamp(tonumber(ply:GetInfo("advdupe2_auto_save_time")) or 5, 5, 30)
 		if(game.SinglePlayer())then
 			ply.AdvDupe2.AutoSavePath = net.ReadString()
 		end
@@ -1302,7 +1302,7 @@ if(CLIENT)then
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Minutes to Save:" )
 		NumSlider.Label:SetDark(true)
-		NumSlider:SetMin( 1 )
+		NumSlider:SetMin( 5 )
 		NumSlider:SetMax( 30 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_auto_save_time" )
