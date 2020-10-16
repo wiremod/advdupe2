@@ -101,6 +101,11 @@ local gtSetupTable = {
 		["Ent"     ] = true,
 		["Ent1"    ] = true,
 	},
+	COMPARE = {
+		V1 = Vector(1, 1, 1),
+		A0 = Angle (0, 0, 0),
+		V0 = Vector(0, 0, 0)
+	}
 }
 
 local function CopyEntTable(Ent, Offset)
@@ -153,10 +158,10 @@ local function CopyEntTable(Ent, Offset)
 		end
 	end
 
-	Tab.Pos = Ent:GetPos()
+	Tab.Pos   = Ent:GetPos()
 	Tab.Class = Ent:GetClass()
 	Tab.Model = Ent:GetModel()
-	Tab.Skin = Ent:GetSkin()
+	Tab.Skin  = Ent:GetSkin()
 	Tab.CollisionGroup = Ent:GetCollisionGroup()
 	Tab.ModelScale = Ent:GetModelScale()
 
@@ -235,21 +240,22 @@ local function CopyEntTable(Ent, Offset)
 	if (Ent:HasBoneManipulations()) then
 
 		Tab.BoneManip = {}
-		local t
-		local s
-		local a
-		local p
+		local t, s, a, p
+		local c = gtSetupTable.COMPARE
 		for i = 0, Ent:GetBoneCount() do
 			t = {}
 			s = Ent:GetManipulateBoneScale(i)
 			a = Ent:GetManipulateBoneAngles(i)
 			p = Ent:GetManipulateBonePosition(i)
 
-			if (s ~= Vector(1, 1, 1)) then t['s'] = s end
-			if (a ~= Angle (0, 0, 0)) then t['a'] = a end
-			if (p ~= Vector(0, 0, 0)) then t['p'] = p end
+			-- Avoid making a vector just to compare it
+			if (s ~= c.V1) then t['s'] = s end
+			if (a ~= c.A0) then t['a'] = a end
+			if (p ~= c.V0) then t['p'] = p end
 
-			if (t['s'] or t['a'] or t['p']) then Tab.BoneManip[i] = t end
+			if (t['s'] or t['a'] or t['p']) then
+				Tab.BoneManip[i] = t
+			end
 
 		end
 
