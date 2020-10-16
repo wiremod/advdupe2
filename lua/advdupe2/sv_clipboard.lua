@@ -315,10 +315,10 @@ local function CopyConstraintTable(Const, Offset)
 
 			if ((Const[ent] and Const[ent]:IsWorld()) or IsValid(Const[ent])) then
 				Constraint.Entity[i] = {}
-				Constraint.Entity[i].Index = Const[ent]:EntIndex()
-				Constraint.Entity[i].Bone = Const["Bone" .. i]
+				Constraint.Entity[i].Index  = Const[ent]:EntIndex()
+				Constraint.Entity[i].Bone   = Const["Bone"   .. i]
 				Constraint.Entity[i].Length = Const["Length" .. i]
-				Constraint.Entity[i].World = Const["World" .. i]
+				Constraint.Entity[i].World  = Const["World"  .. i]
 
 				if Const[ent]:IsWorld() then
 					Constraint.Entity[i].World = true
@@ -326,18 +326,18 @@ local function CopyConstraintTable(Const, Offset)
 						if (i ~= 4 and i ~= 2) then
 							if (Const["Ent2"]) then
 								Constraint.Entity[i].LPos = Const["LPos" .. i] - Const["Ent2"]:GetPos()
-								Constraint["LPos" .. i] = Const["LPos" .. i] - Const["Ent2"]:GetPos()
+								Constraint["LPos" .. i]   = Const["LPos" .. i] - Const["Ent2"]:GetPos()
 							elseif (Const["Ent4"]) then
 								Constraint.Entity[i].LPos = Const["LPos" .. i] - Const["Ent4"]:GetPos()
-								Constraint["LPos" .. i] = Const["LPos" .. i] - Const["Ent4"]:GetPos()
+								Constraint["LPos" .. i]   = Const["LPos" .. i] - Const["Ent4"]:GetPos()
 							end
 						elseif (Const["Ent1"]) then
 							Constraint.Entity[i].LPos = Const["LPos" .. i] - Const["Ent1"]:GetPos()
-							Constraint["LPos" .. i] = Const["LPos" .. i] - Const["Ent1"]:GetPos()
+							Constraint["LPos" .. i]   = Const["LPos" .. i] - Const["Ent1"]:GetPos()
 						end
 					else
 						Constraint.Entity[i].LPos = Offset
-						Constraint["LPos" .. i] = Offset
+						Constraint["LPos" .. i]   = Offset
 					end
 				else
 					Constraint.Entity[i].LPos = Const["LPos" .. i]
@@ -867,7 +867,9 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	Prop:Spawn()
 	Prop:Activate()
 	DoGenericPhysics(Prop, Data, Player)
-	if (Data.Flex) then duplicator.DoFlex(Prop, Data.Flex, Data.FlexScale) end
+	if (Data.Flex) then
+		duplicator.DoFlex(Prop, Data.Flex, Data.FlexScale)
+	end
 
 	return Prop
 end
@@ -1344,13 +1346,13 @@ local function AdvDupe2_Spawn()
 			local phys
 			local edit
 			local mass
-			for _, v in pairs(Queue.CreatedEntities) do
+			for k, v in pairs(Queue.CreatedEntities) do
 				if (not IsValid(v)) then
 					v = nil
 				else
 					edit = true
-					if (Queue.EntityList[_].BuildDupeInfo.DupeParentID ~= nil and Queue.Parenting) then
-						v:SetParent(Queue.CreatedEntities[Queue.EntityList[_].BuildDupeInfo.DupeParentID])
+					if (Queue.EntityList[k].BuildDupeInfo.DupeParentID ~= nil and Queue.Parenting) then
+						v:SetParent(Queue.CreatedEntities[Queue.EntityList[k].BuildDupeInfo.DupeParentID])
 						if (v.Constraints ~= nil) then
 							for i, c in pairs(v.Constraints) do
 								if (c and constraints[c.Type]) then
@@ -1383,7 +1385,7 @@ local function AdvDupe2_Spawn()
 						for i = 0, v:GetPhysicsObjectCount() do
 							phys = v:GetPhysicsObjectNum(i)
 							if (IsValid(phys)) then
-								if (Queue.EntityList[_].BuildDupeInfo.PhysicsObjects[i].Frozen) then
+								if (Queue.EntityList[k].BuildDupeInfo.PhysicsObjects[i].Frozen) then
 									phys:EnableMotion(true) -- Restore the entity and all of its objects to their original frozen state
 									phys:Wake()
 								else
