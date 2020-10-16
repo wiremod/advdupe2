@@ -1,7 +1,10 @@
 --[[
 	Title: Adv. Duplicator 2 Module
+
 	Desc: Provides advanced duplication functionality for the Adv. Dupe 2 tool.
+
 	Author: TB
+
 	Version: 1.0
 ]]
 
@@ -73,16 +76,31 @@ end
 	Returns a copy of the passed entity's table
 ---------------------------------------------------------]]
 
-local gtCopyEntTable = {
-	["Pos"     ] = true,
-	["pos"     ] = true,
-	["position"] = true,
-	["Ang"     ] = true,
-	["Angle"   ] = true,
-	["ang"     ] = true,
-	["angle"   ] = true,
-	["Model"   ] = true,
-	["model"   ] = true
+local gtSetupTable = {
+	POS = {
+		["pos"     ] = true,
+		["position"] = true,
+		["Pos"     ] = true,
+		["Position"] = true
+	},
+	ANG = {
+		["ang"     ] = true,
+		["angle"   ] = true,
+		["Ang"     ] = true,
+		["Angle"   ] = true
+	},
+	MODEL = {
+		["model"   ] = true,
+		["Model"   ] = true
+	},
+	PLAYER = {
+		["pl"      ] = true,
+		["ply"     ] = true
+	},
+	ENT1 = {
+		["Ent"     ] = true,
+		["Ent1"    ] = true,
+	},
 }
 
 local function CopyEntTable(Ent, Offset)
@@ -105,7 +123,9 @@ local function CopyEntTable(Ent, Offset)
 	if EntityClass then
 		for iNumber, Key in pairs(EntityClass.Args) do
 			-- Ignore keys from old system
-			if not gtCopyEntTable[Key] then
+			if (not gtSetupTable.POS[Key] and
+					not gtSetupTable.ANG[Key] and
+					not gtSetupTable.MODEL[Key]) then
 				local varType = TypeID(EntTable[Key])
 				if serializable[varType] then
 					if varType == TYPE_TABLE then
@@ -478,7 +498,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 		local Val = Constraint[Key]
 
-		if Key == "pl" or Key == "ply" then Val = Player end
+		if gtSetupTable.PLAYER[Key] then Val = Player end
 
 		for i = 1, 4 do
 			if (Constraint.Entity and Constraint.Entity[i]) then
@@ -501,7 +521,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 							end
 							-- Important for perfect duplication
 							-- Get which entity is which so we can reposition them before constraining
-							if (Key == "Ent" or Key == "Ent1") then
+							if (gtSetupTable.ENT1[Key]) then
 								first = Val
 								firstindex = Constraint.Entity[i].Index
 							else
@@ -514,7 +534,9 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 				end
 
-				if Key == "Bone" .. i or Key == "Bone" then Val = Constraint.Entity[i].Bone or 0 end
+				if Key == "Bone" .. i or Key == "Bone" then
+					Val = Constraint.Entity[i].Bone or 0
+				end
 
 				if Key == "LPos" .. i then
 					if (Constraint.Entity[i].World and Constraint.Entity[i].LPos) then
@@ -550,7 +572,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 		if(Constraint.Type == "Slider" and Key == "material") then
 			Val = Val or "cable/cable"
-		else
+		else -- Force proper material data type string for sliders
 			Val = Val or false
 		end
 
@@ -611,9 +633,9 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 	end
 
-	local status, Ent = pcall(Factory.Func, unpack(Args))
+	local OK, Ent = pcall(Factory.Func, unpack(Args))
 
-	if not status or not Ent then
+	if not OK or not Ent then
 		if (Player) then
 			AdvDupe2.Notify(Player, "ERROR, Failed to create " .. Constraint.Type .. " Constraint!", NOTIFY_ERROR)
 		else
@@ -677,27 +699,27 @@ local function ApplyEntityModifiers(Player, Ent)
 		Ent.EntityMods.trail.EndSize = math.Clamp(tonumber(Ent.EntityMods.trail.EndSize) or 0, 0, 1024)
 		Ent.EntityMods.trail.StartSize = math.Clamp(tonumber(Ent.EntityMods.trail.StartSize) or 0, 0, 1024)
 	end
-	local status, error
+
 	for Type, Data in SortedPairs(Ent.EntityMods) do
 		local ModFunction = duplicator.EntityModifiers[Type]
 		if (ModFunction) then
-			status, error = pcall(ModFunction, Player, Ent, Data)
-			if (not status) then
+			local OK, ERR = pcall(ModFunction, Player, Ent, Data)
+			if (not OK) then
 				if (Player) then
-					Player:ChatPrint('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. error)
+					Player:ChatPrint('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. ERR)
 				else
-					print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. error)
+					print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. ERR)
 				end
 			end
 		end
 	end
 	if (Ent.EntityMods["mass"] and duplicator.EntityModifiers["mass"]) then
-		status, error = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"])
-		if (not status) then
+		local OK, ERR = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"])
+		if (not OK) then
 			if (Player) then
-				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: ' .. error)
+				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: ' .. ERR)
 			else
-				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. error)
+				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. ERR)
 			end
 		end
 	end
@@ -915,9 +937,9 @@ local function CreateEntityFromTable(EntTable, Player)
 
 			Arg = nil
 			-- Translate keys from old system
-			if (Key == "pos" or Key == "position") then Key = "Pos" end
-			if (Key == "ang" or Key == "Ang" or Key == "angle") then Key = "Angle" end
-			if (Key == "model") then Key = "Model" end
+			if (gtSetupTable.POS[Key]) then Key = "Pos" end
+			if (gtSetupTable.ANG[Key]) then Key = "Angle" end
+			if (gtSetupTable.MODEL[Key]) then Key = "Model" end
 			if (Key == "VehicleTable" and EntTable[Key] and EntTable[Key].KeyValues) then
 				EntTable[Key].KeyValues = {
 					vehiclescript = EntTable[Key].KeyValues.vehiclescript,
