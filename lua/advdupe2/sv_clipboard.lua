@@ -455,8 +455,11 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 			else
 				for k, v in pairs(Ent.Constraints) do
 					-- Filter duplicator blocked constraints out.
-					if not v.DoNotDuplicate then index = v:GetCreationID()
-						if (index and not Constraints[index]) then Constraints[index] = v end
+					if not v.DoNotDuplicate then
+						index = v:GetCreationID()
+						if (index and not Constraints[index]) then
+							Constraints[index] = v
+						end
 					end
 				end
 
@@ -591,47 +594,47 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Bone2
 	local Bone2Index
 	local ReEnableSecond
-	local ConBuDupeInfo = Constraint.BuildDupeInfo
-	if (ConBuDupeInfo) then
+	local buildInfo = Constraint.BuildDupeInfo
+	if (buildInfo) then
 
-		if first ~= nil and second ~= nil and not second:IsWorld() and ConBuDupeInfo.EntityPos ~= nil then
+		if first ~= nil and second ~= nil and not second:IsWorld() and buildInfo.EntityPos ~= nil then
 			local SecondPhys = second:GetPhysicsObject()
 			if IsValid(SecondPhys) then
 				if not DontEnable then ReEnableSecond = SecondPhys:IsMoveable() end
 				SecondPhys:EnableMotion(false)
-				second:SetPos(first:GetPos() - ConBuDupeInfo.EntityPos)
-				if (ConBuDupeInfo.Bone2) then
-					Bone2Index = ConBuDupeInfo.Bone2
+				second:SetPos(first:GetPos() - buildInfo.EntityPos)
+				if (buildInfo.Bone2) then
+					Bone2Index = buildInfo.Bone2
 					Bone2 = second:GetPhysicsObjectNum(Bone2Index)
 					if IsValid(Bone2) then
 						Bone2:EnableMotion(false)
-						Bone2:SetPos(second:GetPos() + ConBuDupeInfo.Bone2Pos)
-						Bone2:SetAngles(ConBuDupeInfo.Bone2Angle)
+						Bone2:SetPos(second:GetPos() + buildInfo.Bone2Pos)
+						Bone2:SetAngles(buildInfo.Bone2Angle)
 					end
 				end
 			end
 		end
 
-		if first ~= nil and not first:IsWorld() and ConBuDupeInfo.Ent1Ang ~= nil then
+		if first ~= nil and not first:IsWorld() and buildInfo.Ent1Ang ~= nil then
 			local FirstPhys = first:GetPhysicsObject()
 			if IsValid(FirstPhys) then
 				if not DontEnable then ReEnableFirst = FirstPhys:IsMoveable() end
 				FirstPhys:EnableMotion(false)
-				first:SetAngles(ConBuDupeInfo.Ent1Ang)
-				if (ConBuDupeInfo.Bone1) then
-					Bone1Index = ConBuDupeInfo.Bone1
+				first:SetAngles(buildInfo.Ent1Ang)
+				if (buildInfo.Bone1) then
+					Bone1Index = buildInfo.Bone1
 					Bone1 = first:GetPhysicsObjectNum(Bone1Index)
 					if IsValid(Bone1) then
 						Bone1:EnableMotion(false)
-						Bone1:SetPos(first:GetPos() + ConBuDupeInfo.Bone1Pos)
-						Bone1:SetAngles(ConBuDupeInfo.Bone1Angle)
+						Bone1:SetPos(first:GetPos() + buildInfo.Bone1Pos)
+						Bone1:SetAngles(buildInfo.Bone1Angle)
 					end
 				end
 			end
 		end
 
 		if second ~= nil and not second:IsWorld() then
-			if ConBuDupeInfo.Ent2Ang ~= nil then
+			if buildInfo.Ent2Ang ~= nil then
 				second:SetAngles(ConBuDupeInfo.Ent2Ang)
 			elseif ConBuDupeInfo.Ent4Ang ~= nil then
 				second:SetAngles(ConBuDupeInfo.Ent4Ang)
@@ -639,9 +642,9 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 	end
 
-	local OK, Ent = pcall(Factory.Func, unpack(Args))
+	local ok, Ent = pcall(Factory.Func, unpack(Args))
 
-	if not OK or not Ent then
+	if not ok or not Ent then
 		if (Player) then
 			AdvDupe2.Notify(Player, "ERROR, Failed to create " .. Constraint.Type .. " Constraint!", NOTIFY_ERROR)
 		else
@@ -709,23 +712,23 @@ local function ApplyEntityModifiers(Player, Ent)
 	for Type, Data in SortedPairs(Ent.EntityMods) do
 		local ModFunction = duplicator.EntityModifiers[Type]
 		if (ModFunction) then
-			local OK, ERR = pcall(ModFunction, Player, Ent, Data)
-			if (not OK) then
+			local ok, err = pcall(ModFunction, Player, Ent, Data)
+			if (not ok) then
 				if (Player) then
-					Player:ChatPrint('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. ERR)
+					Player:ChatPrint('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
 				else
-					print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. ERR)
+					print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
 				end
 			end
 		end
 	end
 	if (Ent.EntityMods["mass"] and duplicator.EntityModifiers["mass"]) then
-		local OK, ERR = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"])
-		if (not OK) then
+		local ok, err = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"])
+		if (not ok) then
 			if (Player) then
-				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: ' .. ERR)
+				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: ' .. err)
 			else
-				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. ERR)
+				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
 			end
 		end
 	end
