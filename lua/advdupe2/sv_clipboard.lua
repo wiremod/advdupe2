@@ -105,6 +105,19 @@ local gtSetupTable = {
 		V1 = Vector(1, 1, 1),
 		A0 = Angle (0, 0, 0),
 		V0 = Vector(0, 0, 0)
+	},
+	TVEHICLE = {
+		["VehicleTable"] = true
+	},
+	SPECIAL = {
+		["VehicleTable"] = true
+	},
+	FRM = {
+		B  = "^Bone[%d]*$"  ,
+		E  = "^Ent[%d]*$"   ,
+		LP = "^LPos[%d]*$"  ,
+		WP = "^WPos[%d]*$"  ,
+		L  = "^Length[%d]*$"
 	}
 }
 
@@ -309,9 +322,10 @@ local function CopyConstraintTable(Const, Offset)
 		Constraint.Type = Const.Type
 		if (Const.BuildDupeInfo) then Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo) end
 	else
-		local ent
 		for i = 1, 4 do
-			ent = "Ent" .. i
+			local ent  = "Ent"  .. i
+			local lpos = "LPos" .. i
+			local wpos = "WPos" .. i
 
 			if ((Const[ent] and Const[ent]:IsWorld()) or IsValid(Const[ent])) then
 				Constraint.Entity[i] = {}
@@ -322,42 +336,44 @@ local function CopyConstraintTable(Const, Offset)
 
 				if Const[ent]:IsWorld() then
 					Constraint.Entity[i].World = true
-					if (Const["LPos" .. i]) then
+					if (Const[lpos]) then
 						if (i ~= 4 and i ~= 2) then
 							if (Const["Ent2"]) then
-								Constraint.Entity[i].LPos = Const["LPos" .. i] - Const["Ent2"]:GetPos()
-								Constraint["LPos" .. i]   = Const["LPos" .. i] - Const["Ent2"]:GetPos()
+								Constraint.Entity[i].LPos = Const[lpos] - Const["Ent2"]:GetPos()
+								Constraint[lpos]   = Const[lpos] - Const["Ent2"]:GetPos()
 							elseif (Const["Ent4"]) then
-								Constraint.Entity[i].LPos = Const["LPos" .. i] - Const["Ent4"]:GetPos()
-								Constraint["LPos" .. i]   = Const["LPos" .. i] - Const["Ent4"]:GetPos()
+								Constraint.Entity[i].LPos = Const[lpos] - Const["Ent4"]:GetPos()
+								Constraint[lpos]   = Const[lpos] - Const["Ent4"]:GetPos()
 							end
 						elseif (Const["Ent1"]) then
-							Constraint.Entity[i].LPos = Const["LPos" .. i] - Const["Ent1"]:GetPos()
-							Constraint["LPos" .. i]   = Const["LPos" .. i] - Const["Ent1"]:GetPos()
+							Constraint.Entity[i].LPos = Const[lpos] - Const["Ent1"]:GetPos()
+							Constraint[lpos]   = Const[lpos] - Const["Ent1"]:GetPos()
 						end
 					else
 						Constraint.Entity[i].LPos = Offset
-						Constraint["LPos" .. i]   = Offset
+						Constraint[lpos]   = Offset
 					end
 				else
-					Constraint.Entity[i].LPos = Const["LPos" .. i]
-					Constraint.Entity[i].WPos = Const["WPos" .. i]
+					Constraint.Entity[i].LPos = Const[lpos]
+					Constraint.Entity[i].WPos = Const[wpos]
 				end
 
 				if (not Const[ent]:IsWorld()) then table.insert(Entities, Const[ent]) end
 			end
 
-			if (Const["WPos" .. i]) then
+			if (Const[wpos]) then
 				if (not Const["Ent1"]:IsWorld()) then
-					Constraint["WPos" .. i] = Const["WPos" .. i] - Const["Ent1"]:GetPos()
+					Constraint[wpos] = Const[wpos] - Const["Ent1"]:GetPos()
 				else
-					Constraint["WPos" .. i] = Const["WPos" .. i] - Const["Ent4"]:GetPos()
+					Constraint[wpos] = Const[wposi] - Const["Ent4"]:GetPos()
 				end
 			end
 		end
 
 		Constraint.Type = Const.Type
-		if (Const.BuildDupeInfo) then Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo) end
+		if (Const.BuildDupeInfo) then
+			Constraint.BuildDupeInfo = table.Copy(Const.BuildDupeInfo)
+		end
 	end
 	return Constraint, Entities
 end
@@ -511,7 +527,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 		for i = 1, 4 do
 			if (Constraint.Entity and Constraint.Entity[i]) then
-				if Key == "Ent" .. i or Key == "Ent" then
+				if Key:find(gtSetupTable.FRM.E) then
 					if (Constraint.Entity[i].World) then
 						Val = game.GetWorld()
 					else
@@ -543,11 +559,11 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 				end
 
-				if Key == "Bone" .. i or Key == "Bone" then
+				if Key:find(gtSetupTable.FRM.B) then
 					Val = Constraint.Entity[i].Bone or 0
 				end
 
-				if Key == "LPos" .. i then
+				if Key:find(gtSetupTable.FRM.LP) then
 					if (Constraint.Entity[i].World and Constraint.Entity[i].LPos) then
 						if (i == 2 or i == 4) then
 							Val = Constraint.Entity[i].LPos + EntityList[Constraint.Entity[1].Index]:GetPos()
@@ -563,27 +579,22 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 					end
 				end
 
-				if Key == "Length" .. i then Val = Constraint.Entity[i].Length end
+				if Key:find(gtSetupTable.FRM.L) then
+					Val = Constraint.Entity[i].Length
+				end
 			end
-			if Key == "WPos" .. i then
+			if Key:find(gtSetupTable.FRM.WP) then
 				if (not Constraint.Entity[1].World) then
-					Val = Constraint["WPos" .. i] + EntityList[Constraint.Entity[1].Index]:GetPos()
+					Val = Constraint[Key] + EntityList[Constraint.Entity[1].Index]:GetPos()
 				else
-					Val = Constraint["WPos" .. i] + EntityList[Constraint.Entity[4].Index]:GetPos()
+					Val = Constraint[Key] + EntityList[Constraint.Entity[4].Index]:GetPos()
 				end
 			end
 
 		end
 
 		-- If there's a missing argument then unpack will stop sending at that argument
-
-		local Par = Val
-
-		if(Constraint.Type == "Slider" and Key == "material") then
-			Val = Val or "cable/cable"
-		else -- Force proper material data type string for sliders
-			Val = Val or false
-		end
+		Val = Val or false
 
 		table.insert(Args, Val)
 	end
@@ -635,9 +646,9 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 		if second ~= nil and not second:IsWorld() then
 			if buildInfo.Ent2Ang ~= nil then
-				second:SetAngles(ConBuDupeInfo.Ent2Ang)
-			elseif ConBuDupeInfo.Ent4Ang ~= nil then
-				second:SetAngles(ConBuDupeInfo.Ent4Ang)
+				second:SetAngles(buildInfo.Ent2Ang)
+			elseif buildInfo.Ent4Ang ~= nil then
+				second:SetAngles(buildInfo.Ent4Ang)
 			end
 		end
 	end
@@ -653,7 +664,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		return
 	end
 
-	Ent.BuildDupeInfo = table.Copy(ConBuDupeInfo)
+	Ent.BuildDupeInfo = table.Copy(buildInfo)
 
 	-- Move the entities back after constraining them. No point in moving the world though.
 	if (EntityTable) then
@@ -951,17 +962,19 @@ local function CreateEntityFromTable(EntTable, Player)
 			if (gtSetupTable.POS[Key]) then Key = "Pos" end
 			if (gtSetupTable.ANG[Key]) then Key = "Angle" end
 			if (gtSetupTable.MODEL[Key]) then Key = "Model" end
-			if (Key == "VehicleTable" and EntTable[Key] and EntTable[Key].KeyValues) then
+			if (gtSetupTable.TVEHICLE[Key] and EntTable[Key] and EntTable[Key].KeyValues) then
 				EntTable[Key].KeyValues = {
-					vehiclescript = EntTable[Key].KeyValues.vehiclescript,
-					limitview = EntTable[Key].KeyValues.limitview
+					limitview     = EntTable[Key].KeyValues.limitview,
+					vehiclescript = EntTable[Key].KeyValues.vehiclescript
 				}
 			end
 
 			Arg = EntTable[Key]
 
 			-- Special keys
-			if (Key == "Data") then Arg = EntTable end
+			if (gtSetupTable.SPECIAL[Key]) then
+				Arg = EntTable
+			end
 
 			ArgList[iNumber] = Arg
 
