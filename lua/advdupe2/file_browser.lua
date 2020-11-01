@@ -234,7 +234,6 @@ local function CollapseParentsComplete(node)
 		node:SetExpanded(false)
 		return
 	end
-  -- CollapseChildren(node) return end
 	CollapseParentsComplete(node.ParentNode)
 end
 
