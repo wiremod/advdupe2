@@ -110,14 +110,7 @@ local gtSetupTable = {
 		["VehicleTable"] = true
 	},
 	SPECIAL = {
-		["VehicleTable"] = true
-	},
-	FRM = {
-		B  = "^Bone[%d]*$"  ,
-		E  = "^Ent[%d]*$"   ,
-		LP = "^LPos[%d]*$"  ,
-		WP = "^WPos[%d]*$"  ,
-		L  = "^Length[%d]*$"
+		["Data"] = true
 	}
 }
 
@@ -527,7 +520,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 		for i = 1, 4 do
 			if (Constraint.Entity and Constraint.Entity[i]) then
-				if Key:find(gtSetupTable.FRM.E) then
+				if Key == "Ent" .. i or Key == "Ent" then
 					if (Constraint.Entity[i].World) then
 						Val = game.GetWorld()
 					else
@@ -559,11 +552,11 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 				end
 
-				if Key:find(gtSetupTable.FRM.B) then
+				if Key == "Bone" .. i or Key == "Bone" then
 					Val = Constraint.Entity[i].Bone or 0
 				end
 
-				if Key:find(gtSetupTable.FRM.LP) then
+				if Key == "LPos" .. i then
 					if (Constraint.Entity[i].World and Constraint.Entity[i].LPos) then
 						if (i == 2 or i == 4) then
 							Val = Constraint.Entity[i].LPos + EntityList[Constraint.Entity[1].Index]:GetPos()
@@ -579,11 +572,11 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 					end
 				end
 
-				if Key:find(gtSetupTable.FRM.L) then
+				if Key == "Length" .. i then
 					Val = Constraint.Entity[i].Length
 				end
 			end
-			if Key:find(gtSetupTable.FRM.WP) then
+			if Key == "WPos" .. i then
 				if (not Constraint.Entity[1].World) then
 					Val = Constraint[Key] + EntityList[Constraint.Entity[1].Index]:GetPos()
 				else
