@@ -630,12 +630,9 @@ if(SERVER)then
 		ply.AdvDupe2.AutoSaveContr = ply:GetInfo("advdupe2_auto_save_contraption")=="1"
 		ply.AdvDupe2.AutoSaveDesc = desc
 
-		local time = tonumber(ply:GetInfo("advdupe2_auto_save_time")) or 5
+		local time = math.Clamp(tonumber(ply:GetInfo("advdupe2_auto_save_time")) or 2, 2, 30)
 		if(game.SinglePlayer())then
 			ply.AdvDupe2.AutoSavePath = net.ReadString()
-		else
-			if(time>30)then time = 30 end
-			if(time<GetConVarNumber("AdvDupe2_AreaAutoSaveTime"))then time = GetConVarNumber("AdvDupe2_AreaAutoSaveTime") end
 		end
 
 		AdvDupe2.Notify(ply, "Your area will be auto saved every "..(time*60).." seconds.")
@@ -914,7 +911,7 @@ if(CLIENT)then
 	language.Add( "Tool.advdupe2.name",	"Advanced Duplicator 2" )
 	language.Add( "Tool.advdupe2.desc",	"Duplicate things." )
 	language.Add( "Tool.advdupe2.0",		"Primary: Paste, Secondary: Copy, Secondary+World: Select/Deselect All, Secondary+Shift: Area copy." )
-	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area, Secondary+Shift: Cancel." )
+	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area, Reload: Autosave an area, Secondary+Shift: Cancel." )
 	language.Add( "Undone.AdvDupe2",	"Undone AdvDupe2 paste" )
 	language.Add( "Cleanup.AdvDupe2",	"Adv. Duplications" )
 	language.Add( "Cleaned.AdvDupe2",	"Cleaned up all Adv. Duplications" )
@@ -936,7 +933,7 @@ if(CLIENT)then
 	CreateClientConVar("advdupe2_area_copy_size", 300, false, true)
 	CreateClientConVar("advdupe2_auto_save_contraption", 0, false, true)
 	CreateClientConVar("advdupe2_auto_save_overwrite", 1, false, true)
-	CreateClientConVar("advdupe2_auto_save_time", 10, false, true)
+	CreateClientConVar("advdupe2_auto_save_time", 2, false, true)
 
 	--Contraption Spawner
 	CreateClientConVar("advdupe2_contr_spawner_key", -1, false, true)
@@ -1305,7 +1302,7 @@ if(CLIENT)then
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Minutes to Save:" )
 		NumSlider.Label:SetDark(true)
-		NumSlider:SetMin( GetConVarNumber("AdvDupe2_AreaAutoSaveTime") )
+		NumSlider:SetMin( 2 )
 		NumSlider:SetMax( 30 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_auto_save_time" )

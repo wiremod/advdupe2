@@ -1,5 +1,5 @@
 local function AdvDupe2_ReceiveFile(len, ply)
-	local Autosave = net.ReadUInt(8) == 1
+	local AutoSave = net.ReadUInt(8) == 1
 
 	net.ReadStream(nil, function(data)
 		AdvDupe2.RemoveProgressBar()
@@ -7,9 +7,11 @@ local function AdvDupe2_ReceiveFile(len, ply)
 			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
 			return
 		end
-		local path = ""
-		if(AutoSave)then
-			if(LocalPlayer():GetInfo("advdupe2_auto_save_overwrite")~="1")then
+		local path
+		if AutoSave then
+			if(LocalPlayer():GetInfo("advdupe2_auto_save_overwrite")~="0")then
+				path = AdvDupe2.GetFilename(AdvDupe2.AutoSavePath, true)
+			else
 				path = AdvDupe2.GetFilename(AdvDupe2.AutoSavePath)
 			end
 		else
