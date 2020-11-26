@@ -57,78 +57,28 @@ local function SavePositions( Constraint )
 		end
 
 	end
-	
 end
 
-
-local function FixMagnet(Magnet)
-	Magnet.Entity = Magnet
-end
-
-//Find out when a Constraint is created
-timer.Simple(0, function()
-					hook.Add( "OnEntityCreated", "AdvDupe2_SavePositions", function(entity)
-
-						if not IsValid( entity ) then return end
-						
-						local a,b = entity:GetClass():match("^(.-)_(.+)")
-
-						if b == "magnet" then
-							timer.Simple( 0, function() FixMagnet(entity) end)
-						end
-						
-						if a == "phys" then
-							if(b=="constraintsystem")then return end
-							timer.Simple( 0, function() SavePositions(entity) end)
-						end
-
-					end )
-				end)
-
---	Register camera entity class
---	fixes key not being saved (Conna)
-local function CamRegister(Player, Pos, Ang, Key, Locked, Toggle, Vel, aVel, Frozen, Nocollide)
-	if (!Key) then return end
-	
-	local Camera = ents.Create("gmod_cameraprop")
-	Camera:SetAngles(Ang)
-	Camera:SetPos(Pos)
-	Camera:Spawn()
-	Camera:SetKey(Key)
-	Camera:SetPlayer(Player)
-	Camera:SetLocked(Locked)
-	Camera.toggle = Toggle
-	Camera:SetTracking(NULL, Vector(0))
-	
-	if (Toggle == 1) then
-		numpad.OnDown(Player, Key, "Camera_Toggle", Camera)
-	else
-		numpad.OnDown(Player, Key, "Camera_On", Camera)
-		numpad.OnUp(Player, Key, "Camera_Off", Camera)
+local function monitorConstraint(name)
+	local oldFunc = constraint[name]
+	constraint[name] = function(...)
+		local Constraint, b, c = oldFunc(...)
+		if Constraint and Constraint:IsValid() then
+			SavePositions(Constraint)
+		end
+		return Constraint, b, c
 	end
-	
-	if (Nocollide) then Camera:GetPhysicsObject():EnableCollisions(false) end
-	
-	-- Merge table
-	local Table = {
-		key			= Key,
-		toggle 		= Toggle,
-		locked      = Locked,
-		pl			= Player,
-		nocollide 	= nocollide
-	}
-	table.Merge(Camera:GetTable(), Table)
-	
-	-- remove any camera that has the same key defined for this player then add the new one
-	local ID = Player:UniqueID()
-	GAMEMODE.CameraList[ID] = GAMEMODE.CameraList[ID] or {}
-	local List = GAMEMODE.CameraList[ID]
-	if (List[Key] and List[Key] != NULL ) then
-		local Entity = List[Key]
-		Entity:Remove()
-	end
-	List[Key] = Camera
-	return Camera
-	
 end
-duplicator.RegisterEntityClass("gmod_cameraprop", CamRegister, "Pos", "Ang", "key", "locked", "toggle", "Vel", "aVel", "frozen", "nocollide")
+monitorConstraint("AdvBallsocket")
+monitorConstraint("Axis")
+monitorConstraint("Ballsocket")
+monitorConstraint("Elastic")
+monitorConstraint("Hydraulic")
+monitorConstraint("Keepupright")
+monitorConstraint("Motor")
+monitorConstraint("Muscle")
+monitorConstraint("Pulley")
+monitorConstraint("Rope")
+monitorConstraint("Slider")
+monitorConstraint("Weld")
+monitorConstraint("Winch")
