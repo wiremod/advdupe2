@@ -922,10 +922,14 @@ local function CreateEntityFromTable(EntTable, Player)
 		GENERIC = true
 		sent = true
 
-		if (EntTable.Class == "prop_effect") then
-			sent = gamemode.Call("PlayerSpawnEffect", Player, EntTable.Model)
+		if Player then
+			if(EntTable.Class=="prop_effect")then
+				sent = gamemode.Call( "PlayerSpawnEffect", Player, EntTable.Model)
+			else
+				sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
+			end
 		else
-			sent = gamemode.Call("PlayerSpawnSENT", Player, EntTable.Class)
+			sent = true
 		end
 
 		if (sent == false) then
@@ -980,10 +984,12 @@ local function CreateEntityFromTable(EntTable, Player)
 			-- Create sents using their spawn function with the arguments we stored earlier
 			sent = true
 
-			if (not EntTable.BuildDupeInfo.IsVehicle and
-					not EntTable.BuildDupeInfo.IsNPC and  -- These four are auto done
-							EntTable.Class ~= "prop_ragdoll" and EntTable.Class ~= "prop_effect") then
-				sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+			if Player then
+				if (not EntTable.BuildDupeInfo.IsVehicle and not EntTable.BuildDupeInfo.IsNPC and EntTable.Class ~= "prop_ragdoll" and EntTable.Class ~= "prop_effect") then
+					sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+				end
+			else
+				sent = true
 			end
 
 			if (sent == false) then
@@ -994,6 +1000,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			end
 
 			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
+			if not status then ErrorNoHalt(valid) end
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
@@ -1027,9 +1034,9 @@ local function CreateEntityFromTable(EntTable, Player)
 			if valid.RestoreNetworkVars then
 				valid:RestoreNetworkVars(EntTable.DT)
 			end
-
-			if GENERIC then
-				if (EntTable.Class == "prop_effect") then
+			
+			if GENERIC and Player then
+				if(EntTable.Class=="prop_effect")then
 					gamemode.Call("PlayerSpawnedEffect", Player, valid:GetModel(), valid)
 				else
 					gamemode.Call("PlayerSpawnedSENT", Player, valid)
