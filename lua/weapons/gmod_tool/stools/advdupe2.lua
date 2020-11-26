@@ -911,7 +911,7 @@ if(CLIENT)then
 	language.Add( "Tool.advdupe2.name",	"Advanced Duplicator 2" )
 	language.Add( "Tool.advdupe2.desc",	"Duplicate things." )
 	language.Add( "Tool.advdupe2.0",		"Primary: Paste, Secondary: Copy, Secondary+World: Select/Deselect All, Secondary+Shift: Area copy." )
-	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area, Secondary+Shift: Cancel." )
+	language.Add( "Tool.advdupe2.1",		"Primary: Paste, Secondary: Copy an area, Reload: Autosave an area, Secondary+Shift: Cancel." )
 	language.Add( "Undone.AdvDupe2",	"Undone AdvDupe2 paste" )
 	language.Add( "Cleanup.AdvDupe2",	"Adv. Duplications" )
 	language.Add( "Cleaned.AdvDupe2",	"Cleaned up all Adv. Duplications" )
