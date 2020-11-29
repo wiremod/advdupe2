@@ -320,10 +320,12 @@ local function serialize(tbl)
 	tablesLookup = {}
 
 	buff = file.Open("ad2temp.txt", "wb", "DATA")
+	if not buff then error("Failed to open file data/ad2temp.txt for writing!") end
 	write(tbl)
 	buff:Close()
 
 	buff = file.Open("ad2temp.txt","rb","DATA")
+	if not buff then error("Failed to open file data/ad2temp.txt for reading!") end
 	local ret = buff:Read(buff:Size())
 	buff:Close()
 	return ret
