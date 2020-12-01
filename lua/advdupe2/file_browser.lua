@@ -71,6 +71,12 @@ local function NarrowHistory(txt, last)
 	Narrow = temp
 end
 
+local function tableSortNodes(tbl)
+    for k, v in pairs(tbl) do tbl[k] = {string.lower(v:GetText()), v} end
+    table.sort(tbl, function(a,b) return a[1]<b[1] end)
+    for k, v in pairs(tbl) do tbl[k] = v[2] end
+end
+
 local BROWSERPNL = {}
 AccessorFunc(BROWSERPNL, "m_bBackground", "PaintBackground", FORCE_BOOL)
 AccessorFunc(BROWSERPNL, "m_bgColor", "BackgroundColor")
@@ -381,7 +387,7 @@ local function Search(node, name)
 	pnFileBr.Search.pnlCanvas.Search = true
 	pnFileBr.Browser:SetVisible(false)
 	local Files = SearchNodes(node, name)
-	table.sort(Files, function(a, b) return a.Label:GetText() < b.Label:GetText() end)
+	tableSortNodes(Files)
 	for k, v in pairs(Files) do
 		pnFileBr.Search.pnlCanvas:AddFile(v.Label:GetText()).Ref = v
 	end
@@ -782,8 +788,8 @@ function BROWSER:AddFile(text)
 end
 
 function BROWSER:Sort(node)
-	table.sort(node.Folders, function(a, b) return a.Label:GetText() < b.Label:GetText() end)
-	table.sort(node.Files  , function(a, b) return a.Label:GetText() < b.Label:GetText() end)
+	tableSortNodes(node.Folders)
+	tableSortNodes(node.Files)
 
 	for i = 1, #node.Folders do
 		node.Folders[i]:SetParent(nil)
