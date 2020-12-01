@@ -25,7 +25,11 @@ local function SavePositions( Constraint )
 			
 		local Ent1, Ent2
 		if IsValid(Constraint.Ent) then
-			BuildDupeInfo.Ent1Ang = Constraint.Ent:GetPhysicsObject():GetAngles()
+			if Constraint.Ent:GetPhysicsObjectCount()>1 then
+				BuildDupeInfo.Ent1Ang = Constraint.Ent:GetAngles()
+			else
+				BuildDupeInfo.Ent1Ang = Constraint.Ent:GetPhysicsObject():GetAngles()
+			end
 		end
 
 		if IsValid(Constraint.Ent1) then
