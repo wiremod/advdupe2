@@ -72,9 +72,9 @@ local function NarrowHistory(txt, last)
 end
 
 local function tableSortNodes(tbl)
-    for k, v in pairs(tbl) do tbl[k] = {string.lower(v.Label:GetText()), v} end
+    for k, v in ipairs(tbl) do tbl[k] = {string.lower(v.Label:GetText()), v} end
     table.sort(tbl, function(a,b) return a[1]<b[1] end)
-    for k, v in pairs(tbl) do tbl[k] = v[2] end
+    for k, v in ipairs(tbl) do tbl[k] = v[2] end
 end
 
 local BROWSERPNL = {}
