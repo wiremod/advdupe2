@@ -865,6 +865,9 @@ AccessorFunc(FOLDER, "m_bgColor", "BackgroundColor")
 
 Derma_Hook(FOLDER, "Paint", "Paint", "Panel")
 
+local clrsel = Color(0,225,250)
+local clrunsel = Color(0,0,0,0)
+
 function FOLDER:Init()
 	self:SetMouseInputEnabled(true)
 
@@ -872,7 +875,7 @@ function FOLDER:Init()
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(Color(0, 0, 0, 0))
+	self:SetBackgroundColor(clrunsel)
 
 	self.Icon = vgui.Create("DImage", self)
 	self.Icon:SetImage("icon16/folder.png")
@@ -913,6 +916,7 @@ function FOLDER:AddFolder(text)
 	node.Label:SetPos(44 + node.Offset, 0)
 	node.Label:SetText(text)
 	node.Label:SizeToContents()
+	node.Label:SetDark(true)
 	node.ParentNode = self
 	node.IsFolder = true
 	node.Folders = {}
@@ -942,6 +946,7 @@ function FOLDER:AddFile(text)
 	node.Label:SetPos(44 + node.Offset, 0)
 	node.Label:SetText(text)
 	node.Label:SizeToContents()
+	node.Label:SetDark(true)
 	node.ParentNode = self
 
 	self.Nodes = self.Nodes + 1
@@ -968,7 +973,6 @@ function FOLDER:SetExpanded(bool)
 		self.Control:Collapse(self)
 	end
 end
-
 function FOLDER:SetSelected(bool)
 	if (bool) then
 		self:SetBackgroundColor(self:GetSkin().bg_color_bright)
@@ -1000,7 +1004,7 @@ function FILE:Init()
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(Color(0, 0, 0, 0))
+	self:SetBackgroundColor(clrunsel)
 
 	self.Icon = vgui.Create("DImage", self)
 	self.Icon:SetImage("icon16/page.png")
