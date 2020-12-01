@@ -865,9 +865,6 @@ AccessorFunc(FOLDER, "m_bgColor", "BackgroundColor")
 
 Derma_Hook(FOLDER, "Paint", "Paint", "Panel")
 
-local clrsel = Color(0,225,250)
-local clrunsel = Color(0,0,0,0)
-
 function FOLDER:Init()
 	self:SetMouseInputEnabled(true)
 
@@ -875,7 +872,7 @@ function FOLDER:Init()
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(clrunsel)
+	self:SetBackgroundColor(Color(0, 0, 0, 0))
 
 	self.Icon = vgui.Create("DImage", self)
 	self.Icon:SetImage("icon16/folder.png")
@@ -1004,7 +1001,7 @@ function FILE:Init()
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(clrunsel)
+	self:SetBackgroundColor(Color(0, 0, 0, 0))
 
 	self.Icon = vgui.Create("DImage", self)
 	self.Icon:SetImage("icon16/page.png")
