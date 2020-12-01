@@ -20,37 +20,49 @@ local function SavePositions( Constraint )
 	if IsValid(Constraint) then
 
 		if Constraint.BuildDupeInfo then return end
-		
-		if not Constraint.BuildDupeInfo then Constraint.BuildDupeInfo = {} end
+		local BuildDupeInfo = {}
+		Constraint.BuildDupeInfo = BuildDupeInfo
 			
-		local Ent1
-		local Ent2
+		local Ent1, Ent2
 		if IsValid(Constraint.Ent) then
-			Constraint.BuildDupeInfo.Ent1Ang = Constraint.Ent:GetAngles()
+			BuildDupeInfo.Ent1Ang = Constraint.Ent:GetPhysicsObject():GetAngles()
 		end
 
 		if IsValid(Constraint.Ent1) then
-			Constraint.BuildDupeInfo.Ent1Ang = Constraint.Ent1:GetAngles()
-			if(Constraint.Ent1:GetPhysicsObjectCount()>1)then
-				Constraint.BuildDupeInfo.Bone1 = Constraint["Bone1"]
-				Constraint.BuildDupeInfo.Bone1Pos = Constraint.Ent1:GetPhysicsObjectNum(Constraint["Bone1"]):GetPos() - Constraint.Ent1:GetPos()
-				Constraint.BuildDupeInfo.Bone1Angle = Constraint.Ent1:GetPhysicsObjectNum(Constraint["Bone1"]):GetAngles()
+			if Constraint.Ent1:GetPhysicsObjectCount()>1 then
+				local Bone = Constraint.Ent1:GetPhysicsObjectNum(Constraint.Bone1)
+				BuildDupeInfo.Ent1Ang = Constraint.Ent1:GetAngles()
+				BuildDupeInfo.Ent1Pos = Constraint.Ent1:GetPos()
+				BuildDupeInfo.Bone1 = Constraint.Bone1
+				BuildDupeInfo.Bone1Pos = Bone:GetPos() - Constraint.Ent1:GetPos()
+				BuildDupeInfo.Bone1Angle = Bone:GetAngles()
+			else
+				BuildDupeInfo.Ent1Ang = Constraint.Ent1:GetPhysicsObject():GetAngles()
+				BuildDupeInfo.Ent1Pos = Constraint.Ent1:GetPhysicsObject():GetPos()
 			end
+
 			if IsValid(Constraint.Ent2) then
-				Constraint.BuildDupeInfo.EntityPos = Constraint.Ent1:GetPos() - Constraint.Ent2:GetPos()
-				Constraint.BuildDupeInfo.Ent2Ang = Constraint.Ent2:GetAngles()
-				if(Constraint.Ent2:GetPhysicsObjectCount()>1)then
-					Constraint.BuildDupeInfo.Bone2 = Constraint["Bone2"]
-					Constraint.BuildDupeInfo.Bone2Pos = Constraint.Ent2:GetPhysicsObjectNum(Constraint["Bone2"]):GetPos() - Constraint.Ent2:GetPos()
-					Constraint.BuildDupeInfo.Bone2Angle = Constraint.Ent2:GetPhysicsObjectNum(Constraint["Bone2"]):GetAngles()
+				if Constraint.Ent2:GetPhysicsObjectCount()>1 then
+					local Bone = Constraint.Ent2:GetPhysicsObjectNum(Constraint.Bone2)
+					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent2:GetPos()
+					BuildDupeInfo.Ent2Ang = Constraint.Ent2:GetAngles()
+					BuildDupeInfo.Bone2 = Constraint.Bone2
+					BuildDupeInfo.Bone2Pos = Bone:GetPos() - Constraint.Ent2:GetPos()
+					BuildDupeInfo.Bone2Angle = Bone:GetAngles()
+				else
+					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent2:GetPhysicsObject():GetPos()
+					BuildDupeInfo.Ent2Ang = Constraint.Ent2:GetPhysicsObject():GetAngles()
 				end
 			elseif IsValid(Constraint.Ent4) then
-				Constraint.BuildDupeInfo.EntityPos = Constraint.Ent1:GetPos() - Constraint.Ent4:GetPos()
-				Constraint.BuildDupeInfo.Ent4Ang = Constraint.Ent4:GetAngles()
-				if(Constraint.Ent4:GetPhysicsObjectCount()>1)then
-					Constraint.BuildDupeInfo.Bone2 = Constraint["Bone4"]
-					Constraint.BuildDupeInfo.Bone2Pos = Constraint.Ent4:GetPhysicsObjectNum(Constraint["Bone4"]):GetPos() - Constraint.Ent4:GetPos()
-					Constraint.BuildDupeInfo.Bone2Angle = Constraint.Ent4:GetPhysicsObjectNum(Constraint["Bone4"]):GetAngles()
+				if Constraint.Ent4:GetPhysicsObjectCount()>1 then
+					BuildDupeInfo.Bone2 = Constraint.Bone4
+					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent4:GetPos()
+					BuildDupeInfo.Ent2Ang = Constraint.Ent4:GetAngles()
+					BuildDupeInfo.Bone2Pos = Constraint.Ent4:GetPhysicsObjectNum(Constraint.Bone4):GetPos() - Constraint.Ent4:GetPos()
+					BuildDupeInfo.Bone2Angle = Constraint.Ent4:GetPhysicsObjectNum(Constraint.Bone4):GetAngles()
+				else
+					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent4:GetPhysicsObject():GetPos()
+					BuildDupeInfo.Ent2Ang = Constraint.Ent4:GetPhysicsObject():GetAngles()
 				end
 			end
 				
