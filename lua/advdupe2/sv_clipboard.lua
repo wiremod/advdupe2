@@ -505,7 +505,7 @@ end
 	Params: <table>Constraint, <table> EntityList, <table> EntityTable
 	Returns: <entity> CreatedConstraint
 ]]
-local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Player, DontEnable)
+local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Player, DontEnable, AngleOffset)
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
@@ -600,48 +600,69 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local ReEnableSecond
 	local buildInfo = Constraint.BuildDupeInfo
 	if (buildInfo) then
-
-		if first ~= nil and second ~= nil and not second:IsWorld() and buildInfo.EntityPos ~= nil then
-			local SecondPhys = second:GetPhysicsObject()
-			if IsValid(SecondPhys) then
-				if not DontEnable then ReEnableSecond = SecondPhys:IsMoveable() end
-				SecondPhys:EnableMotion(false)
-				second:SetPos(first:GetPos() - buildInfo.EntityPos)
-				if (buildInfo.Bone2) then
-					Bone2Index = buildInfo.Bone2
-					Bone2 = second:GetPhysicsObjectNum(Bone2Index)
-					if IsValid(Bone2) then
-						Bone2:EnableMotion(false)
-						Bone2:SetPos(second:GetPos() + buildInfo.Bone2Pos)
-						Bone2:SetAngles(buildInfo.Bone2Angle)
+		if second == nil then
+			if first ~= nil and first:IsValid() and buildInfo.Ent1Ang ~= nil then
+				local FirstPhys = first:GetPhysicsObject()
+				if IsValid(FirstPhys) then
+					if not DontEnable then ReEnableFirst = FirstPhys:IsMoveable() end
+					FirstPhys:EnableMotion(false)
+					local _, ang = LocalToWorld(Vector(), AngleOffset, Vector(), buildInfo.Ent1Ang)
+					first:SetAngles(ang)
+					if (buildInfo.Bone1) then
+						Bone1Index = buildInfo.Bone1
+						Bone1 = first:GetPhysicsObjectNum(Bone1Index)
+						if IsValid(Bone1) then
+							Bone1:EnableMotion(false)
+							local _, ang = LocalToWorld(Vector(), AngleOffset, Vector(), buildInfo.Bone1Angle)
+							Bone1:SetPos(first:GetPos() + buildInfo.Bone1Pos)
+							Bone1:SetAngles(ang)
+						end
 					end
 				end
 			end
-		end
-
-		if first ~= nil and not first:IsWorld() and buildInfo.Ent1Ang ~= nil then
-			local FirstPhys = first:GetPhysicsObject()
-			if IsValid(FirstPhys) then
-				if not DontEnable then ReEnableFirst = FirstPhys:IsMoveable() end
-				FirstPhys:EnableMotion(false)
-				first:SetAngles(buildInfo.Ent1Ang)
-				if (buildInfo.Bone1) then
-					Bone1Index = buildInfo.Bone1
-					Bone1 = first:GetPhysicsObjectNum(Bone1Index)
-					if IsValid(Bone1) then
-						Bone1:EnableMotion(false)
-						Bone1:SetPos(first:GetPos() + buildInfo.Bone1Pos)
-						Bone1:SetAngles(buildInfo.Bone1Angle)
+		else
+			if first and first:IsValid() and second and second:IsValid() and buildInfo.EntityPos ~= nil then
+				local SecondPhys = second:GetPhysicsObject()
+				if IsValid(SecondPhys) then
+					if not DontEnable then ReEnableSecond = SecondPhys:IsMoveable() end
+					SecondPhys:EnableMotion(false)
+					second:SetPos(first:GetPos() - buildInfo.EntityPos)
+					if (buildInfo.Bone2) then
+						Bone2Index = buildInfo.Bone2
+						Bone2 = second:GetPhysicsObjectNum(Bone2Index)
+						if IsValid(Bone2) then
+							Bone2:EnableMotion(false)
+							Bone2:SetPos(second:GetPos() + buildInfo.Bone2Pos)
+							Bone2:SetAngles(buildInfo.Bone2Angle)
+						end
 					end
 				end
 			end
-		end
 
-		if second ~= nil and not second:IsWorld() then
-			if buildInfo.Ent2Ang ~= nil then
-				second:SetAngles(buildInfo.Ent2Ang)
-			elseif buildInfo.Ent4Ang ~= nil then
-				second:SetAngles(buildInfo.Ent4Ang)
+			if first ~= nil and first:IsValid() and buildInfo.Ent1Ang ~= nil then
+				local FirstPhys = first:GetPhysicsObject()
+				if IsValid(FirstPhys) then
+					if not DontEnable then ReEnableFirst = FirstPhys:IsMoveable() end
+					FirstPhys:EnableMotion(false)
+					first:SetAngles(buildInfo.Ent1Ang)
+					if (buildInfo.Bone1) then
+						Bone1Index = buildInfo.Bone1
+						Bone1 = first:GetPhysicsObjectNum(Bone1Index)
+						if IsValid(Bone1) then
+							Bone1:EnableMotion(false)
+							Bone1:SetPos(first:GetPos() + buildInfo.Bone1Pos)
+							Bone1:SetAngles(buildInfo.Bone1Angle)
+						end
+					end
+				end
+			end
+
+			if second ~= nil and second:IsValid() then
+				if buildInfo.Ent2Ang ~= nil then
+					second:SetAngles(buildInfo.Ent2Ang)
+				elseif buildInfo.Ent4Ang ~= nil then
+					second:SetAngles(buildInfo.Ent4Ang)
+				end
 			end
 		end
 	end
@@ -1128,7 +1149,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 	-- Create constraints
 	--
 	for k, Constraint in pairs(ConstraintList) do
-		Entity = CreateConstraintFromTable(Constraint, CreatedEntities, EntityList, Player)
+		Entity = CreateConstraintFromTable(Constraint, CreatedEntities, EntityList, Player, false, AngleOffset)
 		if (IsValid(Entity)) then
 			table.insert(CreatedConstraints, Entity)
 		end
@@ -1323,7 +1344,7 @@ local function AdvDupe2_Spawn()
 			end
 
 			local Entity = CreateConstraintFromTable(Queue.ConstraintList[Queue.Current], Queue.CreatedEntities,
-																							 Queue.EntityList, Queue.Player, true)
+																							 Queue.EntityList, Queue.Player, true, Queue.AngleOffset)
 			if IsValid(Entity) then
 				table.insert(Queue.CreatedConstraints, Entity)
 			end
