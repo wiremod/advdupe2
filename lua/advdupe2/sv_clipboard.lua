@@ -17,17 +17,17 @@ AdvDupe2.JobManager.PastingHook = false
 AdvDupe2.JobManager.Queue = {}
 
 local constraints = {
-	["Weld"      ] = true,
-	["Axis"      ] = true,
-	["Ballsocket"] = true,
-	["Elastic"   ] = true,
-	["Hydraulic "] = true,
-	["Motor"     ] = true,
-	["Muscle"    ] = true,
-	["Pulley"    ] = true,
-	["Rope"      ] = true,
-	["Slider"    ] = true,
-	["Winch"     ] = true
+	Weld       = true,
+	Axis       = true,
+	Ballsocket = true,
+	Elastic    = true,
+	Hydraulic  = true,
+	Motor      = true,
+	Muscle     = true,
+	Pulley     = true,
+	Rope       = true,
+	Slider     = true,
+	Winch      = true
 }
 
 local serializable = {
