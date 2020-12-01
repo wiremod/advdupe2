@@ -970,6 +970,7 @@ function FOLDER:SetExpanded(bool)
 		self.Control:Collapse(self)
 	end
 end
+
 function FOLDER:SetSelected(bool)
 	if (bool) then
 		self:SetBackgroundColor(self:GetSkin().bg_color_bright)
