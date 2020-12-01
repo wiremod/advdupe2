@@ -37,8 +37,9 @@ local function SavePositions( Constraint )
 				BuildDupeInfo.Bone1Pos = Bone:GetPos() - Constraint.Ent1:GetPos()
 				BuildDupeInfo.Bone1Angle = Bone:GetAngles()
 			else
-				BuildDupeInfo.Ent1Ang = Constraint.Ent1:GetPhysicsObject():GetAngles()
-				BuildDupeInfo.Ent1Pos = Constraint.Ent1:GetPhysicsObject():GetPos()
+				local Bone = Constraint.Ent1:GetPhysicsObject()
+				BuildDupeInfo.Ent1Ang = Bone:GetAngles()
+				BuildDupeInfo.Ent1Pos = Bone:GetPos()
 			end
 
 			if IsValid(Constraint.Ent2) then
@@ -50,19 +51,22 @@ local function SavePositions( Constraint )
 					BuildDupeInfo.Bone2Pos = Bone:GetPos() - Constraint.Ent2:GetPos()
 					BuildDupeInfo.Bone2Angle = Bone:GetAngles()
 				else
-					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent2:GetPhysicsObject():GetPos()
-					BuildDupeInfo.Ent2Ang = Constraint.Ent2:GetPhysicsObject():GetAngles()
+					local Bone = Constraint.Ent2:GetPhysicsObject()
+					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Bone:GetPos()
+					BuildDupeInfo.Ent2Ang = Bone:GetAngles()
 				end
 			elseif IsValid(Constraint.Ent4) then
 				if Constraint.Ent4:GetPhysicsObjectCount()>1 then
+					local Bone = Constraint.Ent4:GetPhysicsObjectNum(Constraint.Bone4)
 					BuildDupeInfo.Bone2 = Constraint.Bone4
 					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent4:GetPos()
 					BuildDupeInfo.Ent2Ang = Constraint.Ent4:GetAngles()
-					BuildDupeInfo.Bone2Pos = Constraint.Ent4:GetPhysicsObjectNum(Constraint.Bone4):GetPos() - Constraint.Ent4:GetPos()
-					BuildDupeInfo.Bone2Angle = Constraint.Ent4:GetPhysicsObjectNum(Constraint.Bone4):GetAngles()
+					BuildDupeInfo.Bone2Pos = Bone:GetPos() - Constraint.Ent4:GetPos()
+					BuildDupeInfo.Bone2Angle = Bone:GetAngles()
 				else
-					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Constraint.Ent4:GetPhysicsObject():GetPos()
-					BuildDupeInfo.Ent2Ang = Constraint.Ent4:GetPhysicsObject():GetAngles()
+					local Bone = Constraint.Ent4:GetPhysicsObject()
+					BuildDupeInfo.EntityPos = BuildDupeInfo.Ent1Pos - Bone:GetPos()
+					BuildDupeInfo.Ent2Ang = Bone:GetAngles()
 				end
 			end
 				
