@@ -14,7 +14,6 @@ local tonumber = tonumber
 local error = error
 local Vector = Vector
 local Angle = Angle
-local unpack = unpack
 local format = string.format
 local char = string.char
 local byte = string.byte

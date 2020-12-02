@@ -512,7 +512,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
-	for k, Key in pairs(Factory.Args) do
+	for k, Key in ipairs(Factory.Args) do
 
 		local Val = Constraint[Key]
 
@@ -586,10 +586,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 
 		end
 
-		-- If there's a missing argument then unpack will stop sending at that argument
-		Val = Val or false
-
-		table.insert(Args, Val)
+		Args[k] = Val
 	end
 
 	local Bone1
@@ -646,7 +643,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 	end
 
-	local ok, Ent = pcall(Factory.Func, unpack(Args))
+	local ok, Ent = pcall(Factory.Func, unpack(Args, 1, #Factory.Args))
 
 	if not ok or not Ent then
 		if (Player) then
