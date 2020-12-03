@@ -1066,7 +1066,7 @@ if(CLIENT)then
 		NumSlider:SetText( "Height Offset" )
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 0 )
-		NumSlider:SetMax( 32000 )
+		NumSlider:SetMax( 2500 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar("advdupe2_offset_z")
 		NumSlider:SetToolTip("Change the Z offset of the dupe")
