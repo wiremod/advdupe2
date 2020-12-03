@@ -173,7 +173,7 @@ if(SERVER)then
 			return false
 		end
 
-		local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -16000, 16000)
+		local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -32000, 32000)
 		ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
 		ply.AdvDupe2.Angle = Angle(ply:GetInfoNum("advdupe2_offset_pitch", 0), ply:GetInfoNum("advdupe2_offset_yaw", 0), ply:GetInfoNum("advdupe2_offset_roll", 0))
 		if(tobool(ply:GetInfo("advdupe2_offset_world")))then ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle end
@@ -445,7 +445,7 @@ if(SERVER)then
 				else
 					local EntAngle = headent.PhysicsObjects[0].Angle
 					if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
-					trace.HitPos.Z = trace.HitPos.Z + math.Clamp(ply.AdvDupe2.HeadEnt.Z + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0, -16000, 16000)
+					trace.HitPos.Z = trace.HitPos.Z + math.Clamp(ply.AdvDupe2.HeadEnt.Z + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0, -32000, 32000)
 					Pos, Ang = LocalToWorld(headent.PhysicsObjects[0].Pos, EntAngle, trace.HitPos, Angle(math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_roll")) or 0,-180,180)))
 				end
 			else
