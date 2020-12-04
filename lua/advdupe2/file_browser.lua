@@ -919,6 +919,7 @@ function FOLDER:AddFolder(text)
 	node.Label:SetPos(44 + node.Offset, 0)
 	node.Label:SetText(text)
 	node.Label:SizeToContents()
+	node.Label:SetDark(true)
 	node.ParentNode = self
 	node.IsFolder = true
 	node.Folders = {}
@@ -948,6 +949,7 @@ function FOLDER:AddFile(text)
 	node.Label:SetPos(44 + node.Offset, 0)
 	node.Label:SetText(text)
 	node.Label:SizeToContents()
+	node.Label:SetDark(true)
 	node.ParentNode = self
 
 	self.Nodes = self.Nodes + 1
