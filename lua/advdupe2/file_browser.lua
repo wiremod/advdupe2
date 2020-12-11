@@ -1124,7 +1124,7 @@ local function UpdateClientFiles()
 	PurgeFiles("adv_duplicator/", pnlCanvas:AddFolder("-Advanced Duplicator 1-"))
 
 	if (pnlCanvas.Folders[2]) then
-		if (#pnlCanvas.Folders[2].Folders == 0 and #pnlCanvas[2].Files == 0) then
+		if (#pnlCanvas.Folders[2].Folders == 0 and #pnlCanvas.Folders[2].Files == 0) then
 			pnlCanvas:RemoveNode(pnlCanvas.Folders[2])
 		end
 
