@@ -90,8 +90,8 @@ local len
 local tables,tablesLookup
 
 enc[TYPE_TABLE] = function(obj) --table
-	tables = tables + 1
 	if not tablesLookup[obj] then
+		tables = tables + 1
 		tablesLookup[obj] = tables
 	else
 		buff:WriteByte(247)
