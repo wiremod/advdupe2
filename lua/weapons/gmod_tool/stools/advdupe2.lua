@@ -675,7 +675,7 @@ if(SERVER)then
 				local B = (Vector(-i,-i,-i)+Pos)
 
 				local Entities = FindInBox(B,T, ply)
-				if(table.Count(Entities)==0)then
+				if(next(Entities)==nil)then
 					AdvDupe2.Notify(ply, "Area Auto Save copied 0 entities; be sure to turn it off.", NOTIFY_ERROR)
 					return
 				end
@@ -724,7 +724,7 @@ if(SERVER)then
 			end
 		end
 
-		if(table.Count(Entities)==0)then return end
+		if(next(Entities)==nil)then return end
 
 		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
 		Tab.HeadEnt.Index = table.GetFirstKey(Entities)
@@ -1486,9 +1486,6 @@ if(CLIENT)then
 			local txtbox2 = vgui.Create("DTextEntry", pnl)
 			txtbox2:SetWide(pnl:GetWide()-100)
 			txtbox2:SetPos(60, 5)
-			txtbox2.OnEnter = function()
-				btn2:DoClick()
-			end
 
 			local btn2 = vgui.Create("DImageButton", pnl)
 			x, y = txtbox2:GetPos()
@@ -1499,6 +1496,9 @@ if(CLIENT)then
 			btn2.DoClick = 	function()
 				if(txtbox2:GetValue()=="")then return end
 				RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
+			end
+			txtbox2.OnEnter = function()
+				btn2:DoClick()
 			end
 		end
 	end

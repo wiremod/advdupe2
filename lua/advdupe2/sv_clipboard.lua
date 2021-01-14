@@ -238,7 +238,7 @@ local function CopyEntTable(Ent, Offset)
 		end
 	end
 
-	if(table.Count(Tab.BodyG)==0)then
+	if(next(Tab.BodyG)==nil)then
 		Tab.BodyG = nil
 	end
 
@@ -1324,7 +1324,7 @@ local function AdvDupe2_Spawn()
 			if IsValid(Entity) then
 				table.insert(Queue.CreatedConstraints, Entity)
 			end
-		elseif (table.Count(Queue.ConstraintList) > 0) then
+		elseif (next(Queue.ConstraintList) ~= nil) then
 			local tbl = {}
 			for k, v in pairs(Queue.ConstraintList) do
 				table.insert(tbl, v)
