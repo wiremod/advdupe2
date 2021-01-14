@@ -683,7 +683,7 @@ if(SERVER)then
 				if(ply.AdvDupe2.AutoSaveEnt && Entities[ply.AdvDupe2.AutoSaveEnt])then
 					Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt
 				else
-					Tab.HeadEnt.Index = table.GetFirstKey(Entities)
+					Tab.HeadEnt.Index = next(Entities)
 				end
 				Tab.HeadEnt.Pos = Entities[Tab.HeadEnt.Index]:GetPos()
 
@@ -727,7 +727,7 @@ if(SERVER)then
 		if(next(Entities)==nil)then return end
 
 		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
-		Tab.HeadEnt.Index = table.GetFirstKey(Entities)
+		Tab.HeadEnt.Index = next(Entities)
 		Tab.HeadEnt.Pos = Entities[Tab.HeadEnt.Index]:GetPos()
 
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
