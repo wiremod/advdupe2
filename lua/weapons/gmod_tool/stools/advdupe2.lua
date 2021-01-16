@@ -129,12 +129,12 @@ if(SERVER)then
 	}
 
 	local function PlayerCanDupeCPPI(ply, ent)
-		if ent.DoNotDuplicate or areacopy_classblacklist[ent:GetClass()] or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
 		return ent:CPPIGetOwner()==ply
 	end
 
 	local function PlayerCanDupeTool(ply, ent)
-		if ent.DoNotDuplicate or areacopy_classblacklist[ent:GetClass()] or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
 		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
 	end
@@ -243,7 +243,7 @@ if(SERVER)then
 			AdvDupe2.RemoveSelectBox(ply)
 		elseif trace.HitNonWorld then	--Area Copy is off
 			-- Filter duplicator blocked entities out.
-			if not duplicator.IsAllowed( trace.Entity:GetClass() ) then
+			if not AdvDupe2.duplicator.IsCopyable( trace.Entity ) then
 				return false
 			end
 
@@ -719,7 +719,7 @@ if(SERVER)then
 
 		local Entities = ents.GetAll()
 		for k,v in pairs(Entities) do
-			if v:CreatedByMap() or not duplicator.IsAllowed(v:GetClass()) then
+			if v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v) then
 				Entities[k]=nil
 			end
 		end
