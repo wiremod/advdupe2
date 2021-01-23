@@ -227,13 +227,14 @@ if(SERVER)then
 			local B = (Vector(-area_size,-area_size,-area_size)+Pos)
 
 			local Ents = FindInBox(B,T, ply)
-			if next(Ents)==nil then
+			local _, Ent = next(Ents)
+			if not Ent then
 				self:SetStage(0)
 				AdvDupe2.RemoveSelectBox(ply)
 				return true
 			end
 
-			local Ent = trace.HitNonWorld and trace.Entity or Ents[next(Ents)]
+			Ent = trace.HitNonWorld and trace.Entity or Ent
 			HeadEnt.Index = Ent:EntIndex()
 			HeadEnt.Pos = Ent:GetPos()
 
@@ -285,13 +286,14 @@ if(SERVER)then
 						Entities[ent:EntIndex()] = ent
 					end
 				end
-				if next(Entities)==nil then
+
+				local _, Ent = next(Entities)
+				if not Ent then
 					umsg.Start("AdvDupe2_RemoveGhosts", ply)
 					umsg.End()
 					return true
 				end
 
-				local Ent = Entities[next(Entities)]
 				HeadEnt.Index = Ent:EntIndex()
 				HeadEnt.Pos = Ent:GetPos()
 
@@ -675,7 +677,8 @@ if(SERVER)then
 				local B = (Vector(-i,-i,-i)+Pos)
 
 				local Entities = FindInBox(B,T, ply)
-				if(next(Entities)==nil)then
+				local _, HeadEnt = next(Entities)
+				if not HeadEnt then
 					AdvDupe2.Notify(ply, "Area Auto Save copied 0 entities; be sure to turn it off.", NOTIFY_ERROR)
 					return
 				end
@@ -683,9 +686,9 @@ if(SERVER)then
 				if(ply.AdvDupe2.AutoSaveEnt && Entities[ply.AdvDupe2.AutoSaveEnt])then
 					Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt
 				else
-					Tab.HeadEnt.Index = next(Entities)
+					Tab.HeadEnt.Index = HeadEnt:EntIndex()
 				end
-				Tab.HeadEnt.Pos = Entities[Tab.HeadEnt.Index]:GetPos()
+				Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
 				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 				if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
@@ -724,11 +727,12 @@ if(SERVER)then
 			end
 		end
 
-		if(next(Entities)==nil)then return end
+		local _, HeadEnt = next(Entities)
+		if not HeadEnt then return end
 
 		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
-		Tab.HeadEnt.Index = next(Entities)
-		Tab.HeadEnt.Pos = Entities[Tab.HeadEnt.Index]:GetPos()
+		Tab.HeadEnt.Index = HeadEnt:EntIndex()
+		Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
