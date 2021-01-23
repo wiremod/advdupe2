@@ -129,12 +129,12 @@ if(SERVER)then
 	}
 
 	local function PlayerCanDupeCPPI(ply, ent)
-		if ent.DoNotDuplicate or areacopy_classblacklist[ent:GetClass()] or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
 		return ent:CPPIGetOwner()==ply
 	end
 
 	local function PlayerCanDupeTool(ply, ent)
-		if ent.DoNotDuplicate or areacopy_classblacklist[ent:GetClass()] or not IsValid(ent:GetPhysicsObject()) or not duplicator.IsAllowed(ent:GetClass()) then return false end
+		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
 		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
 	end
@@ -227,13 +227,14 @@ if(SERVER)then
 			local B = (Vector(-area_size,-area_size,-area_size)+Pos)
 
 			local Ents = FindInBox(B,T, ply)
-			if next(Ents)==nil then
+			local _, Ent = next(Ents)
+			if not Ent then
 				self:SetStage(0)
 				AdvDupe2.RemoveSelectBox(ply)
 				return true
 			end
 
-			local Ent = trace.HitNonWorld and trace.Entity or Ents[next(Ents)]
+			Ent = trace.HitNonWorld and trace.Entity or Ent
 			HeadEnt.Index = Ent:EntIndex()
 			HeadEnt.Pos = Ent:GetPos()
 
@@ -243,7 +244,7 @@ if(SERVER)then
 			AdvDupe2.RemoveSelectBox(ply)
 		elseif trace.HitNonWorld then	--Area Copy is off
 			-- Filter duplicator blocked entities out.
-			if not duplicator.IsAllowed( trace.Entity:GetClass() ) then
+			if not AdvDupe2.duplicator.IsCopyable( trace.Entity ) then
 				return false
 			end
 
@@ -285,13 +286,14 @@ if(SERVER)then
 						Entities[ent:EntIndex()] = ent
 					end
 				end
-				if next(Entities)==nil then
+
+				local _, Ent = next(Entities)
+				if not Ent then
 					umsg.Start("AdvDupe2_RemoveGhosts", ply)
 					umsg.End()
 					return true
 				end
 
-				local Ent = Entities[next(Entities)]
 				HeadEnt.Index = Ent:EntIndex()
 				HeadEnt.Pos = Ent:GetPos()
 
@@ -675,7 +677,8 @@ if(SERVER)then
 				local B = (Vector(-i,-i,-i)+Pos)
 
 				local Entities = FindInBox(B,T, ply)
-				if(table.Count(Entities)==0)then
+				local _, HeadEnt = next(Entities)
+				if not HeadEnt then
 					AdvDupe2.Notify(ply, "Area Auto Save copied 0 entities; be sure to turn it off.", NOTIFY_ERROR)
 					return
 				end
@@ -683,9 +686,9 @@ if(SERVER)then
 				if(ply.AdvDupe2.AutoSaveEnt && Entities[ply.AdvDupe2.AutoSaveEnt])then
 					Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt
 				else
-					Tab.HeadEnt.Index = table.GetFirstKey(Entities)
+					Tab.HeadEnt.Index = HeadEnt:EntIndex()
 				end
-				Tab.HeadEnt.Pos = Entities[Tab.HeadEnt.Index]:GetPos()
+				Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
 				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 				if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
@@ -719,16 +722,17 @@ if(SERVER)then
 
 		local Entities = ents.GetAll()
 		for k,v in pairs(Entities) do
-			if v:CreatedByMap() or not duplicator.IsAllowed(v:GetClass()) then
+			if v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v) then
 				Entities[k]=nil
 			end
 		end
 
-		if(table.Count(Entities)==0)then return end
+		local _, HeadEnt = next(Entities)
+		if not HeadEnt then return end
 
 		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
-		Tab.HeadEnt.Index = table.GetFirstKey(Entities)
-		Tab.HeadEnt.Pos = Entities[Tab.HeadEnt.Index]:GetPos()
+		Tab.HeadEnt.Index = HeadEnt:EntIndex()
+		Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
 		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
 		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
@@ -1486,9 +1490,6 @@ if(CLIENT)then
 			local txtbox2 = vgui.Create("DTextEntry", pnl)
 			txtbox2:SetWide(pnl:GetWide()-100)
 			txtbox2:SetPos(60, 5)
-			txtbox2.OnEnter = function()
-				btn2:DoClick()
-			end
 
 			local btn2 = vgui.Create("DImageButton", pnl)
 			x, y = txtbox2:GetPos()
@@ -1499,6 +1500,9 @@ if(CLIENT)then
 			btn2.DoClick = 	function()
 				if(txtbox2:GetValue()=="")then return end
 				RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
+			end
+			txtbox2.OnEnter = function()
+				btn2:DoClick()
 			end
 		end
 	end

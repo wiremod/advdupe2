@@ -114,11 +114,13 @@ local gtSetupTable = {
 	}
 }
 
+function AdvDupe2.duplicator.IsCopyable(Ent)
+	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
+end
+
 local function CopyEntTable(Ent, Offset)
 	-- Filter duplicator blocked entities out.
-	if Ent.DoNotDuplicate then return nil end
-
-	if (not IsValid(Ent:GetPhysicsObject())) then return nil end
+	if not AdvDupe2.duplicator.IsCopyable(Ent) then return nil end
 
 	local Tab = {}
 
@@ -238,7 +240,7 @@ local function CopyEntTable(Ent, Offset)
 		end
 	end
 
-	if(table.Count(Tab.BodyG)==0)then
+	if(next(Tab.BodyG)==nil)then
 		Tab.BodyG = nil
 	end
 
@@ -1324,7 +1326,7 @@ local function AdvDupe2_Spawn()
 			if IsValid(Entity) then
 				table.insert(Queue.CreatedConstraints, Entity)
 			end
-		elseif (table.Count(Queue.ConstraintList) > 0) then
+		elseif (next(Queue.ConstraintList) ~= nil) then
 			local tbl = {}
 			for k, v in pairs(Queue.ConstraintList) do
 				table.insert(tbl, v)
