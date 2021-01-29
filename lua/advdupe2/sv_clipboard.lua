@@ -893,9 +893,9 @@ end
 	Returns: nil
 ]]
 local function IsAllowed(Player, Class)
-	if (scripted_ents.GetMember(Class, "DoNotDuplicate")) then return false end
+	if scripted_ents.GetMember(Class, "DoNotDuplicate") then return false end
 
-	if (IsValid(Player) and not Player:IsAdmin()) then
+	if IsValid(Player) and not Player:IsAdmin() then
 		if not duplicator.IsAllowed(Class) or scripted_ents.GetMember(Class, "AdminOnly") then return false end
 	end
 	return true
