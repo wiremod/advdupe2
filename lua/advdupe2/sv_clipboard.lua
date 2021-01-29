@@ -892,13 +892,11 @@ end
 	Params: <table> EntTable, <player> Player
 	Returns: nil
 ]]
-local function IsAllowed(Player, Class, EntityClass)
+local function IsAllowed(Player, Class)
 	if (scripted_ents.GetMember(Class, "DoNotDuplicate")) then return false end
 
 	if (IsValid(Player) and not Player:IsAdmin()) then
-		if not duplicator.IsAllowed(Class) then return false end
-		if (not scripted_ents.GetMember(Class, "Spawnable") and not EntityClass) then return false end
-		if (scripted_ents.GetMember(Class, "AdminOnly")) then return false end
+		if not duplicator.IsAllowed(Class) or scripted_ents.GetMember(Class, "AdminOnly") then return false end
 	end
 	return true
 end
@@ -906,7 +904,7 @@ end
 local function CreateEntityFromTable(EntTable, Player)
 
 	local EntityClass = duplicator.FindEntityClass(EntTable.Class)
-	if not IsAllowed(Player, EntTable.Class, EntityClass) then
+	if not IsAllowed(Player, EntTable.Class) then
 		Player:ChatPrint([[Entity Class Black listed, "]] .. EntTable.Class .. [["]])
 		return nil
 	end
@@ -938,7 +936,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			sent = true
 		end
 
-		if IsAllowed(Player, EntTable.Class, EntityClass) then
+		if IsAllowed(Player, EntTable.Class) then
 			status, valid = pcall(GenericDuplicatorFunction, EntTable, Player)
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
@@ -979,7 +977,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		-- Create and return the entity
 		if (EntTable.Class == "prop_physics") then
 			valid = MakeProp(Player, unpack(ArgList, 1, #EntityClass.Args)) -- Create prop_physics like this because if the model doesn't exist it will cause
-		elseif IsAllowed(Player, EntTable.Class, EntityClass) then
+		elseif IsAllowed(Player, EntTable.Class) then
 			-- Create sents using their spawn function with the arguments we stored earlier
 			sent = true
 
