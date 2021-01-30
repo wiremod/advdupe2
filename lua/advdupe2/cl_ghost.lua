@@ -176,7 +176,7 @@ local function SpawnGhosts()
 	if AdvDupe2.CurrentGhost==AdvDupe2.HeadEnt then AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1 end
 
 	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
-	if g then
+	if g and AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100 <= GetConVarNumber("advdupe2_limit_ghost") then
 		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g)
 		if(not AdvDupe2.BusyBar)then
 			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
@@ -250,7 +250,7 @@ function AdvDupe2.StartGhosting()
 	AdvDupe2.TotalGhosts = #AdvDupe2.GhostToSpawn
 
 	if AdvDupe2.TotalGhosts > 1 then
-		if(not AdvDupe2.BusyBar)then
+		if not AdvDupe2.BusyBar then
 			AdvDupe2.InitProgressBar("Ghosting: ")
 			AdvDupe2.BusyBar = false
 		end
