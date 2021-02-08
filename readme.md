@@ -1,6 +1,6 @@
 # Advanced Duplicator 2
 
-Advanced Duplicator 2 is a [Garry's Mod][ref-gmod] addon which implements a tool similar to the [Duplicator][ref-dporg], but with many added features. It is a fork of (and not a direct successor to, despite the name) [Advanced Duplicator][ref-dupe1].
+[Advanced Duplicator 2][ref-dupe2] is a [Garry's Mod][ref-gmod] addon which implements a tool similar to the [Duplicator][ref-dporg], but with many added features. It is a fork of (and not a direct successor to, despite the name) [Advanced Duplicator][ref-dupe1].
 
 # Workshop Installation
 
@@ -39,5 +39,6 @@ See [CONTRIBUTING.md][ref-cont] for guidelines on contributing and participating
 [ref-gmod]: https://store.steampowered.com/app/4000/Garrys_Mod/
 [ref-dporg]: https://gmod.fandom.com/wiki/Duplicator
 [ref-dupe1]: https://steamcommunity.com/sharedfiles/filedetails/?id=163806212
+[ref-dupe2]: https://steamcommunity.com/sharedfiles/filedetails/?id=773402917
 [ref-wirecoll]: https://steamcommunity.com/id/wireteam/myworkshopfiles/?appid=4000
 [ref-cont]: https://github.com/wiremod/advdupe2/blob/master/CONTRIBUTING.md
