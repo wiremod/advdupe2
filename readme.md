@@ -1,10 +1,10 @@
 # Advanced Duplicator 2
 
-Advanced Duplicator 2 is a [Garry's Mod][] addon which implements a tool similar to the Duplicator, but with many added features. It is a fork of (and not a direct successor to, despite the name) [Advanced Duplicator][].
+[Advanced Duplicator 2][ref-dupe2] is a [Garry's Mod][ref-gmod] addon which implements a tool similar to the [Duplicator][ref-dporg], but with many added features. It is a fork of (and not a direct successor to, despite the name) [Advanced Duplicator][ref-dupe1].
 
 # Workshop Installation
 
-The Wiremod Collection is available on the Steam Workshop! Go to the [Workshop page][WireTeam Workshop Collection] and press `Subscribe` on the addons you want
+The Wiremod Collection is available on the Steam Workshop! Go to the [Workshop page][ref-wirecoll] and press `Subscribe` on the addons you want
 
 # Manual Installation
 
@@ -24,9 +24,9 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 # Links
 
-[Garry's Mod]: <http://garrysmod.com/>
+[Garry's Mod](http://garrysmod.com/)
 
-[WireTeam Workshop Collection]: <https://steamcommunity.com/id/wireteam/myworkshopfiles/?appid=4000>
+[WireTeam Workshop Collection][ref-wirecoll]
 
 [Wiremod landing page](http://wiremod.com)
 
@@ -34,4 +34,11 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 # Contributor Guidelines
 
-See CONTRIBUTING.md for guidelines on contributing and participating in the wiremod project.
+See [CONTRIBUTING.md][ref-cont] for guidelines on contributing and participating in the wiremod project.
+
+[ref-gmod]: https://store.steampowered.com/app/4000/Garrys_Mod/
+[ref-dporg]: https://gmod.fandom.com/wiki/Duplicator
+[ref-dupe1]: https://steamcommunity.com/sharedfiles/filedetails/?id=163806212
+[ref-dupe2]: https://steamcommunity.com/sharedfiles/filedetails/?id=773402917
+[ref-wirecoll]: https://steamcommunity.com/id/wireteam/myworkshopfiles/?appid=4000
+[ref-cont]: https://github.com/wiremod/advdupe2/blob/master/CONTRIBUTING.md
