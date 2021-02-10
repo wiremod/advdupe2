@@ -1349,9 +1349,7 @@ local function AdvDupe2_Spawn()
 			end
 
 			undo.Create("AdvDupe2")
-			local phys
-			local edit
-			local mass
+			local phys, edit, mass
 			for k, v in pairs(Queue.CreatedEntities) do
 				if (not IsValid(v)) then
 					v = nil
