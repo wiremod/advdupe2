@@ -1,10 +1,7 @@
 --[[
 	Title: Adv. Duplicator 2 Module
-
 	Desc: Provides advanced duplication functionality for the Adv. Dupe 2 tool.
-
 	Author: TB
-
 	Version: 1.0
 ]]
 
@@ -360,7 +357,7 @@ local function CopyConstraintTable(Const, Offset)
 				if (not Const["Ent1"]:IsWorld()) then
 					Constraint[wpos] = Const[wpos] - Const["Ent1"]:GetPos()
 				else
-					Constraint[wpos] = Const[wposi] - Const["Ent4"]:GetPos()
+					Constraint[wpos] = Const[wpos] - Const["Ent4"]:GetPos()
 				end
 			end
 		end
@@ -453,8 +450,7 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 	local Constraints, EntTable, ConstraintTable = {}, {}, {}
 	local index, add, AddEnts, AddConstrs, ConstTable, EntTab
 
-	for _, Ent in pairs(Entities) do
-
+	for idx, Ent in pairs(Entities) do
 		index = Ent:EntIndex()
 		EntTable[index] = CopyEntTable(Ent, Offset)
 		if (EntTable[index] ~= nil) then
@@ -481,7 +477,7 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 		end
 	end
 
-	for _, Constraint in pairs(Constraints) do
+	for idx, Constraint in pairs(Constraints) do
 		ConstTable, EntTab = CopyConstraintTable(table.Copy(Constraint:GetTable()), Offset)
 		-- If the entity is constrained to an entity outside of the area box, don't copy the constraint.
 		if (not CopyOutside) then
@@ -489,9 +485,9 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 			for k, v in pairs(EntTab) do
 				if (not Entities[v:EntIndex()]) then add = false end
 			end
-			if (add) then ConstraintTable[_] = ConstTable end
+			if (add) then ConstraintTable[idx] = ConstTable end
 		else -- Copy entities and constraints outside of the box that are constrained to entities inside the box
-			ConstraintTable[_] = ConstTable
+			ConstraintTable[idx] = ConstTable
 			for k, v in pairs(EntTab) do
 				Copy(v, EntTable, ConstraintTable, Offset)
 			end
@@ -591,12 +587,8 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		Args[k] = Val
 	end
 
-	local Bone1
-	local Bone1Index
-	local ReEnableFirst
-	local Bone2
-	local Bone2Index
-	local ReEnableSecond
+	local Bone1, Bone1Index, ReEnableFirst
+	local Bone2, Bone2Index, ReEnableSecond
 	local buildInfo = Constraint.BuildDupeInfo
 	if (buildInfo) then
 
@@ -949,8 +941,8 @@ local function CreateEntityFromTable(EntTable, Player)
 	if (not GENERIC) then
 
 		-- Build the argument list for the Entitie's spawn function
-		local ArgList = {}
-		local Arg
+		local ArgList, Arg = {}
+
 		for iNumber, Key in pairs(EntityClass.Args) do
 
 			Arg = nil
@@ -1033,7 +1025,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			if valid.RestoreNetworkVars then
 				valid:RestoreNetworkVars(EntTable.DT)
 			end
-			
+
 			if GENERIC and Player then
 				if(EntTable.Class=="prop_effect")then
 					gamemode.Call("PlayerSpawnedEffect", Player, valid:GetModel(), valid)
@@ -1121,8 +1113,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 		CreatedEntities[k] = Ent
 	end
 
-	local CreatedConstraints = {}
-	local Entity
+	local CreatedConstraints, Entity = {}
 	--
 	-- Create constraints
 	--
@@ -1135,8 +1126,8 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 
 	if (Player) then
 
-		undo.Create "AdvDupe2_Paste"
-		for _, v in pairs(CreatedEntities) do
+		undo.Create( "AdvDupe2_Paste" )
+		for idx, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
 				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
@@ -1146,8 +1137,8 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			end
 			v:GetPhysicsObject():EnableMotion(false)
 
-			if (EntityList[_].BuildDupeInfo.DupeParentID and Parenting) then
-				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
+			if (EntityList[idx].BuildDupeInfo.DupeParentID and Parenting) then
+				v:SetParent(CreatedEntities[EntityList[idx].BuildDupeInfo.DupeParentID])
 			end
 			v:SetNotSolid(v.SolidMod)
 			undo.AddEntity(v)
@@ -1158,7 +1149,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 		-- if(Tool)then AdvDupe2.FinishPasting(Player, true) end
 	else
 
-		for _, v in pairs(CreatedEntities) do
+		for idx, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
 				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
@@ -1168,8 +1159,8 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			end
 			v:GetPhysicsObject():EnableMotion(false)
 
-			if (EntityList[_].BuildDupeInfo.DupeParentID and Parenting) then
-				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
+			if (EntityList[idx].BuildDupeInfo.DupeParentID and Parenting) then
+				v:SetParent(CreatedEntities[EntityList[idx].BuildDupeInfo.DupeParentID])
 			end
 
 			v:SetNotSolid(v.SolidMod)
@@ -1285,7 +1276,7 @@ local function AdvDupe2_Spawn()
 		Queue.Current = Queue.Current + 1
 		if (Queue.Current > #Queue.SortedEntities) then
 
-			for _, Ent in pairs(Queue.CreatedEntities) do
+			for idx, Ent in pairs(Queue.CreatedEntities) do
 				ApplyEntityModifiers(Queue.Player, Ent)
 				ApplyBoneModifiers(Queue.Player, Ent)
 
@@ -1464,25 +1455,25 @@ local function ErrorCatchSpawning()
 	ticktotal = ticktotal + AdvDupe2.SpawnRate
 	while ticktotal >= 1 do
 		ticktotal = ticktotal - 1
-		local status, error = pcall(AdvDupe2_Spawn)
+		local status, err = pcall(AdvDupe2_Spawn)
 
 		if (not status) then
 			-- PUT ERROR LOGGING HERE
 
 			if (not AdvDupe2.JobManager.Queue) then
-				print("[AdvDupe2Notify]\t" .. error)
+				print("[AdvDupe2Notify]\t" .. err)
 				AdvDupe2.JobManager.Queue = {}
 				return
 			end
 
 			local Queue = AdvDupe2.JobManager.Queue[AdvDupe2.JobManager.CurrentPlayer]
 			if (not Queue) then
-				print("[AdvDupe2Notify]\t" .. error)
+				print("[AdvDupe2Notify]\t" .. err)
 				return
 			end
 
 			if (IsValid(Queue.Player)) then
-				AdvDupe2.Notify(Queue.Player, error)
+				AdvDupe2.Notify(Queue.Player, err)
 
 				local undos = undo.GetTable()[Queue.Player:UniqueID()]
 				local str = "AdvDupe2_" .. Queue.Player:UniqueID()
@@ -1497,7 +1488,7 @@ local function ErrorCatchSpawning()
 					end
 				end
 			else
-				print("[AdvDupe2Notify]\t" .. error)
+				print("[AdvDupe2Notify]\t" .. err)
 			end
 
 			for k, v in pairs(Queue.CreatedEntities) do
@@ -1541,7 +1532,6 @@ local function RemoveSpawnedEntities(tbl, i)
 end
 
 function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
-
 	local i = #AdvDupe2.JobManager.Queue + 1
 	AdvDupe2.JobManager.Queue[i] = {}
 	local Queue = AdvDupe2.JobManager.Queue[i]
