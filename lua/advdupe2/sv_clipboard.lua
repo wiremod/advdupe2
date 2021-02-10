@@ -733,15 +733,15 @@ end
 local function ApplyBoneModifiers(Player, Ent)
 	if (not Ent.BoneMods or not Ent.PhysicsObjects) then return end
 
-	local status, error, PhysObject
+	local status, err, PhysObject
 	for Type, ModFunction in pairs(duplicator.BoneModifiers) do
 		for Bone, Args in pairs(Ent.PhysicsObjects) do
 			if (Ent.BoneMods[Bone] and Ent.BoneMods[Bone][Type]) then
 				PhysObject = Ent:GetPhysicsObjectNum(Bone)
 				if (Ent.PhysicsObjects[Bone]) then
-					status, error = pcall(ModFunction, Player, Ent, Bone, PhysObject, Ent.BoneMods[Bone][Type])
+					status, err = pcall(ModFunction, Player, Ent, Bone, PhysObject, Ent.BoneMods[Bone][Type])
 					if (not status) then
-						Player:ChatPrint('Error applying bone modifer, "' .. tostring(Type) .. '". ERROR: ' .. error)
+						Player:ChatPrint('Error applying bone modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
 					end
 				end
 			end
