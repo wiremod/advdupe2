@@ -450,7 +450,7 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 	local Constraints, EntTable, ConstraintTable = {}, {}, {}
 	local index, add, AddEnts, AddConstrs, ConstTable, EntTab
 
-	for idx, Ent in pairs(Entities) do
+	for _, Ent in pairs(Entities) do
 		index = Ent:EntIndex()
 		EntTable[index] = CopyEntTable(Ent, Offset)
 		if (EntTable[index] ~= nil) then
@@ -477,7 +477,7 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 		end
 	end
 
-	for idx, Constraint in pairs(Constraints) do
+	for _, Constraint in pairs(Constraints) do
 		ConstTable, EntTab = CopyConstraintTable(table.Copy(Constraint:GetTable()), Offset)
 		-- If the entity is constrained to an entity outside of the area box, don't copy the constraint.
 		if (not CopyOutside) then
@@ -485,9 +485,9 @@ function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside)
 			for k, v in pairs(EntTab) do
 				if (not Entities[v:EntIndex()]) then add = false end
 			end
-			if (add) then ConstraintTable[idx] = ConstTable end
+			if (add) then ConstraintTable[_] = ConstTable end
 		else -- Copy entities and constraints outside of the box that are constrained to entities inside the box
-			ConstraintTable[idx] = ConstTable
+			ConstraintTable[_] = ConstTable
 			for k, v in pairs(EntTab) do
 				Copy(v, EntTable, ConstraintTable, Offset)
 			end
@@ -1126,7 +1126,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 	if (Player) then
 
 		undo.Create("AdvDupe2_Paste")
-		for idx, v in pairs(CreatedEntities) do
+		for _, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
 				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
@@ -1136,8 +1136,8 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			end
 			v:GetPhysicsObject():EnableMotion(false)
 
-			if (EntityList[idx].BuildDupeInfo.DupeParentID and Parenting) then
-				v:SetParent(CreatedEntities[EntityList[idx].BuildDupeInfo.DupeParentID])
+			if (EntityList[_].BuildDupeInfo.DupeParentID and Parenting) then
+				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
 			end
 			v:SetNotSolid(v.SolidMod)
 			undo.AddEntity(v)
@@ -1148,7 +1148,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 		-- if(Tool)then AdvDupe2.FinishPasting(Player, true) end
 	else
 
-		for idx, v in pairs(CreatedEntities) do
+		for _, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
 				local status, valid = pcall(v.PostEntityPaste, v, Player, v, CreatedEntities)
@@ -1158,8 +1158,8 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			end
 			v:GetPhysicsObject():EnableMotion(false)
 
-			if (EntityList[idx].BuildDupeInfo.DupeParentID and Parenting) then
-				v:SetParent(CreatedEntities[EntityList[idx].BuildDupeInfo.DupeParentID])
+			if (EntityList[_].BuildDupeInfo.DupeParentID and Parenting) then
+				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
 			end
 
 			v:SetNotSolid(v.SolidMod)
@@ -1275,7 +1275,7 @@ local function AdvDupe2_Spawn()
 		Queue.Current = Queue.Current + 1
 		if (Queue.Current > #Queue.SortedEntities) then
 
-			for idx, Ent in pairs(Queue.CreatedEntities) do
+			for _, Ent in pairs(Queue.CreatedEntities) do
 				ApplyEntityModifiers(Queue.Player, Ent)
 				ApplyBoneModifiers(Queue.Player, Ent)
 
