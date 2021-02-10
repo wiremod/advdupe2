@@ -1126,7 +1126,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 
 	if (Player) then
 
-		undo.Create( "AdvDupe2_Paste" )
+		undo.Create("AdvDupe2_Paste")
 		for idx, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
@@ -1348,7 +1348,7 @@ local function AdvDupe2_Spawn()
 				end
 			end
 
-			undo.Create "AdvDupe2"
+			undo.Create("AdvDupe2")
 			local phys
 			local edit
 			local mass
