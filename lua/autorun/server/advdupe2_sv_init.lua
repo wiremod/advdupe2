@@ -7,7 +7,6 @@ AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will b
 
 include "advdupe2/sv_clipboard.lua"
 include "advdupe2/sh_codec.lua"
-include "advdupe2/sh_netstream.lua"
 include "advdupe2/sv_misc.lua"
 include "advdupe2/sv_file.lua"
 include "advdupe2/sv_ghost.lua"
@@ -15,7 +14,6 @@ include "advdupe2/sv_ghost.lua"
 AddCSLuaFile "autorun/client/advdupe2_cl_init.lua"
 AddCSLuaFile "advdupe2/file_browser.lua"
 AddCSLuaFile "advdupe2/sh_codec.lua"
-AddCSLuaFile "advdupe2/sh_netstream.lua"
 AddCSLuaFile "advdupe2/cl_file.lua"
 AddCSLuaFile "advdupe2/cl_ghost.lua"
 
