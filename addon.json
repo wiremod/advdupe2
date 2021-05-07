@@ -8,7 +8,7 @@
 		"*.psd",
 		"*.vcproj",
 		"*.txt",
-		".tga",
+		"*.tga",
 		"*.xcf",
 		".git*",
 		"*.md",
