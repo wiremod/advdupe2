@@ -1125,7 +1125,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 
 	if (Player) then
 
-		undo.Create("AdvDupe2_Paste")
+		undo.Create("AdvDupe2_" .. Player:UniqueID() .. " (PASTE)")
 		for _, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
@@ -1576,7 +1576,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		AdvDupe2.JobManager.CurrentPlayer = 1
 	end
 
-	undo.Create("AdvDupe2_" .. Player:UniqueID())
+	undo.Create("AdvDupe2_" .. Player:UniqueID() .. " (" ..Queue.Name .. ")")
 	undo.SetPlayer(Player)
 	undo.SetCustomUndoText("Undone " .. (Player.AdvDupe2.Name or ""))
 	undo.AddFunction(RemoveSpawnedEntities, i)
