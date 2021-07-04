@@ -1125,7 +1125,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 
 	if (Player) then
 
-		undo.Create("AdvDupe2_Paste")
+		undo.Create("AdvDupe2")
 		for _, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
@@ -1347,7 +1347,8 @@ local function AdvDupe2_Spawn()
 				end
 			end
 
-			undo.Create("AdvDupe2")
+			local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
+			undo.Create(undotxt)
 			local phys, edit, mass
 			for k, v in pairs(Queue.CreatedEntities) do
 				if (not IsValid(v)) then
@@ -1415,9 +1416,8 @@ local function AdvDupe2_Spawn()
 					undo.AddEntity(v)
 				end
 			end
-			undo.SetCustomUndoText("Undone " .. (Queue.Name or "Advanced Duplication"))
 			undo.SetPlayer(Queue.Player)
-			undo.Finish()
+			undo.Finish(undotxt)
 
 			hook.Call("AdvDupe_FinishPasting", nil, {
 				{
@@ -1576,9 +1576,9 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		AdvDupe2.JobManager.CurrentPlayer = 1
 	end
 
-	undo.Create("AdvDupe2_" .. Player:UniqueID())
+	local undotxt = Player.AdvDupe2.Name and ("AdvDupe2 ("..Player.AdvDupe2.Name..")") or "AdvDupe2"
+	undo.Create(undotxt)
 	undo.SetPlayer(Player)
-	undo.SetCustomUndoText("Undone " .. (Player.AdvDupe2.Name or ""))
 	undo.AddFunction(RemoveSpawnedEntities, i)
-	undo.Finish()
+	undo.Finish(undotxt)
 end
