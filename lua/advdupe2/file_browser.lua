@@ -184,6 +184,14 @@ end
 local function AddNewFolder(node)
 	local Controller = node.Control:GetParent():GetParent()
 	local name = Controller.FileName:GetValue()
+	local char = string.match(name, "[^%w_ ]")
+	if char then
+		AdvDupe2.Notify("Name contains invalid character ("..char..")!", NOTIFY_ERROR)
+		Controller.FileName:SelectAllOnFocus(true)
+		Controller.FileName:OnGetFocus()
+		Controller.FileName:RequestFocus()
+		return
+	end
 	if (name == "" or name == "Folder_Name...") then
 		AdvDupe2.Notify("Name is blank!", NOTIFY_ERROR)
 		Controller.FileName:SelectAllOnFocus(true)
@@ -191,7 +199,6 @@ local function AddNewFolder(node)
 		Controller.FileName:RequestFocus()
 		return
 	end
-	name = name:gsub("%W", "")
 	local path, area = GetNodePath(node)
 	if (area == 0) then
 		path = AdvDupe2.DataFolder .. "/" .. path .. "/" .. name
@@ -1219,7 +1226,7 @@ function PANEL:Init()
 	self.FileName.OnTextChanged = function()
 
 		if (self.FileName.FirstChar) then
-			if (string.lower(self.FileName:GetValue()[1]) ==
+			if (string.lower(self.FileName:GetValue()[1] or "") ==
 				string.lower(input.LookupBinding("menu"))) then
 				self.FileName:SetText(self.FileName.PrevText)
 				self.FileName:SelectAll()
