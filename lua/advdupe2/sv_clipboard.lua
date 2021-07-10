@@ -727,7 +727,16 @@ local function ApplyEntityModifiers(Player, Ent)
 			end
 		end
 	end
-
+	if(Ent.EntityMods["buoyancy"] and duplicator.EntityModifiers["buoyancy"]) then
+		local ok, err = pcall(duplicator.EntityModifiers["buoyancy"], Player, Ent, Ent.EntityMods["buoyancy"])
+		if (not ok) then
+			if (Player) then
+				Player:ChatPrint('Error applying entity modifer, "buoyancy". ERROR: ' .. err)
+			else
+				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
+			end
+		end
+	end
 end
 
 local function ApplyBoneModifiers(Player, Ent)
