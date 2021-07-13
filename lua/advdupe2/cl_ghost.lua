@@ -140,7 +140,7 @@ local function MakeGhostsFromTable(EntTable)
 
 	GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )	--Was broken, making ghosts invisible
 	GhostEntity:SetColor( Color(255, 255, 255, 150) )
-	GhostEntity.Phys = EntTable.PhysicsObjects and EntTable.PhysicsObjects[0] or nil
+	GhostEntity.Phys = EntTable.PhysicsObjects[0]
 
 	if util.IsValidRagdoll(EntTable.Model) then
 		local ref, parents, angs = {}, {}, {}
