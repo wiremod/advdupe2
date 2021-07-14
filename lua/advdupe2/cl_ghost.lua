@@ -144,7 +144,7 @@ local function MakeGhostsFromTable(EntTable)
 	-- If there are too many entities we might not spawn..
 	if not IsValid(GhostEntity) then
 		AdvDupe2.RemoveGhosts()
-		AdvDupe2.Notify("Too many entities to spawn ghosts", NOTIFY_ERROR)
+		AdvDupe2.Notify("Too many entities to spawn ghosts!", NOTIFY_ERROR)
 		return
 	end
 
@@ -300,7 +300,7 @@ local Lheadpos, Lheadang = Vector(), Angle()
 function AdvDupe2.UpdateGhosts(force)
 	if not IsValid(AdvDupe2.HeadGhost) then
 		AdvDupe2.RemoveGhosts()
-		AdvDupe2.Notify("Invalid ghost parent.", NOTIFY_ERROR)
+		AdvDupe2.Notify("Invalid ghost parent!", NOTIFY_ERROR)
 		return
 	end
 

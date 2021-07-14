@@ -103,8 +103,7 @@ enc[TYPE_TABLE] = function(obj) --table
 	else
 		buff:WriteByte(255)
 		for k, v in pairs(obj) do
-			if(enc[TypeID(k)] ~= noserializer and
-			   enc[TypeID(v)] ~= noserializer) then
+			if(enc[TypeID(k)] ~= noserializer and enc[TypeID(v)] ~= noserializer) then
 				write(k)
 				write(v)
 			end
@@ -150,7 +149,7 @@ end
 
 local function error_nodeserializer()
 	buff:Seek(buff:Tell()-1)
-	error(format("couldn't find deserializer for type {typeid:%d}", buff:ReadByte()))
+	error(format("Couldn't find deserializer for type {typeid:%d}!", buff:ReadByte()))
 end
 
 local reference, read4, read5 = 0
@@ -162,7 +161,7 @@ do --Version 4
 	local function read()
 		local tt = buff:ReadByte()
 		if not tt then
-			error("expected value, got EOF")
+			error("Expected value, got EOF!")
 		end
 		if tt == 0 then
 			return nil
@@ -251,7 +250,7 @@ do --Version 5
 	local function read()
 		local tt = buff:ReadByte()
 		if not tt then
-			error("expected value, got EOF")
+			error("Expected value, got EOF!")
 		end
 		return dec[tt]()
 	end
@@ -301,7 +300,7 @@ do --Version 5
 	dec[248] = function() -- Length>246 string
 		local slen = buff:ReadULong()
 		local retv = buff:Read(slen)
-		if(not retv) then retv="" end
+		if(not retv) then retv = "" end
 		return retv
 	end
 	dec[247] = function() --table reference
@@ -338,7 +337,7 @@ end
 local function deserialize(str, read)
 
 	if(str == nil) then
-		error("File could not be decompressed.")
+		error("File could not be decompressed!")
 		return {}
 	end
 
@@ -378,7 +377,7 @@ end
 local function getInfo(str)
 	local last = str:find("\2")
 	if not last then
-		error("attempt to read AD2 file with malformed info block")
+		error("Attempt to read AD2 file with malformed info block!")
 	end
 	local info = {}
 	local ss = str:sub(1, last - 1)
@@ -388,9 +387,9 @@ local function getInfo(str)
 
 	if info.check ~= "\r\n\t\n" then
 		if info.check == "\10\9\10" then
-			error("detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)")
+			error("Detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)!")
 		else
-			error("attempt to read AD2 file with malformed info block")
+			error("Attempt to read AD2 file with malformed info block!")
 		end
 	end
 	return info, str:sub(last+2)
@@ -465,7 +464,7 @@ function AdvDupe2.Decode(encodedDupe)
 	local sig, rev = encodedDupe:match("^(....)(.)")
 
 	if not rev then
-		return false, "malformed dupe (wtf <5 chars long?!)"
+		return false, "Malformed dupe (wtf <5 chars long)!"
 	end
 
 	rev = rev:byte()
@@ -509,12 +508,12 @@ function AdvDupe2.Decode(encodedDupe)
 
 			return success, tbl, info, moreinfo
 		else
-			return false, "unknown duplication format"
+			return false, "Unknown duplication format!"
 		end
 	elseif rev > REVISION then
 		return false, format("Newer codec needed. (have rev %u, need rev %u) Update Advdupe2.",REVISION,rev)
 	elseif rev < 1 then
-		return false, format("attempt to use an invalid format revision (rev %d)", rev)
+		return false, format("Attempt to use an invalid format revision (rev %d)!", rev)
 	else
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
 
