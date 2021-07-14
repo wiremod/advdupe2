@@ -157,6 +157,9 @@ end
 
  
 function ENT:DoSpawn( ply )
+	-- Explicitly allow spawning if no player is provided, but an invalid player gets denied. This can happen when a player leaves the server.
+	if not (ply and ply:IsValid()) then return end
+
 	for k, v in pairs(self.EntityTable) do
 		for o, p in pairs(v.PhysicsObjects) do
 			p.Pos, p.Angle = self:LocalToWorld(p.LPos), self:LocalToWorldAngles(p.LAngle)
