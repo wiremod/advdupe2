@@ -186,7 +186,9 @@ do --Version 4
 	end
 
 	dec[254] = function() --array
-		local t, k, v = {}, 0
+		local t = {}
+		local k = 0
+		local v
 		reference = reference + 1
 		local ref = reference
 		repeat
@@ -227,7 +229,7 @@ do --Version 4
 		buff:Seek(start)
 
 		local retv = buff:Read(slen)
-		if(not retv)then retv="" end
+		if(not retv) then retv="" end
 		buff:ReadByte()
 
 		return retv
@@ -299,7 +301,7 @@ do --Version 5
 	dec[248] = function() -- Length>246 string
 		local slen = buff:ReadULong()
 		local retv = buff:Read(slen)
-		if(not retv)then retv="" end
+		if(not retv) then retv="" end
 		return retv
 	end
 	dec[247] = function() --table reference
@@ -335,7 +337,7 @@ end
 
 local function deserialize(str, read)
 
-	if(str==nil)then
+	if(str == nil) then
 		error("File could not be decompressed.")
 		return {}
 	end
@@ -424,27 +426,30 @@ function AdvDupe2.CheckValidDupe(dupe, info)
 	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
 	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
-	local head = dupe.HeadEnt.Index -- Localize head ID for faster indexing
-	if not dupe.Entities[head] then
-		return false, "Missing HeadEnt index ["..head.."] from Entities table" end
+	if not dupe.Entities[dupe.HeadEnt.Index] then
+		return false, "Missing HeadEnt index ["..dupe.HeadEnt.Index.."] from Entities table" end
 	for key, data in pairs(dupe.Entities) do
 		if not data.PhysicsObjects then
 			return false, "Missing PhysicsObject table from Entity ["
-				..tostring(key).."]["..tostring(data.Class).."]["..tostring(data.Model).."]" end
+				..key.."]["..data.Class.."]["..data.Model.."]" end
 		if not data.PhysicsObjects[0] then
 			return false, "Missing PhysicsObject[0] table from Entity ["
-				..tostring(key).."]["..tostring(data.Class).."]["..tostring(data.Model).."]" end
-	end
-	if info.ad1 then
-		if not dupe.Entities[head].PhysicsObjects[0].LocalPos then
-			return false, "Missing PhysicsObject[0].LocalPos from HeadEnt Entity table" end
-		if not dupe.Entities[head].PhysicsObjects[0].LocalAngle then
-			return false, "Missing PhysicsObject[0].LocalAngle from HeadEnt Entity table" end
-	else
-		if not dupe.Entities[head].PhysicsObjects[0].Pos then
-			return false, "Missing PhysicsObject[0].Pos from HeadEnt Entity table" end
-		if not dupe.Entities[head].PhysicsObjects[0].Angle then
-			return false, "Missing PhysicsObject[0].Angle from HeadEnt Entity table" end
+				..key.."]["..data.Class.."]["..data.Model.."]" end
+		if info.ad1 then -- Advanced Duplicator 1
+			if not data.PhysicsObjects[0].LocalPos then
+				return false, "Missing PhysicsObject[0].LocalPos from Entity ["
+				..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].LocalAngle then
+				return false, "Missing PhysicsObject[0].LocalAngle from Entity ["
+				..key.."]["..data.Class.."]["..data.Model.."]" end
+		else -- Advanced Duplicator 2
+			if not data.PhysicsObjects[0].Pos then
+				return false, "Missing PhysicsObject[0].Pos from Entity ["
+				..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].Angle then
+				return false, "Missing PhysicsObject[0].Angle from Entity ["
+				..key.."]["..data.Class.."]["..data.Model.."]" end
+		end
 	end
 	return true, dupe
 end

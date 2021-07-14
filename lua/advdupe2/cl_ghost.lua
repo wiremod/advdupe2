@@ -1,11 +1,20 @@
+local varGhosts = GetConVar("advdupe2_limit_ghost")
+local varOrgOrg = GetConVar("advdupe2_original_origin")
+local varOWorld = GetConVar("advdupe2_offset_world")
+local varOffseZ = GetConVar("advdupe2_offset_z")
+local varOPitch = GetConVar("advdupe2_offset_pitch")
+local varOYaw   = GetConVar("advdupe2_offset_yaw"  )
+local varORoll  = GetConVar("advdupe2_offset_roll" )
+
 function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 	AdvDupe2.RemoveGhosts()
 	AdvDupe2.Ghosting = true
 	AdvDupe2.GhostToSpawn = {}
 	local count, time, desc, date, creator = 0
 
-	if(info.ad1)then
-		local z, Pos, Ang = dupe.HeadEnt.Z
+	if(info.ad1) then
+		local z = dupe.HeadEnt.Z
+		local Pos, Ang
 
 		time    = moreinfo.Time    or ""
 		desc    = info.Description or ""
@@ -17,20 +26,20 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		AdvDupe2.HeadZPos = z
 		AdvDupe2.HeadPos.Z = AdvDupe2.HeadPos.Z + z
 
-		for k, v in pairs(dupe.Entities)do
-			if(v.SavedParentIdx)then
-				if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
+		for k, v in pairs(dupe.Entities) do
+			if(v.SavedParentIdx) then
+				if(not v.BuildDupeInfo) then v.BuildDupeInfo = {} end
 				v.BuildDupeInfo.DupeParentID = v.SavedParentIdx
-				Pos = v.LocalPos * 1
-				Ang = v.LocalAngle * 1
+				Pos = v.LocalPos
+				Ang = v.LocalAngle
 			else
 				Pos, Ang = nil, nil
 			end
 
-			for i, p in pairs(v.PhysicsObjects)do
-				p.Pos        = Pos or (p.LocalPos*1)
+			for i, p in pairs(v.PhysicsObjects) do
+				p.Pos        = Vector(Pos or p.LocalPos)
 				p.Pos.Z      = p.Pos.Z - z
-				p.Angle      = Ang or (p.LocalAngle*1)
+				p.Angle      = Angle(Ang or p.LocalAngle)
 				p.LocalPos   = nil
 				p.LocalAngle = nil
 			end
@@ -43,7 +52,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 				PhysicsObjects = v.PhysicsObjects
 			}
 
-			if(AdvDupe2.HeadEnt == k)then
+			if(AdvDupe2.HeadEnt == k) then
 				AdvDupe2.HeadEnt = count
 			end
 
@@ -64,14 +73,14 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		AdvDupe2.HeadOffset = dupe.Entities[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
 		AdvDupe2.HeadAngle  = dupe.Entities[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
 
-		for k, v in pairs(dupe.Entities)do
+		for k, v in pairs(dupe.Entities) do
 			AdvDupe2.GhostToSpawn[count] =
 			{
 				Model          = v.Model,
 				PhysicsObjects = v.PhysicsObjects
 			}
 
-			if(AdvDupe2.HeadEnt == k)then
+			if(AdvDupe2.HeadEnt == k) then
 				AdvDupe2.HeadEnt = count
 			end
 
@@ -79,7 +88,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 		end
 	end
 
-	if(not preview)then
+	if(not preview) then
 		AdvDupe2.Info.File:SetText("File: "..name)
 		AdvDupe2.Info.Creator:SetText("Creator: "..creator)
 		AdvDupe2.Info.Date:SetText("Date: "..date)
@@ -95,17 +104,17 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 end
 
 function AdvDupe2.RemoveGhosts()
-	if(AdvDupe2.Ghosting)then
+	if(AdvDupe2.Ghosting) then
 		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
 		AdvDupe2.Ghosting = false
 
-		if(not AdvDupe2.BusyBar)then
+		if(not AdvDupe2.BusyBar) then
 			AdvDupe2.RemoveProgressBar()
 		end
 	end
 
-	if(AdvDupe2.GhostEntities)then
-		for k, v in pairs(AdvDupe2.GhostEntities)do
+	if(AdvDupe2.GhostEntities) then
+		for k, v in pairs(AdvDupe2.GhostEntities) do
 			if(IsValid(v))then
 				v:Remove()
 			end
@@ -125,9 +134,10 @@ end
 --Creates a ghost from the given entity's table
 local function MakeGhostsFromTable(EntTable)
 
-	if(not EntTable)then return end
-	if(not EntTable.Model or EntTable.Model == "" or
-	       EntTable.Model:sub(-4,-1) ~= ".mdl") then EntTable.Model = "models/error.mdl" end
+	if(not EntTable) then return end
+	if(not EntTable.Model or EntTable.Model:sub(-4,-1) ~= ".mdl") then
+		EntTable.Model = "models/error.mdl"
+	end
 
 	local GhostEntity = ClientsideModel(EntTable.Model, RENDERGROUP_TRANSLUCENT)
 
@@ -178,13 +188,13 @@ local function MakeGhostsFromTable(EntTable)
 end
 
 local function SpawnGhosts()
-	local varGhosts = GetConVar("advdupe2_limit_ghost")
+
 	if AdvDupe2.CurrentGhost == AdvDupe2.HeadEnt then AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1 end
 
 	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
 	if g and AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100 <= varGhosts:GetFloat() then
 		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g)
-		if(not AdvDupe2.BusyBar)then
+		if(not AdvDupe2.BusyBar) then
 			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100
 		end
 
@@ -194,7 +204,7 @@ local function SpawnGhosts()
 		AdvDupe2.Ghosting = false
 		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
 
-		if(not AdvDupe2.BusyBar)then
+		if(not AdvDupe2.BusyBar) then
 			AdvDupe2.RemoveProgressBar()
 		end
 	end
@@ -235,10 +245,10 @@ net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 	AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
 	AdvDupe2.TotalGhosts   = #AdvDupe2.GhostToSpawn
 
-	if(AdvDupe2.TotalGhosts > 1)then
+	if(AdvDupe2.TotalGhosts > 1) then
 		AdvDupe2.Ghosting = true
 
-		if(not AdvDupe2.BusyBar)then
+		if(not AdvDupe2.BusyBar) then
 			AdvDupe2.InitProgressBar("Ghosting: ")
 			AdvDupe2.BusyBar = false
 		end
@@ -261,7 +271,7 @@ end)
 
 function AdvDupe2.StartGhosting()
 	AdvDupe2.RemoveGhosts()
-	if(not AdvDupe2.GhostToSpawn)then return end
+	if(not AdvDupe2.GhostToSpawn) then return end
 	AdvDupe2.CurrentGhost  = 1
 	AdvDupe2.GhostEntities = {}
 	AdvDupe2.Ghosting      = true
@@ -298,18 +308,18 @@ function AdvDupe2.UpdateGhosts(force)
 	if (not trace.Hit) then return end
 
 	local origin, offsetang, headpos, headang
-	if(GetConVar("advdupe2_original_origin"):GetBool())then
+	if(varOrgOrg:GetBool())then
 		headpos   = AdvDupe2.HeadPos + AdvDupe2.HeadOffset
 		headang   = AdvDupe2.HeadAngle
 		origin    = AdvDupe2.HeadPos
 		offsetang = Angle()
 	else
 		local headangle = AdvDupe2.HeadAngle
-		if(GetConVar("advdupe2_offset_world"):GetBool()) then headangle = Angle(0,0,0) end
-		local pz = math.Clamp(AdvDupe2.HeadZPos + GetConVar("advdupe2_offset_z"):GetFloat() or 0, -16000, 16000)
-		local ap = math.Clamp(GetConVar("advdupe2_offset_pitch"):GetFloat() or 0, -180, 180)
-		local ay = math.Clamp(GetConVar("advdupe2_offset_yaw"  ):GetFloat() or 0, -180, 180)
-		local ar = math.Clamp(GetConVar("advdupe2_offset_roll" ):GetFloat() or 0, -180, 180)
+		if(varOWorld:GetBool()) then headangle = Angle(0,0,0) end
+		local pz = math.Clamp(AdvDupe2.HeadZPos + varOffseZ:GetFloat() or 0, -16000, 16000)
+		local ap = math.Clamp(varOPitch:GetFloat() or 0, -180, 180)
+		local ay = math.Clamp(varOYaw:GetFloat()   or 0, -180, 180)
+		local ar = math.Clamp(varORoll:GetFloat()  or 0, -180, 180)
 		origin    = trace.HitPos
 		origin.Z  = origin.Z + pz
 		offsetang = Angle(ap, ay, ar)
@@ -330,13 +340,10 @@ function AdvDupe2.UpdateGhosts(force)
 		AdvDupe2.HeadGhost:SetAngles(headang)
 
 		for k, ghost in ipairs(AdvDupe2.GhostEntities) do
-			if(ghost and ghost.Phys) then
-				local pos = ghost.Phys.Pos
-				local ang = ghost.Phys.Angle
-				pos, ang = LocalToWorld(pos, ang, origin, offsetang)
-				ghost:SetPos(pos)
-				ghost:SetAngles(ang)
-			end
+			local phys = ghost.Phys
+			local pos, ang = LocalToWorld(phys.Pos, phys.Angle, origin, offsetang)
+			ghost:SetPos(pos)
+			ghost:SetAngles(ang)
 		end
 
 	end
