@@ -66,7 +66,8 @@ local enc = {}
 for i = 1, 255 do enc[i] = noserializer end
 
 local function isArray(tbl)
-	local ret, m = true, 0
+	local ret = true
+	local m = 0
 
 	for k, v in pairs(tbl) do
 		m = m + 1
@@ -152,7 +153,8 @@ local function error_nodeserializer()
 	error(format("Couldn't find deserializer for type {typeid:%d}!", buff:ReadByte()))
 end
 
-local reference, read4, read5 = 0
+local reference = 0
+local read4, read5
 
 do --Version 4
 	local dec = {}
@@ -171,7 +173,8 @@ do --Version 4
 	read4 = read
 
 	dec[255] = function() --table
-		local t, k = {}
+		local k
+		local t = {}
 		reference = reference + 1
 		local ref = reference
 		repeat
@@ -238,9 +241,7 @@ do --Version 4
 		return tables[buff:ReadShort()]
 	end
 
-	for i = 1, 246 do
-		dec[i] = function() return buff:Read(i) end
-	end
+	for i = 1, 246 do dec[i] = function() return buff:Read(i) end end
 end
 
 do --Version 5
@@ -310,9 +311,7 @@ do --Version 5
 		return
 	end
 
-	for i = 1, 245 do
-		dec[i] = function() return buff:Read(i) end
-	end
+	for i = 1, 245 do dec[i] = function() return buff:Read(i) end end
 
 	dec[0] = function() return "" end
 end

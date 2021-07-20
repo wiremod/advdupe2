@@ -239,7 +239,8 @@ net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 		end
 	end
 
-	AdvDupe2.CurrentGhost, AdvDupe2.GhostEntities = 1, {}
+	AdvDupe2.CurrentGhost  = 1
+	AdvDupe2.GhostEntities = {}
 	AdvDupe2.HeadGhost     = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
 	AdvDupe2.HeadOffset    = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
 	AdvDupe2.HeadAngle     = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
