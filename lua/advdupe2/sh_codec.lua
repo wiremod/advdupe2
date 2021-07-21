@@ -173,8 +173,8 @@ do --Version 4
 	read4 = read
 
 	dec[255] = function() --table
-		local k
 		local t = {}
+		local k
 		reference = reference + 1
 		local ref = reference
 		repeat
@@ -424,29 +424,16 @@ function AdvDupe2.CheckValidDupe(dupe, info)
 	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
 	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
-	if not dupe.Entities[dupe.HeadEnt.Index] then
-		return false, "Missing HeadEnt index ["..dupe.HeadEnt.Index.."] from Entities table" end
+	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index ["..dupe.HeadEnt.Index.."] from Entities table" end
 	for key, data in pairs(dupe.Entities) do
-		if not data.PhysicsObjects then
-			return false, "Missing PhysicsObject table from Entity ["
-				..key.."]["..data.Class.."]["..data.Model.."]" end
-		if not data.PhysicsObjects[0] then
-			return false, "Missing PhysicsObject[0] table from Entity ["
-				..key.."]["..data.Class.."]["..data.Model.."]" end
+		if not data.PhysicsObjects then return false, "Missing PhysicsObject table from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+		if not data.PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
 		if info.ad1 then -- Advanced Duplicator 1
-			if not data.PhysicsObjects[0].LocalPos then
-				return false, "Missing PhysicsObject[0].LocalPos from Entity ["
-				..key.."]["..data.Class.."]["..data.Model.."]" end
-			if not data.PhysicsObjects[0].LocalAngle then
-				return false, "Missing PhysicsObject[0].LocalAngle from Entity ["
-				..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].LocalPos then return false, "Missing PhysicsObject[0].LocalPos from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].LocalAngle then return false, "Missing PhysicsObject[0].LocalAngle from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
 		else -- Advanced Duplicator 2
-			if not data.PhysicsObjects[0].Pos then
-				return false, "Missing PhysicsObject[0].Pos from Entity ["
-				..key.."]["..data.Class.."]["..data.Model.."]" end
-			if not data.PhysicsObjects[0].Angle then
-				return false, "Missing PhysicsObject[0].Angle from Entity ["
-				..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
 		end
 	end
 	return true, dupe

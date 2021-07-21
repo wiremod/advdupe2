@@ -38,9 +38,9 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 			end
 
 			for i, p in pairs(v.PhysicsObjects) do
-				p.Pos        = Vector(Pos or p.LocalPos)
+				p.Pos        = Pos or p.LocalPos
 				p.Pos.Z      = p.Pos.Z - z
-				p.Angle      = Angle(Ang or p.LocalAngle)
+				p.Angle      = Ang or p.LocalAngle
 				p.LocalPos   = nil
 				p.LocalAngle = nil
 			end
@@ -212,13 +212,13 @@ local function SpawnGhosts()
 end
 
 net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
-	local cache = {}
 	AdvDupe2.RemoveGhosts()
 	AdvDupe2.GhostToSpawn = {}
 	AdvDupe2.HeadEnt  = net.ReadInt(16)
 	AdvDupe2.HeadZPos = net.ReadFloat()
 	AdvDupe2.HeadPos  = net.ReadVector()
 
+	local cache = {}
 	for i = 1, net.ReadInt(16) do
 		cache[i] = net.ReadString()
 	end
