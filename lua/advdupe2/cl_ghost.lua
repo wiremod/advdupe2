@@ -1,11 +1,3 @@
-local varGhosts = GetConVar("advdupe2_limit_ghost")
-local varOrgOrg = GetConVar("advdupe2_original_origin")
-local varOWorld = GetConVar("advdupe2_offset_world")
-local varOffseZ = GetConVar("advdupe2_offset_z")
-local varOPitch = GetConVar("advdupe2_offset_pitch")
-local varOYaw   = GetConVar("advdupe2_offset_yaw"  )
-local varORoll  = GetConVar("advdupe2_offset_roll" )
-
 function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 	AdvDupe2.RemoveGhosts()
 	AdvDupe2.Ghosting = true
@@ -193,7 +185,7 @@ local function SpawnGhosts()
 	if AdvDupe2.CurrentGhost == AdvDupe2.HeadEnt then AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1 end
 
 	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
-	if g and AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100 <= varGhosts:GetFloat() then
+	if g and AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100 <= GetConVar("advdupe2_limit_ghost"):GetFloat() then
 		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g)
 		if(not AdvDupe2.BusyBar) then
 			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100
@@ -309,22 +301,21 @@ function AdvDupe2.UpdateGhosts(force)
 	local trace = LocalPlayer():GetEyeTrace()
 	if (not trace.Hit) then return end
 
-	local origin, offsetang, headpos, headang
-	if(varOrgOrg:GetBool())then
-		headpos   = AdvDupe2.HeadPos + AdvDupe2.HeadOffset
-		headang   = AdvDupe2.HeadAngle
-		origin    = AdvDupe2.HeadPos
-		offsetang = Angle()
+	local headpos, headang
+	local origin, offsetang = Vector(), Angle()
+	if(GetConVar("advdupe2_original_origin"):GetBool())then
+		origin:Set(AdvDupe2.HeadPos)
+		headpos = AdvDupe2.HeadPos + AdvDupe2.HeadOffset
+		headang = AdvDupe2.HeadAngle
 	else
 		local headangle = AdvDupe2.HeadAngle
-		if(varOWorld:GetBool()) then headangle = Angle(0,0,0) end
-		local pz = math.Clamp(AdvDupe2.HeadZPos + varOffseZ:GetFloat() or 0, -16000, 16000)
-		local ap = math.Clamp(varOPitch:GetFloat() or 0, -180, 180)
-		local ay = math.Clamp(varOYaw:GetFloat()   or 0, -180, 180)
-		local ar = math.Clamp(varORoll:GetFloat()  or 0, -180, 180)
-		origin    = trace.HitPos
-		origin.Z  = origin.Z + pz
-		offsetang = Angle(ap, ay, ar)
+		if(GetConVar("advdupe2_offset_world"):GetBool()) then headangle = Angle(0,0,0) end
+		local pz = math.Clamp(AdvDupe2.HeadZPos + GetConVar("advdupe2_offset_z"):GetFloat() or 0, -16000, 16000)
+		local ap = math.Clamp(GetConVar("advdupe2_offset_pitch"):GetFloat() or 0, -180, 180)
+		local ay = math.Clamp(GetConVar("advdupe2_offset_yaw"  ):GetFloat() or 0, -180, 180)
+		local ar = math.Clamp(GetConVar("advdupe2_offset_roll" ):GetFloat() or 0, -180, 180)
+		offsetang:SetUnpacked(ap, ay, ar)
+		origin:SetUnpacked(trace.HitPos.x, trace.HitPos.y, trace.HitPos.z + pz)
 		headpos, headang = LocalToWorld(AdvDupe2.HeadOffset, headangle, origin, offsetang)
 	end
 
