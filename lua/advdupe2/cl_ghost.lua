@@ -301,11 +301,11 @@ function AdvDupe2.UpdateGhosts(force)
 	local trace = LocalPlayer():GetEyeTrace()
 	if (not trace.Hit) then return end
 
-	local origin, oangle, headpos, headang
+	local originpos, originang, headpos, headang
 	local worigin = GetConVar("advdupe2_offset_world"):GetBool()
 	if(GetConVar("advdupe2_original_origin"):GetBool())then
-		oangle  = Angle()
-		origin  = Vector(AdvDupe2.HeadPos)
+		originang  = Angle()
+		originpos  = Vector(AdvDupe2.HeadPos)
 		headpos = AdvDupe2.HeadPos + AdvDupe2.HeadOffset
 		headang = AdvDupe2.HeadAngle
 	else
@@ -314,9 +314,9 @@ function AdvDupe2.UpdateGhosts(force)
 		local ap = math.Clamp(GetConVar("advdupe2_offset_pitch"):GetFloat() or 0, -180, 180)
 		local ay = math.Clamp(GetConVar("advdupe2_offset_yaw"  ):GetFloat() or 0, -180, 180)
 		local ar = math.Clamp(GetConVar("advdupe2_offset_roll" ):GetFloat() or 0, -180, 180)
-		oangle = Angle(ap, ay, ar)
-		origin = Vector(trace.HitPos); origin.z = origin.z + pz
-		headpos, headang = LocalToWorld(AdvDupe2.HeadOffset, hangle, origin, oangle)
+		originang = Angle(ap, ay, ar)
+		originpos = Vector(trace.HitPos); originpos.z = originpos.z + pz
+		headpos, headang = LocalToWorld(AdvDupe2.HeadOffset, hangle, originpos, originang)
 	end
 
 	if math.abs(Lheadpos.x - headpos.x) > 0.01 or
@@ -334,7 +334,7 @@ function AdvDupe2.UpdateGhosts(force)
 
 		for k, ghost in ipairs(AdvDupe2.GhostEntities) do
 			local phys = ghost.Phys
-			local pos, ang = LocalToWorld(phys.Pos, phys.Angle, origin, oangle)
+			local pos, ang = LocalToWorld(phys.Pos, phys.Angle, originpos, originang)
 			ghost:SetPos(pos)
 			ghost:SetAngles(ang)
 		end
