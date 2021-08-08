@@ -1343,10 +1343,10 @@ local function AdvDupe2_Spawn()
 			local preservefrozenstate = tobool(Queue.Player:GetInfo("advdupe2_preserve_freeze")) or false
 
 			-- Remove the undo for stopping pasting
+			local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
 			local undos = undo.GetTable()[Queue.Player:UniqueID()]
-			local str = "AdvDupe2_" .. Queue.Player:UniqueID()
 			for i = #undos, 1, -1 do
-				if (undos[i] and undos[i].Name == str) then
+				if (undos[i] and undos[i].Name == undotxt) then
 					undos[i] = nil
 					-- Undo module netmessage
 					net.Start("Undo_Undone")
@@ -1356,7 +1356,6 @@ local function AdvDupe2_Spawn()
 				end
 			end
 
-			local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
 			undo.Create(undotxt)
 			local phys, edit, mass
 			for k, v in pairs(Queue.CreatedEntities) do
@@ -1482,9 +1481,9 @@ local function ErrorCatchSpawning()
 				AdvDupe2.Notify(Queue.Player, err)
 
 				local undos = undo.GetTable()[Queue.Player:UniqueID()]
-				local str = "AdvDupe2_" .. Queue.Player:UniqueID()
+				local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
 				for i = #undos, 1, -1 do
-					if (undos[i] and undos[i].Name == str) then
+					if (undos[i] and undos[i].Name == undotxt) then
 						undos[i] = nil
 						-- Undo module netmessage
 						net.Start("Undo_Undone")
