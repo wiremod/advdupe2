@@ -117,7 +117,6 @@ end
 
 local function CopyEntTable(Ent, Offset)
 	-- Filter duplicator blocked entities out.
-	print(Ent)
 	if not AdvDupe2.duplicator.IsCopyable(Ent) then return nil end
 
 	local Tab = {}
