@@ -112,11 +112,12 @@ local gtSetupTable = {
 }
 
 function AdvDupe2.duplicator.IsCopyable(Ent)
-	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
+	return IsValid(Ent) and not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
 
 local function CopyEntTable(Ent, Offset)
 	-- Filter duplicator blocked entities out.
+	print(Ent)
 	if not AdvDupe2.duplicator.IsCopyable(Ent) then return nil end
 
 	local Tab = {}
