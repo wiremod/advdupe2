@@ -112,7 +112,7 @@ local gtSetupTable = {
 }
 
 function AdvDupe2.duplicator.IsCopyable(Ent)
-	return IsValid(Ent) and not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
+	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
 
 local function CopyEntTable(Ent, Offset)
@@ -429,7 +429,9 @@ local function Copy(Ent, EntTable, ConstraintTable, Offset)
 		local parent = Ent:GetParent()
 		if IsValid(parent) then Copy(parent, EntTable, ConstraintTable, Offset) end
 		for k, child in pairs(Ent:GetChildren()) do
-			Copy(child, EntTable, ConstraintTable, Offset)
+			if child:IsValid() then
+				Copy(child, EntTable, ConstraintTable, Offset)
+			end
 		end
 	end
 
