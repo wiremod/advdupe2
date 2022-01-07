@@ -22,7 +22,6 @@ if(SERVER)then
 		Slider = true,
 		Axis = true,
 		AdvBallsocket = true,
-		NoCollide = true,
 		Motor = true,
 		Pulley = true,
 		Ballsocket = true,
@@ -34,11 +33,9 @@ if(SERVER)then
 	--Orders constraints so that the dupe uses as little constraint systems as possible
 	local function GroupConstraintOrder( ply, constraints )
 		--First seperate the nocollides, sorted, and unsorted constraints
-		local nocollide, sorted, unsorted = {}, {}, {}
+		local sorted, unsorted = {}, {}
 		for k, v in pairs(constraints) do
-			if v.Type == "NoCollide" then
-				nocollide[#nocollide+1] = v
-			elseif phys_constraint_system_types[v.Type] then
+			if phys_constraint_system_types[v.Type] then
 				sorted[#sorted+1] = v
 			else
 				unsorted[#unsorted+1] = v
@@ -80,7 +77,6 @@ if(SERVER)then
 			end
 		end
 		buildSystems(sorted)
-		buildSystems(nocollide)
 
 		local ret = {}
 		for _, system in pairs(fullSystems) do
