@@ -24,6 +24,6 @@ function AdvDupe2.Notify(msg,typ,dur)
 	//end
 end
 
-usermessage.Hook("AdvDupe2Notify",function(um)
-	AdvDupe2.Notify(um:ReadString(),um:ReadChar(),um:ReadChar())
+net.Receive("AdvDupe2Notify", function()
+	AdvDupe2.Notify(net.ReadString(), net.ReadFloat(), net.ReadFloat())
 end)

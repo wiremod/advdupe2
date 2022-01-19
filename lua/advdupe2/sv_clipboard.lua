@@ -791,15 +791,15 @@ local function DoGenericPhysics(Entity, data, Player)
 end
 
 local function reportclass(ply, class)
-	umsg.Start("AdvDupe2_ReportClass", ply)
-	umsg.String(class)
-	umsg.End()
+	net.Start("AdvDupe2_ReportClass")
+	net.WriteString(class)
+	net.Send(ply)
 end
 
 local function reportmodel(ply, model)
-	umsg.Start("AdvDupe2_ReportModel", ply)
-	umsg.String(model)
-	umsg.End()
+	net.Start("AdvDupe2_ReportClass")
+	net.WriteString(model)
+	net.Send(ply)
 end
 
 --[[

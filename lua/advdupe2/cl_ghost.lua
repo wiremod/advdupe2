@@ -283,11 +283,11 @@ function AdvDupe2.StartGhosting()
 		AdvDupe2.Ghosting = false
 	end
 end
-usermessage.Hook("AdvDupe2_StartGhosting", function()
+net.Receive("AdvDupe2_StartGhosting", function()
 	AdvDupe2.StartGhosting()
 end)
 
-usermessage.Hook("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
+net.Receive("AdvDupe2_RemoveGhosts", AdvDupe2.RemoveGhosts)
 
 --Update the ghost's postion and angles based on where the player is looking and the offsets
 local Lheadpos, Lheadang = Vector(), Angle()
