@@ -25,5 +25,5 @@ function AdvDupe2.Notify(msg,typ,dur)
 end
 
 net.Receive("AdvDupe2Notify", function()
-	AdvDupe2.Notify(net.ReadString(), net.ReadFloat(), net.ReadFloat())
+	AdvDupe2.Notify(net.ReadString(), net.ReadUInt(8), net.ReadFloat())
 end)

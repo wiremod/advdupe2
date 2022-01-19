@@ -33,7 +33,7 @@ util.AddNetworkString("AdvDupe2_ResetOffsets")
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	net.Start("AdvDupe2Notify")
 		net.WriteString(msg)
-		net.WriteFloat(typ or 0)
+		net.WriteUInt(typ or 0, 8)
 		net.WriteFloat(dur or 5)
 	net.Send(ply)
 
