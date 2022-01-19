@@ -270,11 +270,11 @@ if(SERVER)then
 			if ply.AdvDupe2.Entities then
 				--clear the dupe
 				net.Start("AdvDupe2_RemoveGhosts")
-				net.SendToServer()
+				net.Send(ply)
 				ply.AdvDupe2.Entities = nil
 				ply.AdvDupe2.Constraints = nil
 				net.Start("AdvDupe2_ResetDupeInfo")
-				net.SendToServer()
+				net.Send(ply)
 				AdvDupe2.ResetOffsets(ply)
 				return true
 			else
@@ -290,7 +290,7 @@ if(SERVER)then
 				local _, Ent = next(Entities)
 				if not Ent then
 				net.Start("AdvDupe2_RemoveGhosts")
-				net.SendToServer()
+				net.Send(ply)
 					return true
 				end
 
