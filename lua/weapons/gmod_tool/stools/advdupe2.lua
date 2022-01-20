@@ -384,9 +384,9 @@ if(SERVER)then
 				net.WriteVector(trace.HitPos)
 				net.WriteFloat(areasize)
 				if(trace.Entity)then
-					net.WriteFloat(trace.Entity:EntIndex())
+					net.WriteUInt(trace.Entity:EntIndex(), 16)
 				else
-					net.WriteFloat(0)
+					net.WriteUInt(0, 16)
 				end
 			net.Send(ply)
 			self:SetStage(0)
@@ -1774,7 +1774,7 @@ if(CLIENT)then
 		if(AdvDupe2.AutoSavePath~="")then
 			AdvDupe2.AutoSavePos = net.ReadVector()
 			AdvDupe2.AutoSaveSize = net.ReadFloat()
-			local ent = net.ReadFloat()
+			local ent = net.ReadUInt(16)
 			AdvDupe2.OffButton:SetDisabled(false)
 			net.Start("AdvDupe2_CanAutoSave")
 				net.WriteString(AdvDupe2.AutoSaveDesc)
