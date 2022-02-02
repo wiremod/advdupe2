@@ -17,12 +17,26 @@ AddCSLuaFile "advdupe2/sh_codec.lua"
 AddCSLuaFile "advdupe2/cl_file.lua"
 AddCSLuaFile "advdupe2/cl_ghost.lua"
 
+util.AddNetworkString("AdvDupe2_ReportClass")
+util.AddNetworkString("AdvDupe2_ReportModel")
+util.AddNetworkString("AdvDupe2Notify")
+util.AddNetworkString("AdvDupe2_RemoveGhosts")
+util.AddNetworkString("AdvDupe2_ResetDupeInfo")
+util.AddNetworkString("AdvDupe2_StartGhosting")
+util.AddNetworkString("AdvDupe2_InitProgressBar")
+util.AddNetworkString("AdvDupe2_DrawSelectBox")
+util.AddNetworkString("AdvDupe2_RemoveSelectBox")
+util.AddNetworkString("AdvDupe2_UpdateProgressBar")
+util.AddNetworkString("AdvDupe2_RemoveProgressBar")
+util.AddNetworkString("AdvDupe2_ResetOffsets")
+
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
-	umsg.Start("AdvDupe2Notify",ply)
-		umsg.String(msg)
-		umsg.Char(typ or NOTIFY_GENERIC)
-		umsg.Char(dur or 5)
-	umsg.End()
+	net.Start("AdvDupe2Notify")
+		net.WriteString(msg)
+		net.WriteUInt(typ or 0, 8)
+		net.WriteFloat(dur or 5)
+	net.Send(ply)
+
 	if(showsvr==true)then
 		print("[AdvDupe2Notify]\t"..ply:Nick()..": "..msg)
 	end

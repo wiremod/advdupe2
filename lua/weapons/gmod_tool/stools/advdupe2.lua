@@ -269,12 +269,12 @@ if(SERVER)then
 		else --Non valid entity or clicked the world
 			if ply.AdvDupe2.Entities then
 				--clear the dupe
-				umsg.Start("AdvDupe2_RemoveGhosts", ply)
-				umsg.End()
+				net.Start("AdvDupe2_RemoveGhosts")
+				net.Send(ply)
 				ply.AdvDupe2.Entities = nil
 				ply.AdvDupe2.Constraints = nil
-				umsg.Start("AdvDupe2_ResetDupeInfo", ply)
-				umsg.End()
+				net.Start("AdvDupe2_ResetDupeInfo")
+				net.Send(ply)
 				AdvDupe2.ResetOffsets(ply)
 				return true
 			else
@@ -289,8 +289,8 @@ if(SERVER)then
 
 				local _, Ent = next(Entities)
 				if not Ent then
-					umsg.Start("AdvDupe2_RemoveGhosts", ply)
-					umsg.End()
+				net.Start("AdvDupe2_RemoveGhosts")
+				net.Send(ply)
 					return true
 				end
 
@@ -339,8 +339,8 @@ if(SERVER)then
 		if not ply.AdvDupe2 then ply.AdvDupe2 = {} end
 		if not ply.AdvDupe2.Entities then return end
 
-		umsg.Start("AdvDupe2_StartGhosting", ply)
-		umsg.End()
+		net.Start("AdvDupe2_StartGhosting")
+		net.Send(ply)
 
 		if(ply.AdvDupe2.Queued)then
 			AdvDupe2.InitProgressBar(ply, "Queued: ")
@@ -380,15 +380,15 @@ if(SERVER)then
 
 		if(self:GetStage()==1)then
 			local areasize = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
-			umsg.Start("AdvDupe2_CanAutoSave", ply)
-				umsg.Vector(trace.HitPos)
-				umsg.Short(areasize)
+			net.Start("AdvDupe2_CanAutoSave")
+				net.WriteVector(trace.HitPos)
+				net.WriteFloat(areasize)
 				if(trace.Entity)then
-					umsg.Short(trace.Entity:EntIndex())
+					net.WriteUInt(trace.Entity:EntIndex(), 16)
 				else
-					umsg.Short(0)
+					net.WriteUInt(0, 16)
 				end
-			umsg.End()
+			net.Send(ply)
 			self:SetStage(0)
 			AdvDupe2.RemoveSelectBox(ply)
 			ply.AdvDupe2.TempAutoSavePos = trace.HitPos
@@ -566,30 +566,30 @@ if(SERVER)then
 
 
 	function AdvDupe2.InitProgressBar(ply,label)
-		umsg.Start("AdvDupe2_InitProgressBar",ply)
-			umsg.String(label)
-		umsg.End()
+		net.Start("AdvDupe2_InitProgressBar")
+			net.WriteString(label)
+		net.Send(ply)
 	end
 
 	function AdvDupe2.DrawSelectBox(ply)
-		umsg.Start("AdvDupe2_DrawSelectBox", ply)
-		umsg.End()
+		net.Start("AdvDupe2_DrawSelectBox")
+		net.Send(ply)
 	end
-
+	
 	function AdvDupe2.RemoveSelectBox(ply)
-		umsg.Start("AdvDupe2_RemoveSelectBox", ply)
-		umsg.End()
+		net.Start("AdvDupe2_RemoveSelectBox")
+		net.Send(ply)
 	end
-
+	
 	function AdvDupe2.UpdateProgressBar(ply,percent)
-		umsg.Start("AdvDupe2_UpdateProgressBar",ply)
-			umsg.Char(percent)
-		umsg.End()
+		net.Start("AdvDupe2_UpdateProgressBar")
+			net.WriteFloat(percent)
+		net.Send(ply)
 	end
-
+	
 	function AdvDupe2.RemoveProgressBar(ply)
-		umsg.Start("AdvDupe2_RemoveProgressBar",ply)
-		umsg.End()
+		net.Start("AdvDupe2_RemoveProgressBar")
+		net.Send(ply)
 	end
 
 	--Reset the offsets of height, pitch, yaw, and roll back to default
@@ -598,14 +598,8 @@ if(SERVER)then
 		if(not keep)then
 			ply.AdvDupe2.Name = nil
 		end
-		umsg.Start("AdvDupe2_ResetOffsets", ply)
-		umsg.End()
-	end
-
-	function AdvDupe2.UpdateProgressBar(ply, perc)
-		umsg.Start("AdvDupe2_UpdateProgressBar", ply)
-			umsg.Short(perc)
-		umsg.End()
+		net.Start("AdvDupe2_ResetOffsets")
+		net.Send(ply)
 	end
 
 	net.Receive("AdvDupe2_CanAutoSave", function(len, ply, len2)
@@ -1696,7 +1690,7 @@ if(CLIENT)then
 
 	end
 
-	usermessage.Hook("AdvDupe2_DrawSelectBox",function()
+	net.Receive("AdvDupe2_DrawSelectBox", function()
 		hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
 	end)
 
@@ -1714,7 +1708,7 @@ if(CLIENT)then
 			AdvDupe2.EntityColors={}
 		end
 	end
-	usermessage.Hook("AdvDupe2_RemoveSelectBox",function()
+	net.Receive("AdvDupe2_RemoveSelectBox",function()
 		AdvDupe2.RemoveSelectBox()
 	end)
 
@@ -1724,12 +1718,12 @@ if(CLIENT)then
 		AdvDupe2.ProgressBar.Percent = 0
 		AdvDupe2.BusyBar = true
 	end
-	usermessage.Hook("AdvDupe2_InitProgressBar",function(um)
-		AdvDupe2.InitProgressBar(um:ReadString())
+	net.Receive("AdvDupe2_InitProgressBar", function()
+		AdvDupe2.InitProgressBar(net.ReadString())
 	end)
 
-	usermessage.Hook("AdvDupe2_UpdateProgressBar",function(um)
-		AdvDupe2.ProgressBar.Percent = um:ReadChar()
+	net.Receive("AdvDupe2_UpdateProgressBar", function()
+		AdvDupe2.ProgressBar.Percent = net.ReadFloat()
 	end)
 
 	function AdvDupe2.RemoveProgressBar()
@@ -1741,11 +1735,11 @@ if(CLIENT)then
 			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
 		end
 	end
-	usermessage.Hook("AdvDupe2_RemoveProgressBar",function(um)
+	net.Receive("AdvDupe2_RemoveProgressBar", function()
 		AdvDupe2.RemoveProgressBar()
 	end)
 
-	usermessage.Hook("AdvDupe2_ResetOffsets",function(um)
+	net.Receive("AdvDupe2_ResetOffsets", function()
 		RunConsoleCommand("advdupe2_original_origin", "0")
 		RunConsoleCommand("advdupe2_paste_constraints","1")
 		RunConsoleCommand("advdupe2_offset_z","0")
@@ -1756,15 +1750,15 @@ if(CLIENT)then
 		RunConsoleCommand("advdupe2_paste_disparents","0")
 	end)
 
-	usermessage.Hook("AdvDupe2_ReportModel",function(um)
-		print("Advanced Duplicator 2: Invalid Model: "..um:ReadString())
+	net.Receive("AdvDupe2_ReportModel", function()
+		print("Advanced Duplicator 2: Invalid Model: "..net.ReadString())
 	end)
 
-	usermessage.Hook("AdvDupe2_ReportClass",function(um)
-		print("Advanced Duplicator 2: Invalid Class: "..um:ReadString())
+	net.Receive("AdvDupe2_ReportClass", function()
+		print("Advanced Duplicator 2: Invalid Class: "..net.ReadString())
 	end)
-
-	usermessage.Hook("AdvDupe2_ResetDupeInfo", function(um)
+	
+	net.Receive("AdvDupe2_ResetDupeInfo", function()
 		if not AdvDupe2.Info then return end
 		AdvDupe2.Info.File:SetText("File:")
 		AdvDupe2.Info.Creator:SetText("Creator:")
@@ -1776,11 +1770,11 @@ if(CLIENT)then
 		AdvDupe2.Info.Constraints:SetText("Constraints:")
 	end)
 
-	usermessage.Hook("AdvDupe2_CanAutoSave", function(um)
+	net.Receive("AdvDupe2_CanAutoSave", function()
 		if(AdvDupe2.AutoSavePath~="")then
-			AdvDupe2.AutoSavePos = um:ReadVector()
-			AdvDupe2.AutoSaveSize = um:ReadShort()
-			local ent = um:ReadShort()
+			AdvDupe2.AutoSavePos = net.ReadVector()
+			AdvDupe2.AutoSaveSize = net.ReadFloat()
+			local ent = net.ReadUInt(16)
 			AdvDupe2.OffButton:SetDisabled(false)
 			net.Start("AdvDupe2_CanAutoSave")
 				net.WriteString(AdvDupe2.AutoSaveDesc)

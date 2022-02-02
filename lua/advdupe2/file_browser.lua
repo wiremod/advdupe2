@@ -1384,12 +1384,12 @@ function PANEL:GetNodePath(node)
 end
 
 if (game.SinglePlayer()) then
-	usermessage.Hook("AdvDupe2_AddFile", function(um)
+	net.Receive("AdvDupe2_AddFile", function()
 		local asvNode = AdvDupe2.FileBrowser.AutoSaveNode
 		local actNode = AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode
-		if (um:ReadBool()) then
+		if (net.ReadBool()) then
 			if (IsValid(asvNode)) then
-				local name = um:ReadString()
+				local name = net.ReadString()
 				for iD = 1, #asvNode.Files do
 					if (name == asvNode.Files[i]) then return end
 				end
@@ -1397,7 +1397,7 @@ if (game.SinglePlayer()) then
 				asvNode.Control:Sort(asvNode)
 			end
 		else
-			actNode:AddFile(um:ReadString())
+			actNode:AddFile(net.ReadString())
 			actNode.Control:Sort(actNode)
 		end
 	end)
