@@ -113,13 +113,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 	if not IsValid(ply) then return end
 	if not ply.AdvDupe2 then ply.AdvDupe2 = {} end
 
-	local name = net.ReadString()
-	local _1, _2, _3 = string.find(name, "([%w_]+)")
-	if _3 then
-		ply.AdvDupe2.Name = string.sub(_3, 1, 32)
-	else
-		ply.AdvDupe2.Name = "Advanced Duplication"
-	end
+	ply.AdvDupe2.Name = string.match(net.ReadString(), "([%w_ ]+)") or "Advanced Duplication"
 
 	local stream = net.ReadStream(ply, function(data)
 		if data then
