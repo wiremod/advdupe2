@@ -950,7 +950,7 @@ if(CLIENT)then
 
 		local FileBrowser = vgui.Create("advdupe2_browser")
 		CPanel:AddItem(FileBrowser)
-		FileBrowser:SetSize(CPanel:GetWide(),405)
+		FileBrowser:SetSize(CPanel:GetWide(), 405)
 		AdvDupe2.FileBrowser = FileBrowser
 
 		local Check = vgui.Create("DCheckBoxLabel")
@@ -1061,7 +1061,6 @@ if(CLIENT)then
 		Category1:SetLabel("Offsets")
 		Category1:SetExpanded(0)
 
-
 		local parent = FileBrowser:GetParent():GetParent():GetParent():GetParent()
 		--[[Offsets]]--
 		local CategoryContent1 = vgui.Create( "DPanelList" )
@@ -1073,13 +1072,13 @@ if(CLIENT)then
 
 		Category1:SetContents( CategoryContent1 )
 
-
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Height Offset" )
 		NumSlider.Label:SetDark(true)
-		NumSlider:SetMin( 0 )
+		NumSlider:SetMin( -2500 )
 		NumSlider:SetMax( 2500 )
-		NumSlider:SetDecimals( 0 )
+		NumSlider:SetDefaultValue( 0 )
+		NumSlider:SetDecimals( 3 )
 		NumSlider:SetConVar("advdupe2_offset_z")
 		NumSlider:SetToolTip("Change the Z offset of the dupe")
 		CategoryContent1:AddItem(NumSlider)
@@ -1097,7 +1096,8 @@ if(CLIENT)then
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( -180 )
 		NumSlider:SetMax( 180 )
-		NumSlider:SetDecimals( 0 )
+		NumSlider:SetDefaultValue( 0 )
+		NumSlider:SetDecimals( 3 )
 		NumSlider:SetConVar("advdupe2_offset_pitch")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1106,7 +1106,8 @@ if(CLIENT)then
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( -180 )
 		NumSlider:SetMax( 180 )
-		NumSlider:SetDecimals( 0 )
+		NumSlider:SetDefaultValue( 0 )
+		NumSlider:SetDecimals( 3 )
 		NumSlider:SetConVar("advdupe2_offset_yaw")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1115,7 +1116,8 @@ if(CLIENT)then
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( -180 )
 		NumSlider:SetMax( 180 )
-		NumSlider:SetDecimals( 0 )
+		NumSlider:SetDefaultValue( 0 )
+		NumSlider:SetDecimals( 3 )
 		NumSlider:SetConVar("advdupe2_offset_roll")
 		CategoryContent1:AddItem(NumSlider)
 
