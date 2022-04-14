@@ -1080,7 +1080,7 @@ if(CLIENT)then
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
 		NumSlider:SetConVar("advdupe2_offset_z")
-		NumSlider:SetToolTip("Change the Z offset of the dupe")
+		NumSlider:SetToolTip("Changes the dupe Z offset")
 		CategoryContent1:AddItem(NumSlider)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1098,6 +1098,7 @@ if(CLIENT)then
 		NumSlider:SetMax( 180 )
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
+		NumSlider:SetToolTip("Changes the dupe pitch offset")
 		NumSlider:SetConVar("advdupe2_offset_pitch")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1108,6 +1109,7 @@ if(CLIENT)then
 		NumSlider:SetMax( 180 )
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
+		NumSlider:SetToolTip("Changes the dupe yaw offset")
 		NumSlider:SetConVar("advdupe2_offset_yaw")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1118,6 +1120,7 @@ if(CLIENT)then
 		NumSlider:SetMax( 180 )
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
+		NumSlider:SetToolTip("Changes the dupe roll offset")
 		NumSlider:SetConVar("advdupe2_offset_roll")
 		CategoryContent1:AddItem(NumSlider)
 
