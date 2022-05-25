@@ -35,7 +35,7 @@ if(SERVER)then
 		--First seperate the nocollides, sorted, and unsorted constraints
 		local sorted, unsorted = {}, {}
 		for k, v in pairs(constraints) do
-			if phys_constraint_system_types[v.Type] then
+			if(phys_constraint_system_types[v.Type]) then
 				sorted[#sorted+1] = v
 			else
 				unsorted[#unsorted+1] = v
@@ -50,9 +50,9 @@ if(SERVER)then
 					for systemi, system in pairs(sortingSystems) do
 						for _, target in pairs(system) do
 							for x = 1, 4 do
-								if v.Entity[x] then
+								if(v.Entity[x]) then
 									for y = 1, 4 do
-										if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
+										if(target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index) then
 											system[#system + 1] = v
 											if #system==100 then
 												fullSystems[#fullSystems + 1] = system
@@ -113,7 +113,7 @@ if(SERVER)then
 	end
 
 	local function GetSortedConstraints( ply, constraints )
-		if ply:GetInfo("advdupe2_sort_constraints") ~= "0" then
+		if(tobool(ply:GetInfo("advdupe2_sort_constraints"))) then
 			return GroupConstraintOrder( ply, constraints )
 		else
 			return CreationConstraintOrder( constraints )
@@ -125,12 +125,12 @@ if(SERVER)then
 	}
 
 	local function PlayerCanDupeCPPI(ply, ent)
-		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
-		return ent:CPPIGetOwner()==ply
+		if(not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()]) then return false end
+		return ent:CPPIGetOwner() == ply
 	end
 
 	local function PlayerCanDupeTool(ply, ent)
-		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
+		if(not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()]) then return false end
 		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
 		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
 	end
@@ -169,18 +169,29 @@ if(SERVER)then
 			return false
 		end
 
-		local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -32000, 32000)
+		local h = (tonumber(ply.AdvDupe2.HeadEnt.Z) or 0)
+		local z = math.Clamp(ply:GetInfoNum("advdupe2_offset_z"    , 0) + h, -32000, 32000)
+		local p = math.Clamp(ply:GetInfoNum("advdupe2_offset_pitch", 0), -360, 360)
+		local y = math.Clamp(ply:GetInfoNum("advdupe2_offset_yaw"  , 0), -360, 360)
+		local r = math.Clamp(ply:GetInfoNum("advdupe2_offset_roll" , 0), -360, 360)
+
+		ply.AdvDupe2.Angle = Angle(p, y, r)
 		ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
-		ply.AdvDupe2.Angle = Angle(ply:GetInfoNum("advdupe2_offset_pitch", 0), ply:GetInfoNum("advdupe2_offset_yaw", 0), ply:GetInfoNum("advdupe2_offset_roll", 0))
-		if(tobool(ply:GetInfo("advdupe2_offset_world")))then ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle end
+
+		if(tobool(ply:GetInfo("advdupe2_offset_world"))) then
+			ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle
+		end
 
 		ply.AdvDupe2.Pasting = true
 		AdvDupe2.Notify(ply,"Pasting...")
+
 		local origin
 		if(tobool(ply:GetInfo("advdupe2_original_origin")))then
 			origin = ply.AdvDupe2.HeadEnt.Pos
 		end
+
 		AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin, tobool(ply:GetInfo("advdupe2_paste_constraints")), tobool(ply:GetInfo("advdupe2_paste_parents")), tobool(ply:GetInfo("advdupe2_paste_disparents")),tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
+
 		return true
 	end
 
@@ -199,12 +210,12 @@ if(SERVER)then
 		end
 
 		--Set Area Copy on or off
-		if( ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK) )then
-			if(self:GetStage()==0)then
+		if(ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK))then
+			if(self:GetStage() == 0)then
 				AdvDupe2.DrawSelectBox(ply)
 				self:SetStage(1)
 				return false
-			elseif(self:GetStage()==1)then
+			elseif(self:GetStage() == 1)then
 				AdvDupe2.RemoveSelectBox(ply)
 				self:SetStage(0)
 				return false
@@ -224,7 +235,7 @@ if(SERVER)then
 
 			local Ents = FindInBox(B,T, ply)
 			local _, Ent = next(Ents)
-			if not Ent then
+			if(not Ent) then
 				self:SetStage(0)
 				AdvDupe2.RemoveSelectBox(ply)
 				return true
@@ -240,7 +251,7 @@ if(SERVER)then
 			AdvDupe2.RemoveSelectBox(ply)
 		elseif trace.HitNonWorld then	--Area Copy is off
 			-- Filter duplicator blocked entities out.
-			if not AdvDupe2.duplicator.IsCopyable( trace.Entity ) then
+			if(not AdvDupe2.duplicator.IsCopyable( trace.Entity )) then
 				return false
 			end
 
@@ -263,7 +274,7 @@ if(SERVER)then
 				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, trace.HitPos )
 			end
 		else --Non valid entity or clicked the world
-			if ply.AdvDupe2.Entities then
+			if(ply.AdvDupe2.Entities) then
 				--clear the dupe
 				net.Start("AdvDupe2_RemoveGhosts")
 				net.Send(ply)
@@ -278,15 +289,15 @@ if(SERVER)then
 				Entities = {}
 				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 				for _, ent in pairs(ents.GetAll()) do
-					if PPCheck( ply, ent ) then
+					if(PPCheck( ply, ent )) then
 						Entities[ent:EntIndex()] = ent
 					end
 				end
 
 				local _, Ent = next(Entities)
-				if not Ent then
-				net.Start("AdvDupe2_RemoveGhosts")
-				net.Send(ply)
+				if(not Ent) then
+					net.Start("AdvDupe2_RemoveGhosts")
+					net.Send(ply)
 					return true
 				end
 
@@ -297,7 +308,7 @@ if(SERVER)then
 			end
 		end
 
-		if not HeadEnt.Z then
+		if(not HeadEnt.Z) then
 			local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=HeadEnt.Pos+Vector(0,0,1), endpos=HeadEnt.Pos-Vector(0,0,50000)} )
 			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z-WorldTrace.HitPos.Z) or 0
 		end
@@ -317,7 +328,7 @@ if(SERVER)then
 			net.WriteString(#ply.AdvDupe2.Constraints)
 		net.Send(ply)
 
-		if AddOne then
+		if(AddOne) then
 			AdvDupe2.SendGhost(ply, AddOne)
 		else
 			AdvDupe2.SendGhosts(ply)
@@ -332,8 +343,8 @@ if(SERVER)then
 	function TOOL:Deploy()
 		local ply = self:GetOwner()
 
-		if not ply.AdvDupe2 then ply.AdvDupe2 = {} end
-		if not ply.AdvDupe2.Entities then return end
+		if(not ply.AdvDupe2) then ply.AdvDupe2 = {} end
+		if(not ply.AdvDupe2.Entities) then return end
 
 		net.Start("AdvDupe2_StartGhosting")
 		net.Send(ply)
@@ -370,7 +381,7 @@ if(SERVER)then
 		Returns: <boolean> success
 	]]
 	function TOOL:Reload( trace )
-		if(!trace.Hit)then return false end
+		if(not trace.Hit)then return false end
 
 		local ply = self:GetOwner()
 
@@ -432,7 +443,7 @@ if(SERVER)then
 		end
 
 		--Create a contraption spawner
-		if ply.AdvDupe2 and ply.AdvDupe2.Entities then
+		if(ply.AdvDupe2 and ply.AdvDupe2.Entities) then
 			local headent = ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index]
 			local Pos, Ang
 
@@ -478,7 +489,7 @@ if(SERVER)then
 	--function for creating a contraption spawner
 	function MakeContraptionSpawner( ply, Pos, Ang, HeadEnt, EntityTable, ConstraintTable, delay, undo_delay, model, key, undo_key, disgrav, disdrag, addvel, hideprops)
 
-		if not ply:CheckLimit("gmod_contr_spawners") then return nil end
+		if(not ply:CheckLimit("gmod_contr_spawners")) then return nil end
 
 		if(not game.SinglePlayer())then
 			if(table.Count(EntityTable)>tonumber(GetConVarString("AdvDupe2_MaxContraptionEntities")))then
@@ -492,7 +503,7 @@ if(SERVER)then
 		end
 
 		local spawner = ents.Create("gmod_contr_spawner")
-		if not IsValid(spawner) then return end
+		if(not IsValid(spawner)) then return end
 
 		spawner:SetPos(Pos)
 		spawner:SetAngles(Ang)
@@ -502,7 +513,7 @@ if(SERVER)then
 
 		duplicator.ApplyEntityModifiers(ply, spawner)
 
-		if IsValid(spawner:GetPhysicsObject()) then
+		if(IsValid(spawner:GetPhysicsObject())) then
 			spawner:GetPhysicsObject():EnableMotion(false)
 		end
 
@@ -668,7 +679,7 @@ if(SERVER)then
 
 				local Entities = FindInBox(B,T, ply)
 				local _, HeadEnt = next(Entities)
-				if not HeadEnt then
+				if(not HeadEnt) then
 					AdvDupe2.Notify(ply, "Area Auto Save copied 0 entities; be sure to turn it off.", NOTIFY_ERROR)
 					return
 				end
@@ -712,13 +723,13 @@ if(SERVER)then
 
 		local Entities = ents.GetAll()
 		for k,v in pairs(Entities) do
-			if v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v) then
+			if(v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v)) then
 				Entities[k]=nil
 			end
 		end
 
 		local _, HeadEnt = next(Entities)
-		if not HeadEnt then return end
+		if(not HeadEnt) then return end
 
 		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
 		Tab.HeadEnt.Index = HeadEnt:EntIndex()
@@ -872,7 +883,7 @@ if(CLIENT)then
 	--Checks binds to modify dupes position and angles
 	function TOOL:Think()
 
-		if AdvDupe2.HeadGhost then
+		if(AdvDupe2.HeadGhost) then
 			AdvDupe2.UpdateGhosts()
 		end
 
@@ -1528,7 +1539,7 @@ if(CLIENT)then
 		})
 		local function tryToBuild()
 			local CPanel = controlpanel.Get("advdupe2")
-			if CPanel and CPanel:GetWide()>16 then
+			if(CPanel and CPanel:GetWide() > 16) then
 				BuildCPanel(CPanel)
 			else
 				timer.Simple(0.1,tryToBuild)
@@ -1628,7 +1639,7 @@ if(CLIENT)then
 
 		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate)then
 
-			if AdvDupe2.ColorEntities then
+			if(AdvDupe2.ColorEntities) then
 				for k,v in pairs(AdvDupe2.EntityColors)do
 					local ent = AdvDupe2.ColorEntities[k]
 					if(IsValid(ent))then
@@ -1697,7 +1708,7 @@ if(CLIENT)then
 
 	function AdvDupe2.RemoveSelectBox()
 		hook.Remove("HUDPaint", "AdvDupe2_DrawSelectionBox")
-		if AdvDupe2.ColorEntities then
+		if(AdvDupe2.ColorEntities) then
 			for k,v in pairs(AdvDupe2.EntityColors)do
 				if(not IsValid(AdvDupe2.ColorEntities[k]))then
 					AdvDupe2.ColorEntities[k]=nil
@@ -1760,7 +1771,7 @@ if(CLIENT)then
 	end)
 	
 	net.Receive("AdvDupe2_ResetDupeInfo", function()
-		if not AdvDupe2.Info then return end
+		if(not AdvDupe2.Info) then return end
 		AdvDupe2.Info.File:SetText("File:")
 		AdvDupe2.Info.Creator:SetText("Creator:")
 		AdvDupe2.Info.Date:SetText("Date:")
@@ -1790,7 +1801,7 @@ if(CLIENT)then
 	end)
 
 	net.Receive("AdvDupe2_SetDupeInfo", function(len, ply, len2)
-		if AdvDupe2.Info then
+		if(AdvDupe2.Info) then
 			AdvDupe2.Info.File:SetText("File: "..net.ReadString())
 			AdvDupe2.Info.Creator:SetText("Creator: "..net.ReadString())
 			AdvDupe2.Info.Date:SetText("Date: "..net.ReadString())
