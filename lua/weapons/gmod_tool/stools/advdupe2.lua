@@ -16,18 +16,18 @@ if(SERVER)then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
 	local phys_constraint_system_types = {
-		Weld = true,
-		Rope = true,
-		Elastic = true,
-		Slider = true,
-		Axis = true,
+		Weld          = true,
+		Rope          = true,
+		Elastic       = true,
+		Slider        = true,
+		Axis          = true,
 		AdvBallsocket = true,
-		Motor = true,
-		Pulley = true,
-		Ballsocket = true,
-		Winch = true,
-		Hydraulic = true,
-		WireMotor = true,
+		Motor         = true,
+		Pulley        = true,
+		Ballsocket    = true,
+		Winch         = true,
+		Hydraulic     = true,
+		WireMotor     = true,
 		WireHydraulic = true
 	}
 	--Orders constraints so that the dupe uses as little constraint systems as possible
@@ -44,21 +44,21 @@ if(SERVER)then
 
 		local sortingSystems = {}
 		local fullSystems = {}
-		local function buildSystems(input)
-			while next(input) ~= nil do
-				for k, v in pairs(input) do
-					for systemi, system in pairs(sortingSystems) do
-						for _, target in pairs(system) do
+		local function buildSystems(data)
+			while next(data) ~= nil do
+				for k, v in pairs(data) do
+					for sysk, sysv in pairs(sortingSystems) do
+						for _, target in pairs(sysv) do
 							for x = 1, 4 do
 								if(v.Entity[x]) then
 									for y = 1, 4 do
 										if(target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index) then
-											system[#system + 1] = v
-											if #system==100 then
-												fullSystems[#fullSystems + 1] = system
-												table.remove(sortingSystems, systemi)
+											sysv[#sysv + 1] = v
+											if #sysv==100 then
+												fullSystems[#fullSystems + 1] = sysv
+												table.remove(sortingSystems, sysk)
 											end
-											input[k] = nil
+											data[k] = nil
 											goto super_loopbreak
 										end
 									end
@@ -69,9 +69,9 @@ if(SERVER)then
 				end
 
 				--Normally skipped by the goto unless no cluster is found. If so, make a new one.
-				local k = next(input)
-				sortingSystems[#sortingSystems + 1] = {input[k]}
-				input[k] = nil
+				local k = next(data)
+				sortingSystems[#sortingSystems + 1] = {data[k]}
+				data[k] = nil
 
 				::super_loopbreak::
 			end
@@ -79,13 +79,13 @@ if(SERVER)then
 		buildSystems(sorted)
 
 		local ret = {}
-		for _, system in pairs(fullSystems) do
-			for _, v in pairs(system) do
+		for _, sysv in pairs(fullSystems) do
+			for _, v in pairs(sysv) do
 				ret[#ret + 1] = v
 			end
 		end
-		for _, system in pairs(sortingSystems) do
-			for _, v in pairs(system) do
+		for _, sysv in pairs(sortingSystems) do
+			for _, v in pairs(sysv) do
 				ret[#ret + 1] = v
 			end
 		end
@@ -153,6 +153,18 @@ if(SERVER)then
 	end
 
 	--[[
+		Name: GetDupeAngle
+		Desc: Retrieves duplication angle offsets from player
+		Returns: <angle> Created angle
+	]]
+	local function GetDupeAngle()
+		local p = math.Clamp(ply:GetInfoNum("advdupe2_offset_pitch", 0), -180, 180)
+		local y = math.Clamp(ply:GetInfoNum("advdupe2_offset_yaw"  , 0), -180, 180)
+		local r = math.Clamp(ply:GetInfoNum("advdupe2_offset_roll" , 0), -180, 180)
+		return Angle(p, y, r)
+	end
+
+	--[[
 		Name: LeftClick
 		Desc: Defines the tool's behavior when the player left-clicks.
 		Params: <trace> trace
@@ -170,13 +182,11 @@ if(SERVER)then
 		end
 
 		local h = (tonumber(ply.AdvDupe2.HeadEnt.Z) or 0)
-		local z = math.Clamp(ply:GetInfoNum("advdupe2_offset_z"    , 0) + h, -32000, 32000)
-		local p = math.Clamp(ply:GetInfoNum("advdupe2_offset_pitch", 0), -360, 360)
-		local y = math.Clamp(ply:GetInfoNum("advdupe2_offset_yaw"  , 0), -360, 360)
-		local r = math.Clamp(ply:GetInfoNum("advdupe2_offset_roll" , 0), -360, 360)
+		local z = math.Clamp(ply:GetInfoNum("advdupe2_offset_z", 0) + h, -32000, 32000)
 
-		ply.AdvDupe2.Angle = Angle(p, y, r)
-		ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
+		ply.AdvDupe2.Angle = GetDupeAngle()
+		ply.AdvDupe2.Position = Vector(trace.HitPos)
+		ply.AdvDupe2.Position.z = ply.AdvDupe2.Position.z + z
 
 		if(tobool(ply:GetInfo("advdupe2_offset_world"))) then
 			ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle
@@ -190,7 +200,11 @@ if(SERVER)then
 			origin = ply.AdvDupe2.HeadEnt.Pos
 		end
 
-		AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin, tobool(ply:GetInfo("advdupe2_paste_constraints")), tobool(ply:GetInfo("advdupe2_paste_parents")), tobool(ply:GetInfo("advdupe2_paste_disparents")),tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
+		AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin,
+			tobool(ply:GetInfo("advdupe2_paste_constraints")),
+			tobool(ply:GetInfo("advdupe2_paste_parents")),
+			tobool(ply:GetInfo("advdupe2_paste_disparents")),
+			tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
 
 		return true
 	end
@@ -438,7 +452,14 @@ if(SERVER)then
 					undo_delay = 0
 				end
 			end
-			trace.Entity:GetTable():SetOptions(ply, delay, undo_delay, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
+
+			trace.Entity:GetTable():SetOptions(ply, delay, undo_delay,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_key")),
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1 )
+
 			return true
 		end
 
@@ -455,7 +476,7 @@ if(SERVER)then
 					local EntAngle = headent.PhysicsObjects[0].Angle
 					if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
 					trace.HitPos.Z = trace.HitPos.Z + math.Clamp(ply.AdvDupe2.HeadEnt.Z + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0, -32000, 32000)
-					Pos, Ang = LocalToWorld(headent.PhysicsObjects[0].Pos, EntAngle, trace.HitPos, Angle(math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_roll")) or 0,-180,180)))
+					Pos, Ang = LocalToWorld(headent.PhysicsObjects[0].Pos, EntAngle, trace.HitPos, GetDupeAngle() )
 				end
 			else
 				AdvDupe2.Notify(ply, "Invalid head entity to spawn contraption spawner.")
@@ -467,8 +488,19 @@ if(SERVER)then
 				return false
 			end
 
+			local spawner = MakeContraptionSpawner( ply, Pos, Ang, ply.AdvDupe2.HeadEnt.Index,
+				table.Copy(ply.AdvDupe2.Entities),
+				table.Copy(ply.AdvDupe2.Constraints),
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")),
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")),
+				headent.Model,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_key")),
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1,
+				tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0 )
 
-			local spawner = MakeContraptionSpawner( ply, Pos, Ang, ply.AdvDupe2.HeadEnt.Index, table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints), tonumber(ply:GetInfo("advdupe2_contr_spawner_delay")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay")), headent.Model, tonumber(ply:GetInfo("advdupe2_contr_spawner_key")), tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),  tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0, tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1, tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0 )
 			ply:AddCleanup( "AdvDupe2", spawner )
 			undo.Create("gmod_contr_spawner")
 				undo.AddEntity( spawner )
@@ -553,13 +585,13 @@ if(SERVER)then
 		spawner:GetTable():SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel, hideprops)
 
 		local tbl = {
-			ply 		= ply,
-			delay		= delay,
-			undo_delay	= undo_delay,
-			disgrav		= disgrav,
-			disdrag 	= disdrag,
-			addvel		= addvel,
-			hideprops	= hideprops
+			ply        = ply,
+			delay      = delay,
+			undo_delay = undo_delay,
+			disgrav    = disgrav,
+			disdrag    = disdrag,
+			addvel     = addvel,
+			hideprops  = hideprops
 		}
 		table.Merge(spawner:GetTable(), tbl)
 		spawner:SetDupeInfo(HeadEnt, EntityTable, ConstraintTable)
@@ -569,8 +601,10 @@ if(SERVER)then
 		ply:AddCleanup("gmod_contr_spawner", spawner)
 		return spawner
 	end
-	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 
+	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner,
+		"Pos", "Ang", "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay",
+		"model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 
 	function AdvDupe2.InitProgressBar(ply,label)
 		net.Start("AdvDupe2_InitProgressBar")
@@ -674,8 +708,8 @@ if(SERVER)then
 			else
 				local i = ply.AdvDupe2.AutoSaveSize
 				local Pos = ply.AdvDupe2.AutoSavePos
-				local T = (Vector(i,i,i)+Pos)
-				local B = (Vector(-i,-i,-i)+Pos)
+				local T = (Vector( i, i, i) + Pos)
+				local B = (Vector(-i,-i,-i) + Pos)
 
 				local Entities = FindInBox(B,T, ply)
 				local _, HeadEnt = next(Entities)
