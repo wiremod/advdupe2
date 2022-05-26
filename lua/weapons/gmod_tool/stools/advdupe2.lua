@@ -168,7 +168,7 @@ if(SERVER) then
 
 	--[[
 		Name: LeftClick
-		Desc: Defines the tool's behavior when the player left - clicks.
+		Desc: Defines the tool's behavior when the player left-clicks.
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
@@ -213,7 +213,7 @@ if(SERVER) then
 
 	--[[
 		Name: RightClick
-		Desc: Defines the tool's behavior when the player right - clicks.
+		Desc: Defines the tool's behavior when the player right-clicks.
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
@@ -720,7 +720,7 @@ if(SERVER) then
 					return
 				end
 
-				if(ply.AdvDupe2.AutoSaveEnt && Entities[ply.AdvDupe2.AutoSaveEnt]) then
+				if(ply.AdvDupe2.AutoSaveEnt and Entities[ply.AdvDupe2.AutoSaveEnt]) then
 					Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt
 				else
 					Tab.HeadEnt.Index = HeadEnt:EntIndex()
@@ -815,7 +815,7 @@ if(CLIENT) then
 	end
 
 	function TOOL:Reload( trace )
-		if(trace and (AdvDupe2.HeadGhost || self:GetStage() == 1)) then
+		if(trace and (AdvDupe2.HeadGhost or self:GetStage() == 1)) then
 			return true
 		end
 		return false
