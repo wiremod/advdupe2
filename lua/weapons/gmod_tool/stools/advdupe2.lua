@@ -12,7 +12,7 @@ TOOL.Name = "#Tool.advdupe2.name"
 cleanup.Register( "AdvDupe2" )
 require "controlpanel"
 
-if(SERVER)then
+if(SERVER) then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
 
 	local phys_constraint_system_types = {
@@ -36,29 +36,29 @@ if(SERVER)then
 		local sorted, unsorted = {}, {}
 		for k, v in pairs(constraints) do
 			if(phys_constraint_system_types[v.Type]) then
-				sorted[#sorted+1] = v
+				sorted[#sorted + 1] = v
 			else
-				unsorted[#unsorted+1] = v
+				unsorted[#unsorted + 1] = v
 			end
 		end
 
 		local sortingSystems = {}
 		local fullSystems = {}
-		local function buildSystems(data)
-			while next(data) ~= nil do
-				for k, v in pairs(data) do
-					for sysk, sysv in pairs(sortingSystems) do
-						for _, target in pairs(sysv) do
+		local function buildSystems(input)
+			while next(input) ~= nil do
+				for k, v in pairs(input) do
+					for systemi, system in pairs(sortingSystems) do
+						for _, target in pairs(system) do
 							for x = 1, 4 do
 								if(v.Entity[x]) then
 									for y = 1, 4 do
 										if(target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index) then
-											sysv[#sysv + 1] = v
-											if #sysv==100 then
-												fullSystems[#fullSystems + 1] = sysv
-												table.remove(sortingSystems, sysk)
+											system[#system + 1] = v
+											if #system == 100 then
+												fullSystems[#fullSystems + 1] = system
+												table.remove(sortingSystems, systemi)
 											end
-											data[k] = nil
+											input[k] = nil
 											goto super_loopbreak
 										end
 									end
@@ -69,9 +69,9 @@ if(SERVER)then
 				end
 
 				--Normally skipped by the goto unless no cluster is found. If so, make a new one.
-				local k = next(data)
-				sortingSystems[#sortingSystems + 1] = {data[k]}
-				data[k] = nil
+				local k = next(input)
+				sortingSystems[#sortingSystems + 1] = {input[k]}
+				input[k] = nil
 
 				::super_loopbreak::
 			end
@@ -79,13 +79,13 @@ if(SERVER)then
 		buildSystems(sorted)
 
 		local ret = {}
-		for _, sysv in pairs(fullSystems) do
-			for _, v in pairs(sysv) do
+		for _, system in pairs(fullSystems) do
+			for _, v in pairs(system) do
 				ret[#ret + 1] = v
 			end
 		end
-		for _, sysv in pairs(sortingSystems) do
-			for _, v in pairs(sysv) do
+		for _, system in pairs(sortingSystems) do
+			for _, v in pairs(system) do
 				ret[#ret + 1] = v
 			end
 		end
@@ -106,7 +106,7 @@ if(SERVER)then
 			ret[#ret + 1] = k
 		end
 		table.sort(ret)
-		for i=1, #ret do
+		for i = 1, #ret do
 			ret[i] = constraints[ret[i]]
 		end
 		return ret
@@ -137,14 +137,16 @@ if(SERVER)then
 
 	--Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
-		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
+		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI ~= nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local Entities = ents.GetAll() --Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
 		local pos, ent
-		for i=1, #Entities do
+		for i = 1, #Entities do
 			ent = Entities[i]
 			pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and PPCheck( ply, ent ) then
+			if (pos.X >= min.X) and (pos.X <= max.X) and
+				 (pos.Y >= min.Y) and (pos.Y <= max.Y) and
+				 (pos.Z >= min.Z) and (pos.Z <= max.Z) and PPCheck( ply, ent ) then
 				EntTable[ent:EntIndex()] = ent
 			end
 		end
@@ -166,17 +168,17 @@ if(SERVER)then
 
 	--[[
 		Name: LeftClick
-		Desc: Defines the tool's behavior when the player left-clicks.
+		Desc: Defines the tool's behavior when the player left - clicks.
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
 	function TOOL:LeftClick( trace )
-		if(not trace)then return false end
+		if(not trace) then return false end
 
 		local ply = self:GetOwner()
-		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities)then return false end
+		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities) then return false end
 
-		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
+		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading) then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
 			return false
 		end
@@ -196,7 +198,7 @@ if(SERVER)then
 		AdvDupe2.Notify(ply,"Pasting...")
 
 		local origin
-		if(tobool(ply:GetInfo("advdupe2_original_origin")))then
+		if(tobool(ply:GetInfo("advdupe2_original_origin"))) then
 			origin = ply.AdvDupe2.HeadEnt.Pos
 		end
 
@@ -211,37 +213,37 @@ if(SERVER)then
 
 	--[[
 		Name: RightClick
-		Desc: Defines the tool's behavior when the player right-clicks.
+		Desc: Defines the tool's behavior when the player right - clicks.
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
 	function TOOL:RightClick( trace )
 		local ply = self:GetOwner()
 
-		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
+		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading) then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.", NOTIFY_ERROR)
 			return false
 		end
 
 		--Set Area Copy on or off
-		if(ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK))then
-			if(self:GetStage() == 0)then
+		if(ply:KeyDown(IN_SPEED) and not ply:KeyDown(IN_WALK)) then
+			if(self:GetStage() == 0) then
 				AdvDupe2.DrawSelectBox(ply)
 				self:SetStage(1)
 				return false
-			elseif(self:GetStage() == 1)then
+			elseif(self:GetStage() == 1) then
 				AdvDupe2.RemoveSelectBox(ply)
 				self:SetStage(0)
 				return false
 			end
 		end
 
-		if(not trace or not trace.Hit)then return false end
+		if(not trace or not trace.Hit) then return false end
 
 		local Entities, Constraints, AddOne
 		local HeadEnt = {}
 		--If area copy is on
-		if(self:GetStage()==1)then
+		if(self:GetStage() == 1) then
 			local area_size = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 			local Pos = trace.HitNonWorld and trace.Entity:GetPos() or trace.HitPos
 			local T = (Vector(area_size,area_size,area_size)+Pos)
@@ -270,7 +272,7 @@ if(SERVER)then
 			end
 
 			--If Alt is being held, add a prop to the dupe
-			if(ply:KeyDown(IN_WALK) and ply.AdvDupe2.Entities~=nil and next(ply.AdvDupe2.Entities)~=nil)then
+			if(ply:KeyDown(IN_WALK) and ply.AdvDupe2.Entities ~= nil and next(ply.AdvDupe2.Entities) ~= nil) then
 				Entities = ply.AdvDupe2.Entities
 				Constraints = ply.AdvDupe2.Constraints
 				HeadEnt = ply.AdvDupe2.HeadEnt
@@ -301,7 +303,7 @@ if(SERVER)then
 			else
 				--select all owned props
 				Entities = {}
-				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
+				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI ~= nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 				for _, ent in pairs(ents.GetAll()) do
 					if(PPCheck( ply, ent )) then
 						Entities[ent:EntIndex()] = ent
@@ -323,8 +325,8 @@ if(SERVER)then
 		end
 
 		if(not HeadEnt.Z) then
-			local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=HeadEnt.Pos+Vector(0,0,1), endpos=HeadEnt.Pos-Vector(0,0,50000)} )
-			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z-WorldTrace.HitPos.Z) or 0
+			local WorldTrace = util.TraceLine( {mask = MASK_NPCWORLDSTATIC, start = HeadEnt.Pos + Vector(0,0,1), endpos = HeadEnt.Pos - Vector(0,0,50000)} )
+			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 		end
 
 		ply.AdvDupe2.HeadEnt = HeadEnt
@@ -353,7 +355,7 @@ if(SERVER)then
 		return true
 	end
 
-	--Checks table, re-draws loading bar, and recreates ghosts when tool is pulled out
+	--Checks table, re - draws loading bar, and recreates ghosts when tool is pulled out
 	function TOOL:Deploy()
 		local ply = self:GetOwner()
 
@@ -363,19 +365,19 @@ if(SERVER)then
 		net.Start("AdvDupe2_StartGhosting")
 		net.Send(ply)
 
-		if(ply.AdvDupe2.Queued)then
+		if(ply.AdvDupe2.Queued) then
 			AdvDupe2.InitProgressBar(ply, "Queued: ")
 			return
 		end
 
-		if(ply.AdvDupe2.Pasting)then
+		if(ply.AdvDupe2.Pasting) then
 			AdvDupe2.InitProgressBar(ply, "Pasting: ")
 			return
 		else
-			if(ply.AdvDupe2.Uploading)then
+			if(ply.AdvDupe2.Uploading) then
 				AdvDupe2.InitProgressBar(ply, "Opening: ")
 				return
-			elseif(ply.AdvDupe2.Downloading)then
+			elseif(ply.AdvDupe2.Downloading) then
 				AdvDupe2.InitProgressBar(ply, "Saving: ")
 				return
 			end
@@ -395,16 +397,16 @@ if(SERVER)then
 		Returns: <boolean> success
 	]]
 	function TOOL:Reload( trace )
-		if(not trace.Hit)then return false end
+		if(not trace.Hit) then return false end
 
 		local ply = self:GetOwner()
 
-		if(self:GetStage()==1)then
+		if(self:GetStage() == 1) then
 			local areasize = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 			net.Start("AdvDupe2_CanAutoSave")
 				net.WriteVector(trace.HitPos)
 				net.WriteFloat(areasize)
-				if(trace.Entity)then
+				if(trace.Entity) then
 					net.WriteUInt(trace.Entity:EntIndex(), 16)
 				else
 					net.WriteUInt(0, 16)
@@ -419,36 +421,36 @@ if(SERVER)then
 		end
 
 		--If a contraption spawner was clicked then update it with the current settings
-		if(trace.Entity:GetClass()=="gmod_contr_spawner")then
+		if(trace.Entity:GetClass() == "gmod_contr_spawner") then
 			local delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_delay"))
 			local undo_delay = tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay"))
 			local min
 			local max
-			if(not delay)then
+			if(not delay) then
 				delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
 			else
-				if(not game.SinglePlayer())then
+				if(not game.SinglePlayer()) then
 					min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
-					if (delay < min) then
+					if(delay < min) then
 						delay = min
 					end
-				elseif(delay<0)then
+				elseif(delay < 0) then
 					delay = 0
 				end
 			end
 
-			if(not undo_delay)then
+			if(not undo_delay) then
 				undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
 			else
-				if(not game.SinglePlayer())then
+				if(not game.SinglePlayer()) then
 					min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
 					max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
 					if(undo_delay < min) then
 						undo_delay = min
-					elseif(undo_delay > max)then
+					elseif(undo_delay > max) then
 						undo_delay = max
 					end
-				elseif(undo_delay < 0)then
+				elseif(undo_delay < 0) then
 					undo_delay = 0
 				end
 			end
@@ -468,13 +470,13 @@ if(SERVER)then
 			local headent = ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index]
 			local Pos, Ang
 
-			if(headent)then
-				if(tobool(ply:GetInfo("advdupe2_original_origin")))then
+			if(headent) then
+				if(tobool(ply:GetInfo("advdupe2_original_origin"))) then
 					Pos = ply.AdvDupe2.HeadEnt.Pos + headent.PhysicsObjects[0].Pos
 					Ang = headent.PhysicsObjects[0].Angle
 				else
 					local EntAngle = headent.PhysicsObjects[0].Angle
-					if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
+					if(tobool(ply:GetInfo("advdupe2_offset_world"))) then EntAngle = Angle(0,0,0) end
 					trace.HitPos.Z = trace.HitPos.Z + math.Clamp(ply.AdvDupe2.HeadEnt.Z + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0, -32000, 32000)
 					Pos, Ang = LocalToWorld(headent.PhysicsObjects[0].Pos, EntAngle, trace.HitPos, GetDupeAngle() )
 				end
@@ -483,7 +485,7 @@ if(SERVER)then
 				return false
 			end
 
-			if(headent.Class=="gmod_contr_spawner") then
+			if(headent.Class == "gmod_contr_spawner") then
 				AdvDupe2.Notify(ply, "Cannot make a contraption spawner from a contraption spawner.")
 				return false
 			end
@@ -513,9 +515,9 @@ if(SERVER)then
 
 	--Called to clean up the tool when pasting is finished or undo during pasting
 	function AdvDupe2.FinishPasting(Player, Paste)
-		Player.AdvDupe2.Pasting=false
+		Player.AdvDupe2.Pasting = false
 		AdvDupe2.RemoveProgressBar(Player)
-		if(Paste)then AdvDupe2.Notify(Player,"Finished Pasting!") end
+		if(Paste) then AdvDupe2.Notify(Player,"Finished Pasting!") end
 	end
 
 	--function for creating a contraption spawner
@@ -523,12 +525,12 @@ if(SERVER)then
 
 		if(not ply:CheckLimit("gmod_contr_spawners")) then return nil end
 
-		if(not game.SinglePlayer())then
-			if(table.Count(EntityTable)>tonumber(GetConVarString("AdvDupe2_MaxContraptionEntities")))then
+		if(not game.SinglePlayer()) then
+			if(table.Count(EntityTable) > tonumber(GetConVarString("AdvDupe2_MaxContraptionEntities"))) then
 				AdvDupe2.Notify(ply,"Contraption Spawner exceeds the maximum amount of "..GetConVarString("AdvDupe2_MaxContraptionEntities").." entities for a spawner!",NOTIFY_ERROR)
 				return false
 			end
-			if(#ConstraintTable>tonumber(GetConVarString("AdvDupe2_MaxContraptionConstraints")))then
+			if(#ConstraintTable > tonumber(GetConVarString("AdvDupe2_MaxContraptionConstraints"))) then
 				AdvDupe2.Notify(ply,"Contraption Spawner exceeds the maximum amount of "..GetConVarString("AdvDupe2_MaxContraptionConstraints").." constraints for a spawner!",NOTIFY_ERROR)
 				return false
 			end
@@ -551,31 +553,31 @@ if(SERVER)then
 
 		local min
 		local max
-		if(not delay)then
+		if(not delay) then
 			delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
 		else
-			if(not game.SinglePlayer())then
+			if(not game.SinglePlayer()) then
 				min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
-				if (delay < min) then
+				if(delay < min) then
 					delay = min
 				end
-			elseif(delay<0)then
+			elseif(delay < 0) then
 				delay = 0
 			end
 		end
 
-		if(not undo_delay)then
+		if(not undo_delay) then
 			undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
 		else
-			if(not game.SinglePlayer())then
+			if(not game.SinglePlayer()) then
 				min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
 				max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
 				if(undo_delay < min) then
 					undo_delay = min
-				elseif(undo_delay > max)then
+				elseif(undo_delay > max) then
 					undo_delay = max
 				end
-			elseif(undo_delay < 0)then
+			elseif(undo_delay < 0) then
 				undo_delay = 0
 			end
 		end
@@ -636,7 +638,7 @@ if(SERVER)then
 	--Reset the offsets of height, pitch, yaw, and roll back to default
 	function AdvDupe2.ResetOffsets(ply, keep)
 
-		if(not keep)then
+		if(not keep) then
 			ply.AdvDupe2.Name = nil
 		end
 		net.Start("AdvDupe2_ResetOffsets")
@@ -648,13 +650,13 @@ if(SERVER)then
 		local desc = net.ReadString()
 		local ent = net.ReadInt(16)
 
-		if(ent~=0)then
+		if(ent ~= 0) then
 			ply.AdvDupe2.AutoSaveEnt = ent
-			if(ply:GetInfo("advdupe2_auto_save_contraption")=="1")then
+			if(ply:GetInfo("advdupe2_auto_save_contraption") == "1") then
 				ply.AdvDupe2.AutoSaveEnt = ents.GetByIndex( ply.AdvDupe2.AutoSaveEnt )
 			end
 		else
-			if(ply:GetInfo("advdupe2_auto_save_contraption")=="1")then
+			if(ply:GetInfo("advdupe2_auto_save_contraption") == "1") then
 				AdvDupe2.Notify(ply, "No entity selected to auto save contraption.", NOTIFY_ERROR)
 				return
 			end
@@ -664,35 +666,35 @@ if(SERVER)then
 		ply.AdvDupe2.AutoSavePos = ply.AdvDupe2.TempAutoSavePos
 		ply.AdvDupe2.AutoSaveSize = ply.AdvDupe2.TempAutoSaveSize
 		ply.AdvDupe2.AutoSaveOutSide = ply.AdvDupe2.TempAutoSaveOutSide
-		ply.AdvDupe2.AutoSaveContr = ply:GetInfo("advdupe2_auto_save_contraption")=="1"
+		ply.AdvDupe2.AutoSaveContr = ply:GetInfo("advdupe2_auto_save_contraption") == "1"
 		ply.AdvDupe2.AutoSaveDesc = desc
 
 		local time = math.Clamp(tonumber(ply:GetInfo("advdupe2_auto_save_time")) or 2, 2, 30)
-		if(game.SinglePlayer())then
+		if(game.SinglePlayer()) then
 			ply.AdvDupe2.AutoSavePath = net.ReadString()
 		end
 
-		AdvDupe2.Notify(ply, "Your area will be auto saved every "..(time*60).." seconds.")
+		AdvDupe2.Notify(ply, "Your area will be auto saved every "..(time * 60).." seconds.")
 		local name = "AdvDupe2_AutoSave_"..ply:UniqueID()
-		if(timer.Exists(name))then
-			timer.Adjust(name, time*60, 0)
+		if(timer.Exists(name)) then
+			timer.Adjust(name, time * 60, 0)
 			return
 		end
-		timer.Create(name, time*60, 0, function()
-			if(not IsValid(ply))then
+		timer.Create(name, time * 60, 0, function()
+			if(not IsValid(ply)) then
 				timer.Remove(name)
 				return
 			end
 
-			if(ply.AdvDupe2.Downloading)then
+			if(ply.AdvDupe2.Downloading) then
 				AdvDupe2.Notify(ply, "Skipping auto save, tool is busy.", NOTIFY_ERROR)
 				return
 			end
 
-			local Tab = {Entities={}, Constraints={}, HeadEnt={}}
+			local Tab = {Entities = {}, Constraints = {}, HeadEnt = {}}
 
-			if(ply.AdvDupe2.AutoSaveContr)then
-				if(not IsValid(ply.AdvDupe2.AutoSaveEnt))then
+			if(ply.AdvDupe2.AutoSaveContr) then
+				if(not IsValid(ply.AdvDupe2.AutoSaveEnt)) then
 					timer.Remove(name)
 					AdvDupe2.Notify(ply, "Head entity for auto save no longer valid; stopping auto save.", NOTIFY_ERROR)
 					return
@@ -701,8 +703,8 @@ if(SERVER)then
 				Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt:EntIndex()
 				Tab.HeadEnt.Pos = ply.AdvDupe2.AutoSaveEnt:GetPos()
 
-				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
-				if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
+				local WorldTrace = util.TraceLine( {mask = MASK_NPCWORLDSTATIC, start = Tab.HeadEnt.Pos + Vector(0,0,1), endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)} )
+				if(WorldTrace.Hit) then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 
 				AdvDupe2.duplicator.Copy( ply.AdvDupe2.AutoSaveEnt, Tab.Entities, Tab.Constraints, Tab.HeadEnt.Pos )
 			else
@@ -718,15 +720,15 @@ if(SERVER)then
 					return
 				end
 
-				if(ply.AdvDupe2.AutoSaveEnt && Entities[ply.AdvDupe2.AutoSaveEnt])then
+				if(ply.AdvDupe2.AutoSaveEnt && Entities[ply.AdvDupe2.AutoSaveEnt]) then
 					Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt
 				else
 					Tab.HeadEnt.Index = HeadEnt:EntIndex()
 				end
 				Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
-				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
-				if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
+				local WorldTrace = util.TraceLine( {mask = MASK_NPCWORLDSTATIC, start = Tab.HeadEnt.Pos + Vector(0,0,1), endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)} )
+				if(WorldTrace.Hit) then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 
 				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, ply.AdvDupe2.AutoSaveOutSide)
 			end
@@ -750,7 +752,7 @@ if(SERVER)then
 	end)
 
 	concommand.Add("AdvDupe2_SaveMap", function(ply, cmd, args)
-		if(not ply:IsAdmin())then
+		if(not ply:IsAdmin()) then
 			AdvDupe2.Notify(ply, "You do not have permission to this function.", NOTIFY_ERROR)
 			return
 		end
@@ -758,25 +760,25 @@ if(SERVER)then
 		local Entities = ents.GetAll()
 		for k,v in pairs(Entities) do
 			if(v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v)) then
-				Entities[k]=nil
+				Entities[k] = nil
 			end
 		end
 
 		local _, HeadEnt = next(Entities)
 		if(not HeadEnt) then return end
 
-		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
+		local Tab = {Entities = {}, Constraints = {}, HeadEnt = {}, Description = ""}
 		Tab.HeadEnt.Index = HeadEnt:EntIndex()
 		Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
-		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
-		if(WorldTrace.Hit)then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
+		local WorldTrace = util.TraceLine( {mask = MASK_NPCWORLDSTATIC, start = Tab.HeadEnt.Pos + Vector(0,0,1), endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)} )
+		if(WorldTrace.Hit) then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
 		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 
 		Tab.Map = true
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-			if(not file.IsDir("advdupe2_maps", "DATA"))then
+			if(not file.IsDir("advdupe2_maps", "DATA")) then
 				file.CreateDir("advdupe2_maps")
 			end
 			file.Write("advdupe2_maps/"..args[1]..".txt", data)
@@ -785,17 +787,17 @@ if(SERVER)then
 	end)
 end
 
-if(CLIENT)then
+if(CLIENT) then
 
 	function TOOL:LeftClick(trace)
-		if(trace and AdvDupe2.HeadGhost)then
+		if(trace and AdvDupe2.HeadGhost) then
 			return true
 		end
 		return false
 	end
 
 	function TOOL:RightClick(trace)
-		if( self:GetOwner():KeyDown(IN_SPEED) and not self:GetOwner():KeyDown(IN_WALK) )then
+		if( self:GetOwner():KeyDown(IN_SPEED) and not self:GetOwner():KeyDown(IN_WALK) ) then
 			return false
 		end
 		return true
@@ -805,7 +807,7 @@ if(CLIENT)then
 	function TOOL:Holster()
 		AdvDupe2.RemoveGhosts()
 		AdvDupe2.RemoveSelectBox()
-		if(AdvDupe2.Rotation)then
+		if(AdvDupe2.Rotation) then
 			hook.Remove("PlayerBindPress", "AdvDupe2_BindPress")
 			hook.Remove("CreateMove", "AdvDupe2_MouseControl")
 		end
@@ -813,7 +815,7 @@ if(CLIENT)then
 	end
 
 	function TOOL:Reload( trace )
-		if(trace and (AdvDupe2.HeadGhost || self:GetStage()==1))then
+		if(trace and (AdvDupe2.HeadGhost || self:GetStage() == 1)) then
 			return true
 		end
 		return false
@@ -822,8 +824,8 @@ if(CLIENT)then
 	--Take control of the mouse wheel bind so the player can modify the height of the dupe
 	local function MouseWheelScrolled(ply, bind, pressed)
 
-		if(bind=="invprev")then
-			if(ply:GetTool("advdupe2"):GetStage()==1)then
+		if(bind == "invprev") then
+			if(ply:GetTool("advdupe2"):GetStage() == 1) then
 				local size = math.min(tonumber(ply:GetInfo("advdupe2_area_copy_size")) + 25, 30720)
 				RunConsoleCommand("advdupe2_area_copy_size",size)
 			else
@@ -831,8 +833,8 @@ if(CLIENT)then
 				RunConsoleCommand("advdupe2_offset_z",Z)
 			end
 			return true
-		elseif(bind=="invnext")then
-			if(ply:GetTool("advdupe2"):GetStage()==1)then
+		elseif(bind == "invnext") then
+			if(ply:GetTool("advdupe2"):GetStage() == 1) then
 				local size = math.max(tonumber(ply:GetInfo("advdupe2_area_copy_size")) - 25, 25)
 				RunConsoleCommand("advdupe2_area_copy_size",size)
 			else
@@ -849,26 +851,26 @@ if(CLIENT)then
 	local YTotal = 0
 	local LastXDegree = 0
 	local function MouseControl( cmd )
-		local X = -cmd:GetMouseX()/-20
-		local Y = cmd:GetMouseY()/-20
+		local X = -cmd:GetMouseX() / -20
+		local Y =  cmd:GetMouseY() / -20
 
 		local X2 = 0
 		local Y2 = 0
 
-		if(X~=0)then
+		if(X ~= 0) then
 			X2 = tonumber(LocalPlayer():GetInfo("advdupe2_offset_yaw"))
 
-			if(LocalPlayer():KeyDown(IN_SPEED))then
+			if(LocalPlayer():KeyDown(IN_SPEED)) then
 				XTotal = XTotal + X
 				local temp = XTotal + X2
 
-				local degree = math.Round(temp/45)*45
-				if(degree>=225)then
+				local degree = math.Round(temp / 45) * 45
+				if(degree >= 225) then
 					degree = -135
-				elseif(degree<=-225)then
+				elseif(degree <= -225) then
 					degree = 135
 				end
-				if(degree~=LastXDegree)then
+				if(degree ~= LastXDegree) then
 					XTotal = 0
 					LastXDegree = degree
 				end
@@ -876,25 +878,26 @@ if(CLIENT)then
 				X2 = degree
 			else
 				X2 = X2 + X
-				if(X2<-180)then
-					X2 = X2+360
-				elseif(X2>180)then
-					X2 = X2-360
+				if(X2 < -180) then
+					X2 = X2 + 360
+				elseif(X2 > 180) then
+					X2 = X2 - 360
 				end
 			end
 			RunConsoleCommand("advdupe2_offset_yaw", X2)
 		end
 
-		/*if(Y~=0)then
+		--[[
+		if(Y ~= 0) then
 			local modyaw = LocalPlayer():GetAngles().y
 			local modyaw2 = tonumber(LocalPlayer():GetInfo("advdupe2_offset_yaw"))
 
-			if(modyaw<0)then modyaw = modyaw + 360 else modyaw = modyaw + 180 end
-			if(modyaw2<0)then modyaw2 = modyaw2 + 360 else modyaw2 = modyaw2 + 180 end
+			if(modyaw < 0) then modyaw = modyaw + 360 else modyaw = modyaw + 180 end
+			if(modyaw2 < 0) then modyaw2 = modyaw2 + 360 else modyaw2 = modyaw2 + 180 end
 
 			modyaw = modyaw - modyaw2
 			local modyaw3 = modyaw
-			if(modyaw3<0)then
+			if(modyaw3 < 0) then
 				modyaw3 = modyaw3 * -1
 			end
 
@@ -902,16 +905,18 @@ if(CLIENT)then
 			local roll = tonumber(LocalPlayer():GetInfo("advdupe2_offset_roll"))
 
 				--print(modyaw3)
-			if(modyaw3 <= 90)then
-				pitch = pitch + (Y - Y * (modyaw3/90))
-				roll = roll - (Y*(modyaw3/90))
+			if(modyaw3 <= 90) then
+				pitch = pitch + (Y - Y * (modyaw3 / 90))
+				roll = roll - (Y*(modyaw3 / 90))
 			end
 
-			--if(pitch>180)then pitch = -180
+			--if(pitch>180) then pitch = -180
 
 			RunConsoleCommand("advdupe2_offset_pitch",pitch)
 			RunConsoleCommand("advdupe2_offset_roll",roll)
-		end*/
+		end
+		]]
+
 	end
 
 	--Checks binds to modify dupes position and angles
@@ -921,14 +926,14 @@ if(CLIENT)then
 			AdvDupe2.UpdateGhosts()
 		end
 
-		if(LocalPlayer():KeyDown(IN_USE))then
-			if(not AdvDupe2.Rotation)then
+		if(LocalPlayer():KeyDown(IN_USE)) then
+			if(not AdvDupe2.Rotation) then
 				hook.Add("PlayerBindPress", "AdvDupe2_BindPress", MouseWheelScrolled)
 				hook.Add("CreateMove", "AdvDupe2_MouseControl", MouseControl)
 				AdvDupe2.Rotation = true
 			end
 		else
-			if(AdvDupe2.Rotation)then
+			if(AdvDupe2.Rotation) then
 				AdvDupe2.Rotation = false
 				hook.Remove("PlayerBindPress", "AdvDupe2_BindPress")
 				hook.Remove("CreateMove", "AdvDupe2_MouseControl")
@@ -1031,7 +1036,7 @@ if(CLIENT)then
 		Check_1:SetConVar( "advdupe2_paste_unfreeze" )
 		Check_1:SetValue( 0 )
 		Check_1.OnChange = function()
-			if(Check_1:GetChecked() and Check_2:GetChecked())then
+			if(Check_1:GetChecked() and Check_2:GetChecked()) then
 				Check_2:SetValue(0)
 			end
 		end
@@ -1043,7 +1048,7 @@ if(CLIENT)then
 		Check_2:SetConVar( "advdupe2_preserve_freeze" )
 		Check_2:SetValue( 0 )
 		Check_2.OnChange = function()
-			if(Check_2:GetChecked() and Check_1:GetChecked())then
+			if(Check_2:GetChecked() and Check_1:GetChecked()) then
 				Check_1:SetValue(0)
 			end
 		end
@@ -1268,11 +1273,11 @@ if(CLIENT)then
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Spawn Delay" )
 		NumSlider.Label:SetDark(true)
-		if(game.SinglePlayer())then
+		if(game.SinglePlayer()) then
 			NumSlider:SetMin( 0 )
 		else
 			local min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
-			if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay"))<min)then
+			if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_delay")) < min) then
 				RunConsoleCommand("advdupe2_contr_spawner_delay", tostring(min))
 			end
 			NumSlider:SetMin( min )
@@ -1285,15 +1290,15 @@ if(CLIENT)then
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Undo Delay" )
 		NumSlider.Label:SetDark(true)
-		if(game.SinglePlayer())then
+		if(game.SinglePlayer()) then
 			NumSlider:SetMin( 0 )
 			NumSlider:SetMax( 60 )
 		else
 			local min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 10
 			local max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
-			if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < min)then
+			if(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) < min) then
 				RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(min))
-			elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > max)then
+			elseif(tonumber(LocalPlayer():GetInfo("advdupe2_contr_spawner_undo_delay")) > max) then
 				RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(max))
 			end
 			NumSlider:SetMin( min )
@@ -1404,7 +1409,7 @@ if(CLIENT)then
 
 			FileBrowser.Submit:SetMaterial("icon16/disk.png")
 			FileBrowser.Submit:SetTooltip("Directory for Area Auto Save")
-			if(FileBrowser.FileName:GetValue()=="Folder_Name...")then
+			if(FileBrowser.FileName:GetValue() == "Folder_Name...") then
 				FileBrowser.FileName:SetValue("File_Name...")
 			end
 			FileBrowser.Desc:SetVisible(true)
@@ -1413,11 +1418,11 @@ if(CLIENT)then
 			FileBrowser.FileName:SelectAllOnFocus(true)
 			FileBrowser.FileName:OnMousePressed()
 			FileBrowser.FileName:RequestFocus()
-			FileBrowser.Expanding=true
+			FileBrowser.Expanding = true
 			FileBrowser:Slide(true)
 			FileBrowser.Submit.DoClick = function()
 				local name = FileBrowser.FileName:GetValue()
-				if(name=="" or name=="File_Name...")then
+				if(name == "" or name == "File_Name...") then
 					AdvDupe2.Notify("Name field is blank.", NOTIFY_ERROR)
 					FileBrowser.FileName:SelectAllOnFocus(true)
 					FileBrowser.FileName:OnGetFocus()
@@ -1425,9 +1430,9 @@ if(CLIENT)then
 					return
 				end
 				local desc = FileBrowser.Desc:GetValue()
-				if(desc=="Description...")then desc="" end
+				if(desc == "Description...") then desc = "" end
 
-				if(not IsValid(FileBrowser.Browser.pnlCanvas.m_pSelectedItem) or FileBrowser.Browser.pnlCanvas.m_pSelectedItem.Derma.ClassName~="advdupe2_browser_folder")then
+				if(not IsValid(FileBrowser.Browser.pnlCanvas.m_pSelectedItem) or FileBrowser.Browser.pnlCanvas.m_pSelectedItem.Derma.ClassName ~= "advdupe2_browser_folder") then
 					AdvDupe2.Notify("Folder to save Area Auto Save not selected.", NOTIFY_ERROR)
 					return
 				end
@@ -1455,10 +1460,10 @@ if(CLIENT)then
 
 		btn = vgui.Create("DButton", pnl)
 		btn:SetSize(50, 35)
-		btn:SetPos(pnl:GetWide()/4-10, 30)
+		btn:SetPos(pnl:GetWide() / 4 - 10, 30)
 		btn:SetText("Show")
 		btn.DoClick = function()
-			if(AdvDupe2.AutoSavePos)then
+			if(AdvDupe2.AutoSavePos) then
 				RunConsoleCommand("advdupe2_area_copy_size", AdvDupe2.AutoSaveSize)
 				LocalPlayer():SetEyeAngles( (AdvDupe2.AutoSavePos - LocalPlayer():GetShootPos()):Angle() )
 				RunConsoleCommand("AdvDupe2_SetStage")
@@ -1468,7 +1473,7 @@ if(CLIENT)then
 
 		btn = vgui.Create("DButton", pnl)
 		btn:SetSize(50, 35)
-		btn:SetPos((pnl:GetWide()/4)*3-40, 30)
+		btn:SetPos((pnl:GetWide() / 4) * 3 - 40, 30)
 		btn:SetText("Turn Off")
 		btn:SetDisabled(true)
 		btn.DoClick = function(self)
@@ -1517,7 +1522,7 @@ if(CLIENT)then
 		CategoryContent5:AddItem(Check)
 
 		--[[Save Map]]--
-		if(LocalPlayer():IsAdmin())then
+		if(LocalPlayer():IsAdmin()) then
 			local Category6 = vgui.Create("DCollapsibleCategory")
 			CPanel:AddItem(Category6)
 			Category6:SetLabel("Save Map")
@@ -1556,7 +1561,7 @@ if(CLIENT)then
 			btn2:SizeToContents()
 			btn2:SetToolTip("Save Map")
 			btn2.DoClick = 	function()
-				if(txtbox2:GetValue()=="")then return end
+				if(txtbox2:GetValue() == "") then return end
 				RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
 			end
 			txtbox2.OnEnter = function()
@@ -1583,21 +1588,21 @@ if(CLIENT)then
 	end
 
 	local state = 0
-	local ToColor = {r=25, g=100, b=40, a=255}
-	local CurColor = {r=25, g=100, b=40, a=255}
+	local ToColor = {r = 25, g = 100, b = 40, a = 255}
+	local CurColor = {r = 25, g = 100, b = 40, a = 255}
 	local rate
-	surface.CreateFont ("AD2Font", {font="Arial", size=40, weight=1000}) ---Remember to use gm_clearfonts
-	surface.CreateFont ("AD2TitleFont", {font="Arial", size=24, weight=1000})
+	surface.CreateFont ("AD2Font", {font = "Arial", size = 40, weight = 1000}) ---Remember to use gm_clearfonts
+	surface.CreateFont ("AD2TitleFont", {font = "Arial", size = 24, weight = 1000})
 	function TOOL:DrawToolScreen()
-		if(not AdvDupe2)then return true end
+		if(not AdvDupe2) then return true end
 
 		local text = "Ready"
-		if(AdvDupe2.Preview)then
+		if(AdvDupe2.Preview) then
 			text = "Preview"
 		end
-		local state=0
-		if(AdvDupe2.ProgressBar.Text)then
-			state=1
+		local state = 0
+		if(AdvDupe2.ProgressBar.Text) then
+			state = 1
 			text = AdvDupe2.ProgressBar.Text
 		end
 
@@ -1606,13 +1611,13 @@ if(CLIENT)then
 			surface.SetDrawColor(32, 32, 32, 255)
 			surface.DrawRect(0, 0, 256, 256)
 
-			if(state==0)then
-				ToColor = {r=25, g=100, b=40, a=255}
+			if(state == 0) then
+				ToColor = {r = 25, g = 100, b = 40, a = 255}
 			else
-				ToColor = {r=130, g=25, b=40, a=255}
+				ToColor = {r = 130, g = 25, b = 40, a = 255}
 			end
 
-			rate = FrameTime()*160
+			rate = FrameTime() * 160
 			CurColor.r = math.Approach( CurColor.r, ToColor.r, rate )
 			CurColor.g = math.Approach( CurColor.g, ToColor.g, rate )
 
@@ -1623,10 +1628,10 @@ if(CLIENT)then
 
 			draw.SimpleText("Advanced Duplicator 2", "AD2TitleFont", 128, 50, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 			draw.SimpleText(text, "AD2Font", 128, 128, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-			if(state~=0)then
+			if(state ~= 0) then
 				draw.RoundedBox( 6, 32, 178, 192, 28, Color( 255, 255, 255, 150 ) )
-				draw.RoundedBox( 6, 36, 182, 188*(AdvDupe2.ProgressBar.Percent/100), 24, Color( 0, 255, 0, 255 ) )
-			elseif(LocalPlayer():KeyDown(IN_USE))then
+				draw.RoundedBox( 6, 36, 182, 188 * (AdvDupe2.ProgressBar.Percent / 100), 24, Color( 0, 255, 0, 255 ) )
+			elseif(LocalPlayer():KeyDown(IN_USE)) then
 				draw.SimpleText("Height: "..LocalPlayer():GetInfo("advdupe2_offset_z"), "AD2TitleFont", 25, 160, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 				draw.SimpleText("Pitch: "..LocalPlayer():GetInfo("advdupe2_offset_pitch"), "AD2TitleFont", 25, 190, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 				draw.SimpleText("Yaw: "..LocalPlayer():GetInfo("advdupe2_offset_yaw"), "AD2TitleFont", 25, 220, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
@@ -1642,8 +1647,10 @@ if(CLIENT)then
 		local EntTable = {}
 		for _,ent in pairs(Entities) do
 			local pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) then
-				--if(ent:GetClass()~="C_BaseFlexclass")then
+			if (pos.X >= min.X) and (pos.X <= max.X) and
+				 (pos.Y >= min.Y) and (pos.Y <= max.Y) and
+				 (pos.Z >= min.Z) and (pos.Z <= max.Z) then
+				--if(ent:GetClass() ~= "C_BaseFlexclass") then
 					EntTable[ent:EntIndex()] = ent
 				--end
 			end
@@ -1660,23 +1667,23 @@ if(CLIENT)then
 		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 				
 		--Bottom Points
-		local B1 = (Vector(-i,-i,-i)+TraceRes.HitPos)
-		local B2 = (Vector(-i,i,-i)+TraceRes.HitPos)
-		local B3 = (Vector(i,i,-i)+TraceRes.HitPos)
-		local B4 = (Vector(i,-i,-i)+TraceRes.HitPos)
+		local B1 = (Vector(-i,-i,-i) + TraceRes.HitPos)
+		local B2 = (Vector(-i, i,-i) + TraceRes.HitPos)
+		local B3 = (Vector( i, i,-i) + TraceRes.HitPos)
+		local B4 = (Vector( i,-i,-i) + TraceRes.HitPos)
 
 		--Top Points
-		local T1 = (Vector(-i,-i,i)+TraceRes.HitPos):ToScreen()
-		local T2 = (Vector(-i,i,i)+TraceRes.HitPos):ToScreen()
-		local T3 = (Vector(i,i,i)+TraceRes.HitPos):ToScreen()
-		local T4 = (Vector(i,-i,i)+TraceRes.HitPos):ToScreen()
+		local T1 = (Vector(-i,-i, i) + TraceRes.HitPos):ToScreen()
+		local T2 = (Vector(-i, i, i) + TraceRes.HitPos):ToScreen()
+		local T3 = (Vector( i, i, i) + TraceRes.HitPos):ToScreen()
+		local T4 = (Vector( i,-i, i) + TraceRes.HitPos):ToScreen()
 
-		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate)then
+		if(not AdvDupe2.LastUpdate or CurTime() >= AdvDupe2.LastUpdate) then
 
 			if(AdvDupe2.ColorEntities) then
 				for k,v in pairs(AdvDupe2.EntityColors)do
 					local ent = AdvDupe2.ColorEntities[k]
-					if(IsValid(ent))then
+					if(IsValid(ent)) then
 						AdvDupe2.ColorEntities[k]:SetColor(v)
 					end
 				end
@@ -1697,19 +1704,19 @@ if(CLIENT)then
 		tracedata.mask = MASK_NPCWORLDSTATIC
 		local WorldTrace
 
-		tracedata.start = B1+Vector(0,0,i*2)
+		tracedata.start = B1 + Vector(0,0,i * 2)
 		tracedata.endpos = B1
 		WorldTrace = util.TraceLine( tracedata )
 		B1 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B2+Vector(0,0,i*2)
+		tracedata.start = B2 + Vector(0,0,i * 2)
 		tracedata.endpos = B2
 		WorldTrace = util.TraceLine( tracedata )
 		B2 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B3+Vector(0,0,i*2)
+		tracedata.start = B3 + Vector(0,0,i * 2)
 		tracedata.endpos = B3
 		WorldTrace = util.TraceLine( tracedata )
 		B3 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B4+Vector(0,0,i*2)
+		tracedata.start = B4 + Vector(0,0,i * 2)
 		tracedata.endpos = B4
 		WorldTrace = util.TraceLine( tracedata )
 		B4 = WorldTrace.HitPos:ToScreen()
@@ -1744,14 +1751,14 @@ if(CLIENT)then
 		hook.Remove("HUDPaint", "AdvDupe2_DrawSelectionBox")
 		if(AdvDupe2.ColorEntities) then
 			for k,v in pairs(AdvDupe2.EntityColors)do
-				if(not IsValid(AdvDupe2.ColorEntities[k]))then
-					AdvDupe2.ColorEntities[k]=nil
+				if(not IsValid(AdvDupe2.ColorEntities[k])) then
+					AdvDupe2.ColorEntities[k] = nil
 				else
 					AdvDupe2.ColorEntities[k]:SetColor(v)
 				end
 			end
-			AdvDupe2.ColorEntities={}
-			AdvDupe2.EntityColors={}
+			AdvDupe2.ColorEntities = {}
+			AdvDupe2.EntityColors = {}
 		end
 	end
 	net.Receive("AdvDupe2_RemoveSelectBox",function()
@@ -1775,10 +1782,10 @@ if(CLIENT)then
 	function AdvDupe2.RemoveProgressBar()
 		AdvDupe2.ProgressBar = {}
 		AdvDupe2.BusyBar = false
-		if(AdvDupe2.Ghosting)then
+		if(AdvDupe2.Ghosting) then
 			AdvDupe2.InitProgressBar("Ghosting: ")
 			AdvDupe2.BusyBar = false
-			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost/AdvDupe2.TotalGhosts*100
+			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100
 		end
 	end
 	net.Receive("AdvDupe2_RemoveProgressBar", function()
@@ -1817,7 +1824,7 @@ if(CLIENT)then
 	end)
 
 	net.Receive("AdvDupe2_CanAutoSave", function()
-		if(AdvDupe2.AutoSavePath~="")then
+		if(AdvDupe2.AutoSavePath ~= "") then
 			AdvDupe2.AutoSavePos = net.ReadVector()
 			AdvDupe2.AutoSaveSize = net.ReadFloat()
 			local ent = net.ReadUInt(16)
@@ -1825,7 +1832,7 @@ if(CLIENT)then
 			net.Start("AdvDupe2_CanAutoSave")
 				net.WriteString(AdvDupe2.AutoSaveDesc)
 				net.WriteInt(ent, 16)
-				if(game.SinglePlayer())then
+				if(game.SinglePlayer()) then
 					net.WriteString(string.sub(AdvDupe2.AutoSavePath, 10, #AdvDupe2.AutoSavePath))
 				end
 			net.SendToServer()
