@@ -343,11 +343,13 @@ local function deserialize(str, read)
 	tables = {}
 	reference = 0
 	buff = file.Open("ad2temp.txt","wb","DATA")
+	if not buff then error("Failed to open file data/ad2temp.txt for writing!") end
 	buff:Write(str)
 	buff:Flush()
 	buff:Close()
 
 	buff = file.Open("ad2temp.txt","rb", "DATA")
+	if not buff then error("Failed to open file data/ad2temp.txt for reading!") end
 	local success, tbl = pcall(read)
 	buff:Close()
 
