@@ -805,7 +805,7 @@ end
 --[[
 	Name: GenericDuplicatorFunction
 	Desc: Override the default duplicator's GenericDuplicatorFunction function
-	Params: <player> Player, <table> data
+	Params: <table> data, <player> Player
 	Returns: <entity> Entity
 ]]
 local function GenericDuplicatorFunction(data, Player)
@@ -830,6 +830,7 @@ local function GenericDuplicatorFunction(data, Player)
 	end
 
 	duplicator.DoGeneric(Entity, data)
+	if (Player) then Entity:SetCreator(Player) end
 	Entity:Spawn()
 	Entity:Activate()
 	DoGenericPhysics(Entity, data, Player)
@@ -870,6 +871,7 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	if not IsValid(Prop) then return false end
 
 	duplicator.DoGeneric(Prop, Data)
+	if (Player) then Prop:SetCreator(Player) end
 	Prop:Spawn()
 	Prop:Activate()
 	DoGenericPhysics(Prop, Data, Player)
@@ -1101,10 +1103,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 		AdvDupe2.SpawningEntity = false
 
 		if Ent then
-			if (Player) then
-				Player:AddCleanup("AdvDupe2", Ent)
-				Ent:SetCreator(Player)
-			end
+			if (Player) then Player:AddCleanup("AdvDupe2", Ent) end
 			Ent.BoneMods = table.Copy(v.BoneMods)
 			Ent.EntityMods = table.Copy(v.EntityMods)
 			Ent.PhysicsObjects = table.Copy(v.PhysicsObjects)
@@ -1266,7 +1265,6 @@ local function AdvDupe2_Spawn()
 
 		if Ent then
 			Queue.Player:AddCleanup("AdvDupe2", Ent)
-			Ent:SetCreator(Queue.Player)
 			Ent.BoneMods = table.Copy(v.BoneMods)
 			Ent.EntityMods = table.Copy(v.EntityMods)
 			Ent.PhysicsObjects = table.Copy(v.PhysicsObjects)

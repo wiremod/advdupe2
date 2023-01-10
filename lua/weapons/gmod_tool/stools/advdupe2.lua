@@ -498,6 +498,7 @@ if(SERVER)then
 		spawner:SetAngles(Ang)
 		spawner:SetModel(model)
 		spawner:SetRenderMode(RENDERMODE_TRANSALPHA)
+		spawner:SetCreator(ply)
 		spawner:Spawn()
 
 		duplicator.ApplyEntityModifiers(ply, spawner)
