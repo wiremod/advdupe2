@@ -1101,7 +1101,10 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 		AdvDupe2.SpawningEntity = false
 
 		if Ent then
-			if (Player) then Player:AddCleanup("AdvDupe2", Ent) end
+			if (Player) then
+				Player:AddCleanup("AdvDupe2", Ent)
+				Ent:SetCreator(Player)
+			end
 			Ent.BoneMods = table.Copy(v.BoneMods)
 			Ent.EntityMods = table.Copy(v.EntityMods)
 			Ent.PhysicsObjects = table.Copy(v.PhysicsObjects)
@@ -1263,6 +1266,7 @@ local function AdvDupe2_Spawn()
 
 		if Ent then
 			Queue.Player:AddCleanup("AdvDupe2", Ent)
+			Ent:SetCreator(Queue.Player)
 			Ent.BoneMods = table.Copy(v.BoneMods)
 			Ent.EntityMods = table.Copy(v.EntityMods)
 			Ent.PhysicsObjects = table.Copy(v.PhysicsObjects)
