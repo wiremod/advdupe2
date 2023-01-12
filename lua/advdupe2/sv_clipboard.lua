@@ -805,7 +805,7 @@ end
 --[[
 	Name: GenericDuplicatorFunction
 	Desc: Override the default duplicator's GenericDuplicatorFunction function
-	Params: <player> Player, <table> data
+	Params: <table> data, <player> Player
 	Returns: <entity> Entity
 ]]
 local function GenericDuplicatorFunction(data, Player)
@@ -830,6 +830,7 @@ local function GenericDuplicatorFunction(data, Player)
 	end
 
 	duplicator.DoGeneric(Entity, data)
+	if (Player) then Entity:SetCreator(Player) end
 	Entity:Spawn()
 	Entity:Activate()
 	DoGenericPhysics(Entity, data, Player)
@@ -870,6 +871,7 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 	if not IsValid(Prop) then return false end
 
 	duplicator.DoGeneric(Prop, Data)
+	if (Player) then Prop:SetCreator(Player) end
 	Prop:Spawn()
 	Prop:Activate()
 	DoGenericPhysics(Prop, Data, Player)
