@@ -758,7 +758,7 @@ if(CLIENT)then
 	end
 
 	--Removes progress bar and removes ghosts when tool is put away
-	function TOOL:Holster()
+	function TOOL:ReleaseGhostEntity()
 		AdvDupe2.RemoveGhosts()
 		AdvDupe2.RemoveSelectBox()
 		if(AdvDupe2.Rotation)then
