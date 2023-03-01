@@ -137,7 +137,7 @@ if(SERVER)then
 
 	--Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
-		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
+		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local Entities = ents.GetAll() --Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
 		local pos, ent
