@@ -1008,8 +1008,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
 
 			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
-			if not status then ErrorNoHaltWithStack(valid)
-			end
+			if not status then ErrorNoHaltWithStack(valid) end
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
