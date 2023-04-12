@@ -1009,7 +1009,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			if not status then
 				if lastEnt:GetClass() == EntTable.Class then
 					print("Advanced Duplicator 2: Error creating entity, removing last created entity", lastEnt)
-					lastEnt:Remove()
+					SafeRemoveEntity(lastEnt)
 				end
 				ErrorNoHaltWithStack(valid)
 			end
