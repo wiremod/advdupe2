@@ -1006,12 +1006,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			end
 
 			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
-			if not status then
-				if lastEnt:GetClass() == EntTable.Class then
-					print("Advanced Duplicator 2: Error creating entity, removing last created entity", lastEnt)
-					SafeRemoveEntity(lastEnt)
-				end
-				ErrorNoHaltWithStack(valid)
+			if not status then ErrorNoHaltWithStack(valid)
 			end
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
@@ -1061,6 +1056,13 @@ local function CreateEntityFromTable(EntTable, Player)
 
 		return valid
 	else
+		if (status == false) then
+			if lastEnt:GetClass() == EntTable.Class then
+				print("Advanced Duplicator 2: Error creating entity, removing last created entity", lastEnt)
+				SafeRemoveEntity(lastEnt)
+			end
+		end
+
 		if (valid == false) then
 			return false
 		else
