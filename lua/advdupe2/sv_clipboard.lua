@@ -1000,6 +1000,11 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = true
 			end
 
+            if #ArgList ~= #EntityClass.Args then
+                print("Advanced Duplicator 2: Invalid argument count for class, : " .. EntTable.Class)
+                return nil
+            end
+
 			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
 			if not status then ErrorNoHalt(valid) end
 		else
