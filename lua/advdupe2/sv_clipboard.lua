@@ -905,6 +905,11 @@ local function IsAllowed(Player, Class, EntityClass)
 	return true
 end
 
+local lastEnt
+hook.Add( "OnEntityCreated", "AdvDupe2_GetLastEntityCreated", function( ent )
+	lastEnt = ent
+end )
+
 local function CreateEntityFromTable(EntTable, Player)
 
 	local EntityClass = duplicator.FindEntityClass(EntTable.Class)
@@ -1000,13 +1005,14 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = true
 			end
 
-			if (#ArgList ~= #EntityClass.Args) then
-				print("Advanced Duplicator 2: Invalid argument count for class, : " .. EntTable.Class)
-				return nil
-			end
-
 			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
-			if not status then ErrorNoHalt(valid) end
+			if not status then
+				if lastEnt:GetClass() == EntTable.Class then
+					print("Advanced Duplicator 2: Error creating entity, removing last created entity", lastEnt)
+					lastEnt:Remove()
+				end
+				ErrorNoHaltWithStack(valid)
+			end
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
