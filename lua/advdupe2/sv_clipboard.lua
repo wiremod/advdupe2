@@ -1000,7 +1000,7 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = true
 			end
 
-            if #ArgList ~= #EntityClass.Args then
+            if (#ArgList ~= #EntityClass.Args) then
                 print("Advanced Duplicator 2: Invalid argument count for class, : " .. EntTable.Class)
                 return nil
             end
