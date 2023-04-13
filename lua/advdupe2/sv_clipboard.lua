@@ -1058,7 +1058,7 @@ local function CreateEntityFromTable(EntTable, Player)
 		return valid
 	else
 		if (status == false) then
-			print("Advanced Duplicator 2: Error creating entity, removing last created entity", lastEnt)
+			print("Advanced Duplicator 2: Error creating entity, removing last created entities", lastEnt)
 			for _, CreatedEntity in pairs(CreatedEntities) do
 				SafeRemoveEntity(CreatedEntity)
 			end
