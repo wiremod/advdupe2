@@ -916,6 +916,7 @@ local function CreateEntityFromTable(EntTable, Player)
 	local sent = false
 	local status, valid
 	local GENERIC = false
+	local CreatedEntities = {}
 
 	-- This class is unregistered. Instead of failing try using a generic
 	-- Duplication function to make a new copy.
@@ -1000,8 +1001,13 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = true
 			end
 
+			hook.Add( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated", function( ent )
+				table.insert( CreatedEntities, ent )
+			end )
+
 			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
-			if not status then ErrorNoHalt(valid) end
+
+			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
@@ -1050,6 +1056,14 @@ local function CreateEntityFromTable(EntTable, Player)
 
 		return valid
 	else
+		if (status == false) then
+			print("Advanced Duplicator 2: Error creating entity, removing last created entities")
+			for _, CreatedEntity in pairs(CreatedEntities) do
+				SafeRemoveEntity(CreatedEntity)
+			end
+            ErrorNoHaltWithStack(valid)
+		end
+
 		if (valid == false) then
 			return false
 		else
