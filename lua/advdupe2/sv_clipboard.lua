@@ -1061,7 +1061,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			for _, CreatedEntity in pairs(CreatedEntities) do
 				SafeRemoveEntity(CreatedEntity)
 			end
-            ErrorNoHaltWithStack(valid)
+			ErrorNoHaltWithStack(valid)
 		end
 
 		if (valid == false) then
@@ -1553,9 +1553,9 @@ local function RemoveSpawnedEntities(tbl, i)
 end
 
 function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
-    if not Player.AdvDupe2.Constraints then
-        Player.AdvDupe2.Constraints = {}
-    end
+	if not Player.AdvDupe2.Constraints then
+		Player.AdvDupe2.Constraints = {}
+	end
 
 	local i = #AdvDupe2.JobManager.Queue + 1
 	AdvDupe2.JobManager.Queue[i] = {}
