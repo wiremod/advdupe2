@@ -36,9 +36,9 @@ if(SERVER) then
 		local sorted, unsorted = {}, {}
 		for k, v in pairs(constraints) do
 			if phys_constraint_system_types[v.Type] then
-				sorted[#sorted+1] = v
+				table.insert(sorted, v)
 			else
-				unsorted[#unsorted+1] = v
+				table.insert(unsorted, v)
 			end
 		end
 
@@ -50,12 +50,14 @@ if(SERVER) then
 					for systemi, system in pairs(sortingSystems) do
 						for _, target in pairs(system) do
 							for x = 1, 4 do
-								if v.Entity[x] then
+								local eX = v.Entity[x]
+								if eX then
 									for y = 1, 4 do
-										if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
-											system[#system + 1] = v
-											if #system==100 then
-												fullSystems[#fullSystems + 1] = system
+										local eY = target.Entity[y]
+										if eY and eX.Index == eY.Index then
+											table.insert(system, v)
+											if #system == 100 then
+												table.insert(fullSystems, system)
 												table.remove(sortingSystems, systemi)
 											end
 											input[k] = nil
@@ -70,7 +72,7 @@ if(SERVER) then
 
 				--Normally skipped by the goto unless no cluster is found. If so, make a new one.
 				local k = next(input)
-				sortingSystems[#sortingSystems + 1] = {input[k]}
+				table.insert(sortingSystems, {input[k]})
 				input[k] = nil
 
 				::super_loopbreak::
@@ -81,20 +83,21 @@ if(SERVER) then
 		local ret = {}
 		for _, system in pairs(fullSystems) do
 			for _, v in pairs(system) do
-				ret[#ret + 1] = v
+				table.insert(ret, v)
 			end
 		end
 		for _, system in pairs(sortingSystems) do
 			for _, v in pairs(system) do
-				ret[#ret + 1] = v
+				table.insert(ret, v)
 			end
 		end
 		for k, v in pairs(unsorted) do
-			ret[#ret + 1] = v
+			table.insert(ret, v)
 		end
 
 		if #fullSystems ~= 0 then
-			ply:ChatPrint("DUPLICATOR: WARNING, Number of constraints exceeds 100: (".. #ret .."). Constraint sorting might not work as expected.")
+			ply:ChatPrint("DUPLICATOR: WARNING, Number of constraints exceeds 100: ("..
+				#ret .."). Constraint sorting might not work as expected.")
 		end
 
 		return ret
@@ -103,10 +106,10 @@ if(SERVER) then
 	local function CreationConstraintOrder( constraints )
 		local ret = {}
 		for k, v in pairs( constraints ) do
-			ret[#ret + 1] = k
+			table.insert(ret, k)
 		end
 		table.sort(ret)
-		for i=1, #ret do
+		for i = 1, #ret do
 			ret[i] = constraints[ret[i]]
 		end
 		return ret
@@ -141,7 +144,7 @@ if(SERVER) then
 		local Entities = ents.GetAll() --Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
 		local pos, ent
-		for i=1, #Entities do
+		for i = 1, #Entities do
 			ent = Entities[i]
 			pos = ent:GetPos()
 			if (pos.X>=min.X) and (pos.X<=max.X) and
