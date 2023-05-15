@@ -153,31 +153,57 @@ if(SERVER)then
 	end
 
 	--[[
+		Name: GetDupeAngleOffset
+		Desc: Retrieves duplication angle offsets from player
+		Returns: <angle> Created angle
+	]]
+	local function GetDupeAngleOffset(ply)
+		local p = math.Clamp(ply:GetInfoNum("advdupe2_offset_pitch", 0), -180, 180)
+		local y = math.Clamp(ply:GetInfoNum("advdupe2_offset_yaw"  , 0), -180, 180)
+		local r = math.Clamp(ply:GetInfoNum("advdupe2_offset_roll" , 0), -180, 180)
+		return Angle(p, y, r)
+	end
+
+	--[[
+		Name: GetDupeElevation
+		Desc: Retrieves duplication Z elevation
+		Returns: <number> Dupe elevation
+	]]
+	local function GetDupeElevation(ply)
+		local con = ply:GetInfoNum("advdupe2_offset_z", 0)
+		local enz = (tonumber(ply.AdvDupe2.HeadEnt.Z) or 0)
+		return math.Clamp(con + enz, -32000, 32000)
+	end
+
+	--[[
 		Name: LeftClick
 		Desc: Defines the tool's behavior when the player left-clicks.
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
 	function TOOL:LeftClick( trace )
-		if(not trace)then return false end
+		if(not trace) then return false end
 
 		local ply = self:GetOwner()
-		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities)then return false end
+		if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities) then return false end
 
-		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading)then
+		if(ply.AdvDupe2.Pasting or ply.AdvDupe2.Downloading) then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
 			return false
 		end
 
-		local z = math.Clamp((tonumber(ply:GetInfo("advdupe2_offset_z")) + ply.AdvDupe2.HeadEnt.Z), -32000, 32000)
-		ply.AdvDupe2.Position = trace.HitPos + Vector(0, 0, z)
-		ply.AdvDupe2.Angle = Angle(ply:GetInfoNum("advdupe2_offset_pitch", 0), ply:GetInfoNum("advdupe2_offset_yaw", 0), ply:GetInfoNum("advdupe2_offset_roll", 0))
-		if(tobool(ply:GetInfo("advdupe2_offset_world")))then ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle end
+		ply.AdvDupe2.Angle = GetDupeAngleOffset()
+		ply.AdvDupe2.Position = Vector(trace.HitPos)
+		ply.AdvDupe2.Position.z = ply.AdvDupe2.Position.z + GetDupeElevation(ply)
+
+		if(tobool(ply:GetInfo("advdupe2_offset_world"))) then
+			ply.AdvDupe2.Angle = ply.AdvDupe2.Angle - ply.AdvDupe2.Entities[ply.AdvDupe2.HeadEnt.Index].PhysicsObjects[0].Angle
+		end
 
 		ply.AdvDupe2.Pasting = true
 		AdvDupe2.Notify(ply,"Pasting...")
 		local origin
-		if(tobool(ply:GetInfo("advdupe2_original_origin")))then
+		if(tobool(ply:GetInfo("advdupe2_original_origin"))) then
 			origin = ply.AdvDupe2.HeadEnt.Pos
 		end
 		AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin, tobool(ply:GetInfo("advdupe2_paste_constraints")), tobool(ply:GetInfo("advdupe2_paste_parents")), tobool(ply:GetInfo("advdupe2_paste_disparents")),tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
@@ -443,8 +469,8 @@ if(SERVER)then
 				else
 					local EntAngle = headent.PhysicsObjects[0].Angle
 					if(tobool(ply:GetInfo("advdupe2_offset_world")))then EntAngle = Angle(0,0,0) end
-					trace.HitPos.Z = trace.HitPos.Z + math.Clamp(ply.AdvDupe2.HeadEnt.Z + tonumber(ply:GetInfo("advdupe2_offset_z")) or 0, -32000, 32000)
-					Pos, Ang = LocalToWorld(headent.PhysicsObjects[0].Pos, EntAngle, trace.HitPos, Angle(math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0,-180,180), math.Clamp(tonumber(ply:GetInfo("advdupe2_offset_roll")) or 0,-180,180)))
+					trace.HitPos.Z = trace.HitPos.Z + GetDupeElevation(ply)
+					Pos, Ang = LocalToWorld(headent.PhysicsObjects[0].Pos, EntAngle, trace.HitPos, GetDupeAngleOffset(ply))
 				end
 			else
 				AdvDupe2.Notify(ply, "Invalid head entity to spawn contraption spawner.")
