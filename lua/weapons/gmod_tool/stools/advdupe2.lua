@@ -192,7 +192,7 @@ if(SERVER)then
 			return false
 		end
 
-		ply.AdvDupe2.Angle = GetDupeAngleOffset()
+		ply.AdvDupe2.Angle = GetDupeAngleOffset(ply)
 		ply.AdvDupe2.Position = Vector(trace.HitPos)
 		ply.AdvDupe2.Position.z = ply.AdvDupe2.Position.z + GetDupeElevation(ply)
 
