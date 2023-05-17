@@ -154,6 +154,12 @@ local function GetWorldTrace(pos)
 	})
 end
 
+local function IsInBox(pos, min, max)
+return ((pos.X >= min.X) and (pos.X <= max.X) and
+				(pos.Y >= min.Y) and (pos.Y <= max.Y) and
+				(pos.Z >= min.Z) and (pos.Z <= max.Z))
+end
+
 if (SERVER) then
 	CreateConVar("sbox_maxgmod_contr_spawners", 5)
 
@@ -292,10 +298,7 @@ if (SERVER) then
 		for i = 1, #Entities do
 			local ent = Entities[i]
 			local pos = ent:GetPos()
-			if (pos.X >= min.X) and (pos.X <= max.X) and
-				 (pos.Y >= min.Y) and (pos.Y <= max.Y) and
-				 (pos.Z >= min.Z) and (pos.Z <= max.Z) and PPCheck(ply, ent)
-			then
+			if IsInBox(pos, min, max) and PPCheck(ply, ent) then
 				EntTable[ent:EntIndex()] = ent
 			end
 		end
@@ -1834,10 +1837,7 @@ if (CLIENT) then
 		local EntTable = {}
 		for _, ent in pairs(Entities) do
 			local pos = ent:GetPos()
-			if (pos.X >= min.X) and (pos.X <= max.X) and
-				 (pos.Y >= min.Y) and (pos.Y <= max.Y) and
-				 (pos.Z >= min.Z) and (pos.Z <= max.Z)
-			then
+			if IsInBox(pos, min, max) then
 				-- if(ent:GetClass()~="C_BaseFlexclass")then
 				EntTable[ent:EntIndex()] = ent
 				-- end
