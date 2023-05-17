@@ -102,6 +102,30 @@ local function GetDupeAngleRoll(ply)
 	return math.Clamp(ply:GetInfoNum("advdupe2_offset_roll", 0), -180, 180)
 end
 
+local function GetMinContraptionSpawnDelay()
+	return (tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2)
+end
+
+local function GetMinContraptionUndoDelay(def)
+	return (tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or def)
+end
+
+local function GetMaxContraptionUndoDelay(def)
+	return (tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or def)
+end
+
+local function GetMaxContraptionEntities()
+	return tonumber(GetConVarString("AdvDupe2_MaxContraptionEntities"))
+end
+
+local function GetMaxContraptionConstraints()
+	return tonumber(GetConVarString("AdvDupe2_MaxContraptionConstraints"))
+end
+
+local function GetFileModificationDelay()
+	return tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
+end
+
 --[[
 	Name: GetDupeAngleOffset
 	Desc: Retrieves duplication angle offsets from player
@@ -541,10 +565,10 @@ if (SERVER) then
 			local undo_delay = GetContrSpawnerUndoDelay(ply)
 			local min, max
 			if (not delay) then
-				delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+				delay = GetMinContraptionSpawnDelay()
 			else
 				if (not game.SinglePlayer()) then
-					min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+					min = GetMinContraptionSpawnDelay()
 					if (delay < min) then
 						delay = min
 					end
@@ -554,11 +578,11 @@ if (SERVER) then
 			end
 
 			if (not undo_delay) then
-				undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+				undo_delay = GetMinContraptionUndoDelay()
 			else
 				if (not game.SinglePlayer()) then
-					min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
-					max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+					min = GetMinContraptionUndoDelay(0.1)
+					max = GetMaxContraptionUndoDelay(60)
 					if (undo_delay < min) then
 						undo_delay = min
 					elseif (undo_delay > max) then
@@ -635,16 +659,16 @@ if (SERVER) then
 		end
 
 		if (not game.SinglePlayer()) then
-			if (table.Count(EntityTable) > tonumber(GetConVarString("AdvDupe2_MaxContraptionEntities"))) then
+			if (table.Count(EntityTable) > GetMaxContraptionEntities()) then
 				AdvDupe2.Notify(ply,
 												"Contraption Spawner exceeds the maximum amount of " ..
-													GetConVarString("AdvDupe2_MaxContraptionEntities") .. " entities for a spawner!", NOTIFY_ERROR)
+													GetMaxContraptionEntities() .. " entities for a spawner!", NOTIFY_ERROR)
 				return false
 			end
-			if (#ConstraintTable > tonumber(GetConVarString("AdvDupe2_MaxContraptionConstraints"))) then
+			if (#ConstraintTable > GetMaxContraptionConstraints()) then
 				AdvDupe2.Notify(ply,
 												"Contraption Spawner exceeds the maximum amount of " ..
-													GetConVarString("AdvDupe2_MaxContraptionConstraints") .. " constraints for a spawner!",
+													GetMaxContraptionConstraints() .. " constraints for a spawner!",
 												NOTIFY_ERROR)
 				return false
 			end
@@ -671,10 +695,10 @@ if (SERVER) then
 		local min
 		local max
 		if (not delay) then
-			delay = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+			delay = GetMinContraptionSpawnDelay()
 		else
 			if (not game.SinglePlayer()) then
-				min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+				min = GetMinContraptionSpawnDelay()
 				if (delay < min) then
 					delay = min
 				end
@@ -684,11 +708,11 @@ if (SERVER) then
 		end
 
 		if (not undo_delay) then
-			undo_delay = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay"))
+			undo_delay = GetMinContraptionUndoDelay()
 		else
 			if (not game.SinglePlayer()) then
-				min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 0.1
-				max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+				min = GetMinContraptionUndoDelay(0.1)
+				max = GetMaxContraptionUndoDelay(60)
 				if (undo_delay < min) then
 					undo_delay = min
 				elseif (undo_delay > max) then
@@ -871,7 +895,7 @@ if (SERVER) then
 			AdvDupe2.Encode(Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
 				AdvDupe2.SendToClient(ply, data, 1)
 			end)
-			ply.AdvDupe2.FileMod = CurTime() + tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
+			ply.AdvDupe2.FileMod = CurTime() + GetFileModificationDelay()
 		end)
 		timer.Start(name)
 	end)
@@ -1433,7 +1457,7 @@ if (CLIENT) then
 		if (game.SinglePlayer()) then
 			NumSlider:SetMin(0)
 		else
-			local min = tonumber(GetConVarString("AdvDupe2_MinContraptionSpawnDelay")) or 0.2
+			local min = GetMinContraptionSpawnDelay()
 			if GetContrSpawnerDelay(ply) < min then
 				RunConsoleCommand("advdupe2_contr_spawner_delay", tostring(min))
 			end
@@ -1451,8 +1475,8 @@ if (CLIENT) then
 			NumSlider:SetMin(0)
 			NumSlider:SetMax(60)
 		else
-			local min = tonumber(GetConVarString("AdvDupe2_MinContraptionUndoDelay")) or 10
-			local max = tonumber(GetConVarString("AdvDupe2_MaxContraptionUndoDelay")) or 60
+			local min = GetMinContraptionUndoDelay(10)
+			local max = GetMaxContraptionUndoDelay(60)
 			if GetContrSpawnerUndoDelay(ply) < min then
 				RunConsoleCommand("advdupe2_contr_spawner_undo_delay", tostring(min))
 			elseif GetContrSpawnerUndoDelay(ply) > max then
