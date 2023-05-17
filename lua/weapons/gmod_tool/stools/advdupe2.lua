@@ -720,9 +720,9 @@ if (SERVER) then
 		ply:AddCleanup("gmod_contr_spawner", spawner)
 		return spawner
 	end
-	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang", "HeadEnt", "EntityTable",
-																 "ConstraintTable", "delay", "undo_delay", "model", "key", "undo_key", "disgrav",
-																 "disdrag", "addvel", "hideprops")
+	duplicator.RegisterEntityClass("gmod_contr_spawner", MakeContraptionSpawner, "Pos", "Ang",
+																 "HeadEnt", "EntityTable", "ConstraintTable", "delay", "undo_delay",
+																 "model", "key", "undo_key", "disgrav", "disdrag", "addvel", "hideprops")
 
 	function AdvDupe2.InitProgressBar(ply, label)
 		net.Start("AdvDupe2_InitProgressBar")
