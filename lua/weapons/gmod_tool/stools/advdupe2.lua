@@ -155,9 +155,9 @@ local function GetWorldTrace(pos)
 end
 
 local function IsInBox(pos, min, max)
-return ((pos.X >= min.X) and (pos.X <= max.X) and
-				(pos.Y >= min.Y) and (pos.Y <= max.Y) and
-				(pos.Z >= min.Z) and (pos.Z <= max.Z))
+	return ((pos.X >= min.X) and (pos.X <= max.X) and
+					(pos.Y >= min.Y) and (pos.Y <= max.Y) and
+					(pos.Z >= min.Z) and (pos.Z <= max.Z))
 end
 
 if (SERVER) then
