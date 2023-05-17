@@ -1,39 +1,14 @@
 --[[
 	Title: Adv. Dupe 2 Tool
-
 	Desc: Defines the AD2 tool and assorted functionalities.
-
 	Author: TB
-
 	Version: 1.0
 ]]
+
 TOOL.Category = "Construction"
 TOOL.Name = "#Tool.advdupe2.name"
 cleanup.Register("AdvDupe2")
 require "controlpanel"
-
---[[
-	Name: GetDupeAngleOffset
-	Desc: Retrieves duplication angle offsets from player
-	Returns: <angle> Created angle
-]]
-local function GetDupeAngleOffset(ply)
-	local p = math.Clamp(ply:GetInfoNum("advdupe2_offset_pitch", 0), -180, 180)
-	local y = math.Clamp(ply:GetInfoNum("advdupe2_offset_yaw", 0), -180, 180)
-	local r = math.Clamp(ply:GetInfoNum("advdupe2_offset_roll", 0), -180, 180)
-	return Angle(p, y, r)
-end
-
---[[
-	Name: GetDupeElevation
-	Desc: Retrieves duplication Z elevation
-	Returns: <number> Dupe elevation
-]]
-local function GetDupeElevation(ply)
-	local con, enz = ply:GetInfoNum("advdupe2_offset_z", 0), 0
-	if(SERVER) then enz = (tonumber(ply.AdvDupe2.HeadEnt.Z) or 0) end
-	return math.Clamp(con + enz, -32000, 32000)
-end
 
 local function IsCopyOutside(ply)
 	return tobool(ply:GetInfo("advdupe2_copy_outside"))
@@ -72,7 +47,79 @@ local function GetContrSpawnerDelay(ply)
 end
 
 local function GetContrSpawnerUndoDelay(ply)
-	tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay"))
+	return tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_delay"))
+end
+
+local function IsPasteConstraints(ply)
+	return tobool(ply:GetInfo("advdupe2_paste_constraints"))
+end
+
+local function IsPasteParents(ply)
+	return tobool(ply:GetInfo("advdupe2_paste_parents"))
+end
+
+local function IsPasteDisparents(ply)
+	return tobool(ply:GetInfo("advdupe2_paste_disparents"))
+end
+
+local function IsPasteProtectoveride(ply)
+	return tobool(ply:GetInfo("advdupe2_paste_protectoveride"))
+end
+
+local function GetContrSpawnerKey(ply)
+	return tonumber(ply:GetInfo("advdupe2_contr_spawner_key"))
+end
+
+local function GetContrSpawnerUndoKey(ply)
+	return tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")
+end
+
+local function GetContrSpawnerDisgrav(ply)
+	return (tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0)
+end
+
+local function GetContrSpawnerDisdrag(ply)
+	return (tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0)
+end
+
+local function GetContrSpawnerAddvel(ply)
+	return (tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1)
+end
+
+local function GetContrSpawnerHideprops(ply)
+	return (tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0)
+end
+
+local function GetDupeAnglePitch(ply)
+	return math.Clamp(ply:GetInfoNum("advdupe2_offset_pitch", 0), -180, 180)
+end
+
+local function GetDupeAngleYaw(ply)
+	return math.Clamp(ply:GetInfoNum("advdupe2_offset_yaw", 0), -180, 180)
+end
+
+local function GetDupeAngleRoll(ply)
+	return math.Clamp(ply:GetInfoNum("advdupe2_offset_roll", 0), -180, 180)
+end
+
+--[[
+	Name: GetDupeAngleOffset
+	Desc: Retrieves duplication angle offsets from player
+	Returns: <angle> Created angle
+]]
+local function GetDupeAngleOffset(ply)
+	return Angle(GetAnglePitch(ply), GetAngleYaw(ply), GetAngleRoll(ply))
+end
+
+--[[
+	Name: GetDupeElevation
+	Desc: Retrieves duplication Z elevation
+	Returns: <number> Dupe elevation
+]]
+local function GetDupeElevation(ply)
+	local con, enz = ply:GetInfoNum("advdupe2_offset_z", 0), 0
+	if(SERVER) then enz = (tonumber(ply.AdvDupe2.HeadEnt.Z) or 0) end
+	return math.Clamp(con + enz, -32000, 32000)
 end
 
 if (SERVER) then
@@ -100,9 +147,9 @@ if (SERVER) then
 		local sorted, unsorted = {}, {}
 		for k, v in pairs(constraints) do
 			if phys_constraint_system_types[v.Type] then
-				table.insert(sorted, v)
+				sorted[#sorted + 1] = v
 			else
-				table.insert(unsorted, v)
+				unsorted[#unsorted + 1] = v
 			end
 		end
 
@@ -119,9 +166,9 @@ if (SERVER) then
 									for y = 1, 4 do
 										local ey = target.Entity[y]
 										if ey and ex.Index == ey.Index then
-											table.insert(sysv, v)
+											sysv[#sysv + 1] = v
 											if #sysv == 100 then
-												table.insert(fullSystems, sysv)
+												fullSystems[#fullSystems + 1] = sysv
 												table.remove(sortingSystems, sysi)
 											end
 											intab[k] = nil
@@ -136,7 +183,7 @@ if (SERVER) then
 
 				-- Normally skipped by the goto unless no cluster is found. If so, make a new one.
 				local k = next(intab)
-				table.insert(sortingSystems, {intab[k]})
+				sortingSystems[#sortingSystems + 1] = {intab[k]}
 				intab[k] = nil
 
 				::super_loopbreak::
@@ -147,16 +194,16 @@ if (SERVER) then
 		local ret = {}
 		for _, sysv in pairs(fullSystems) do
 			for _, v in pairs(sysv) do
-				table.insert(ret, v)
+				ret[#ret + 1] = v
 			end
 		end
 		for _, sysv in pairs(sortingSystems) do
 			for _, v in pairs(sysv) do
-				table.insert(ret, v)
+				ret[#ret + 1] = v
 			end
 		end
 		for k, v in pairs(unsorted) do
-			table.insert(ret, v)
+			ret[#ret + 1] = v
 		end
 
 		if #fullSystems ~= 0 then
@@ -170,7 +217,7 @@ if (SERVER) then
 	local function CreationConstraintOrder(constraints)
 		local ret = {}
 		for k, v in pairs(constraints) do
-			table.insert(ret, k)
+			ret[#ret + 1] = k
 		end
 		table.sort(ret)
 		for i = 1, #ret do
@@ -210,10 +257,9 @@ if (SERVER) then
 		local PPCheck = isPP and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local Entities = ents.GetAll() -- Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
-		local pos, ent
 		for i = 1, #Entities do
-			ent = Entities[i]
-			pos = ent:GetPos()
+			local ent = Entities[i]
+			local pos = ent:GetPos()
 			if (pos.X >= min.X) and (pos.X <= max.X) and
 				 (pos.Y >= min.Y) and (pos.Y <= max.Y) and
 				 (pos.Z >= min.Z) and (pos.Z <= max.Z) and PPCheck(ply, ent)
@@ -263,10 +309,8 @@ if (SERVER) then
 		end
 
 		AdvDupe2.InitPastingQueue(ply, ply.AdvDupe2.Position, ply.AdvDupe2.Angle, origin,
-															tobool(ply:GetInfo("advdupe2_paste_constraints")),
-															tobool(ply:GetInfo("advdupe2_paste_parents")),
-															tobool(ply:GetInfo("advdupe2_paste_disparents")),
-															tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
+															IsPasteConstraints(ply), IsPasteParents(ply),
+															IsPasteDisparents(ply), IsPasteProtectoveride(ply))
 		return true
 	end
 
@@ -361,11 +405,10 @@ if (SERVER) then
 				net.Send(ply)
 				AdvDupe2.ResetOffsets(ply)
 				return true
-			else
-				-- select all owned props
+			else -- select all owned props
 				Entities = {}
-				local PPCheck = (IsCopyOnlyMine(ply) and CPPI ~= nil) and PlayerCanDupeCPPI or
-													PlayerCanDupeTool
+				local isPP = (IsCopyOnlyMine(ply) and CPPI ~= nil)
+				local PPCheck = isPP and PlayerCanDupeCPPI or PlayerCanDupeTool
 				for _, ent in pairs(ents.GetAll()) do
 					if PPCheck(ply, ent) then
 						Entities[ent:EntIndex()] = ent
@@ -400,14 +443,14 @@ if (SERVER) then
 		ply.AdvDupe2.Constraints = GetSortedConstraints(ply, Constraints)
 
 		net.Start("AdvDupe2_SetDupeInfo")
-		net.WriteString("")
-		net.WriteString(ply:Nick())
-		net.WriteString(os.date("%d %B %Y"))
-		net.WriteString(os.date("%I:%M %p"))
-		net.WriteString("")
-		net.WriteString("")
-		net.WriteString(table.Count(ply.AdvDupe2.Entities))
-		net.WriteString(#ply.AdvDupe2.Constraints)
+			net.WriteString("")
+			net.WriteString(ply:Nick())
+			net.WriteString(os.date("%d %B %Y"))
+			net.WriteString(os.date("%I:%M %p"))
+			net.WriteString("")
+			net.WriteString("")
+			net.WriteString(table.Count(ply.AdvDupe2.Entities))
+			net.WriteString(#ply.AdvDupe2.Constraints)
 		net.Send(ply)
 
 		if AddOne then
@@ -476,13 +519,13 @@ if (SERVER) then
 		if (self:GetStage() == 1) then
 			local areasize = GetAreaCopySize(ply)
 			net.Start("AdvDupe2_CanAutoSave")
-			net.WriteVector(trace.HitPos)
-			net.WriteFloat(areasize)
-			if (trace.Entity) then
-				net.WriteUInt(trace.Entity:EntIndex(), 16)
-			else
-				net.WriteUInt(0, 16)
-			end
+				net.WriteVector(trace.HitPos)
+				net.WriteFloat(areasize)
+				if (trace.Entity) then
+					net.WriteUInt(trace.Entity:EntIndex(), 16)
+				else
+					net.WriteUInt(0, 16)
+				end
 			net.Send(ply)
 			self:SetStage(0)
 			AdvDupe2.RemoveSelectBox(ply)
@@ -526,11 +569,8 @@ if (SERVER) then
 				end
 			end
 			trace.Entity:GetTable():SetOptions(ply, delay, undo_delay,
-																				 tonumber(ply:GetInfo("advdupe2_contr_spawner_key")),
-																				 tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),
-																				 tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0,
-																				 tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0,
-																				 tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1)
+				GetContrSpawnerKey(ply), GetContrSpawnerUndoKey(ply),
+				GetContrSpawnerDisgrav(ply), GetContrSpawnerDisdrag(ply), GetContrSpawnerAddvel(ply))
 			return true
 		end
 
@@ -563,18 +603,14 @@ if (SERVER) then
 
 			local spawner = MakeContraptionSpawner(ply, Pos, Ang, ply.AdvDupe2.HeadEnt.Index,
 																						 table.Copy(ply.AdvDupe2.Entities), table.Copy(ply.AdvDupe2.Constraints),
-																						 GetContrSpawnerDelay(ply),
-																						 GetContrSpawnerUndoDelay(ply), headent.Model,
-																						 tonumber(ply:GetInfo("advdupe2_contr_spawner_key")),
-																						 tonumber(ply:GetInfo("advdupe2_contr_spawner_undo_key")),
-																						 tonumber(ply:GetInfo("advdupe2_contr_spawner_disgrav")) or 0,
-																						 tonumber(ply:GetInfo("advdupe2_contr_spawner_disdrag")) or 0,
-																						 tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1,
-																						 tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0)
+																						 GetContrSpawnerDelay(ply), GetContrSpawnerUndoDelay(ply), headent.Model,
+																						 GetContrSpawnerKey(ply), GetContrSpawnerUndoKey(ply),
+																						 GetContrSpawnerDisgrav(ply), GetContrSpawnerDisdrag(ply),
+																						 GetContrSpawnerAddvel(ply), GetContrSpawnerHideprops(ply))
 			ply:AddCleanup("AdvDupe2", spawner)
 			undo.Create("gmod_contr_spawner")
-			undo.AddEntity(spawner)
-			undo.SetPlayer(ply)
+				undo.AddEntity(spawner)
+				undo.SetPlayer(ply)
 			undo.Finish()
 
 			return true
@@ -690,7 +726,7 @@ if (SERVER) then
 
 	function AdvDupe2.InitProgressBar(ply, label)
 		net.Start("AdvDupe2_InitProgressBar")
-		net.WriteString(label)
+			net.WriteString(label)
 		net.Send(ply)
 	end
 
@@ -706,7 +742,7 @@ if (SERVER) then
 
 	function AdvDupe2.UpdateProgressBar(ply, percent)
 		net.Start("AdvDupe2_UpdateProgressBar")
-		net.WriteFloat(percent)
+			net.WriteFloat(percent)
 		net.Send(ply)
 	end
 
@@ -964,7 +1000,7 @@ if (CLIENT) then
 		local Y2 = 0
 
 		if (X ~= 0) then
-			X2 = tonumber(ply:GetInfo("advdupe2_offset_yaw"))
+			X2 = GetDupeAngleYaw(ply)
 
 			if (ply:KeyDown(IN_SPEED)) then
 				XTotal = XTotal + X
@@ -1764,11 +1800,13 @@ if (CLIENT) then
 			draw.RoundedBox(6, 32, 178, 192, 28, Color(255, 255, 255, 150))
 			draw.RoundedBox(6, 36, 182, 188 * (AdvDupe2.ProgressBar.Percent / 100), 24, Color(0, 255, 0, 255))
 		elseif (ply:KeyDown(IN_USE)) then
-			draw.SimpleText("Height: " .. ply:GetInfo("advdupe2_offset_z"), "AD2TitleFont", 25, 160,
+			local z = GetDupeElevation(ply)
+			local p, y = GetDupeAnglePitch(ply), GetDupeAngleYaw(ply)
+			draw.SimpleText("Height: " .. z, "AD2TitleFont", 25, 160,
 											Color(255, 255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
-			draw.SimpleText("Pitch: " .. ply:GetInfo("advdupe2_offset_pitch"), "AD2TitleFont", 25, 190,
+			draw.SimpleText("Pitch: " .. p, "AD2TitleFont", 25, 190,
 											Color(255, 255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
-			draw.SimpleText("Yaw: " .. ply:GetInfo("advdupe2_offset_yaw"), "AD2TitleFont", 25, 220,
+			draw.SimpleText("Yaw: " .. y, "AD2TitleFont", 25, 220,
 											Color(255, 255, 255, 255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
 		end
 
@@ -1776,7 +1814,6 @@ if (CLIENT) then
 	end
 
 	local function FindInBox(min, max, ply)
-
 		local Entities = ents.GetAll()
 		local EntTable = {}
 		for _, ent in pairs(Entities) do
@@ -1966,11 +2003,11 @@ if (CLIENT) then
 			local ent = net.ReadUInt(16)
 			AdvDupe2.OffButton:SetDisabled(false)
 			net.Start("AdvDupe2_CanAutoSave")
-			net.WriteString(AdvDupe2.AutoSaveDesc)
-			net.WriteInt(ent, 16)
-			if (game.SinglePlayer()) then
-				net.WriteString(string.sub(AdvDupe2.AutoSavePath, 10, #AdvDupe2.AutoSavePath))
-			end
+				net.WriteString(AdvDupe2.AutoSaveDesc)
+				net.WriteInt(ent, 16)
+				if (game.SinglePlayer()) then
+					net.WriteString(string.sub(AdvDupe2.AutoSavePath, 10, #AdvDupe2.AutoSavePath))
+				end
 			net.SendToServer()
 		else
 			AdvDupe2.Notify("Select a directory for the Area Auto Save.", NOTIFY_ERROR)
