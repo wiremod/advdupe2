@@ -146,6 +146,14 @@ local function GetDupeElevation(ply)
 	return math.Clamp(con + enz, -32000, 32000)
 end
 
+local function GetWorldTrace(pos)
+	return util.TraceLine({
+		mask   = MASK_NPCWORLDSTATIC,
+		start  = pos + Vector(0, 0, 1),
+		endpos = pos - Vector(0, 0, 50000)
+	})
+end
+
 if (SERVER) then
 	CreateConVar("sbox_maxgmod_contr_spawners", 5)
 
@@ -373,10 +381,10 @@ if (SERVER) then
 		local HeadEnt = {}
 		-- If area copy is on
 		if (self:GetStage() == 1) then
-			local area_size = GetAreaCopySize(ply)
+			local siz = GetAreaCopySize(ply)
 			local Pos = trace.HitNonWorld and trace.Entity:GetPos() or trace.HitPos
-			local T = (Vector(area_size, area_size, area_size) + Pos)
-			local B = (Vector(-area_size, -area_size, -area_size) + Pos)
+			local T = (Vector( siz,  siz,  siz) + Pos)
+			local B = (Vector(-siz, -siz, -siz) + Pos)
 
 			local Ents = FindInBox(B, T, ply)
 			local _, Ent = next(Ents)
@@ -454,11 +462,7 @@ if (SERVER) then
 		end
 
 		if not HeadEnt.Z then
-			local WorldTrace = util.TraceLine({
-				mask = MASK_NPCWORLDSTATIC,
-				start = HeadEnt.Pos + Vector(0, 0, 1),
-				endpos = HeadEnt.Pos - Vector(0, 0, 50000)
-			})
+			local WorldTrace = GetWorldTrace(HeadEnt.Pos)
 			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 		end
 
@@ -843,11 +847,7 @@ if (SERVER) then
 				Tab.HeadEnt.Index = ply.AdvDupe2.AutoSaveEnt:EntIndex()
 				Tab.HeadEnt.Pos = ply.AdvDupe2.AutoSaveEnt:GetPos()
 
-				local WorldTrace = util.TraceLine({
-					mask = MASK_NPCWORLDSTATIC,
-					start = Tab.HeadEnt.Pos + Vector(0, 0, 1),
-					endpos = Tab.HeadEnt.Pos - Vector(0, 0, 50000)
-				})
+				local WorldTrace = GetWorldTrace(Tab.HeadEnt.Pos)
 				if (WorldTrace.Hit) then
 					Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z)
 				else
@@ -875,11 +875,7 @@ if (SERVER) then
 				end
 				Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
-				local WorldTrace = util.TraceLine({
-					mask = MASK_NPCWORLDSTATIC,
-					start = Tab.HeadEnt.Pos + Vector(0, 0, 1),
-					endpos = Tab.HeadEnt.Pos - Vector(0, 0, 50000)
-				})
+				local WorldTrace = GetWorldTrace(Tab.HeadEnt.Pos)
 				if (WorldTrace.Hit) then
 					Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z)
 				else
@@ -930,11 +926,7 @@ if (SERVER) then
 		Tab.HeadEnt.Index = HeadEnt:EntIndex()
 		Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
-		local WorldTrace = util.TraceLine({
-			mask = MASK_NPCWORLDSTATIC,
-			start = Tab.HeadEnt.Pos + Vector(0, 0, 1),
-			endpos = Tab.HeadEnt.Pos - Vector(0, 0, 50000)
-		})
+		local WorldTrace = GetWorldTrace(Tab.HeadEnt.Pos)
 		if (WorldTrace.Hit) then
 			Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z)
 		else
