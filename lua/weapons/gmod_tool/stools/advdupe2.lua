@@ -1048,7 +1048,7 @@ if (CLIENT) then
 			RunConsoleCommand("advdupe2_offset_yaw", X2)
 		end
 		--[[
-			if(Y~=0)then
+		if(Y~=0)then
 			local modyaw = LocalPlayer():GetAngles().y
 			local modyaw2 = tonumber(LocalPlayer():GetInfo("advdupe2_offset_yaw"))
 
