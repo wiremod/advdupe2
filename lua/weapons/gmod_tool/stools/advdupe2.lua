@@ -293,9 +293,9 @@ if (SERVER) then
 	local function FindInBox(min, max, ply)
 		local isPP = (IsCopyOnlyMine(ply) and ply.CPPIGetOwner ~= nil)
 		local PPCheck = isPP and PlayerCanDupeCPPI or PlayerCanDupeTool
+		local EntTable = {} -- Where to store the boxed items
 		local Entities = ents.GetAll() -- Don't use FindInBox. It has a 512 entity limit.
-		local EntTable = {}
-		for i = 1, #Entities do
+		for i = 1, #Entities do -- Integer for loop is faster
 			local ent = Entities[i]
 			local pos = ent:GetPos()
 			if IsInBox(pos, min, max) and PPCheck(ply, ent) then
@@ -1833,9 +1833,10 @@ if (CLIENT) then
 	end
 
 	local function FindInBox(min, max, ply)
-		local Entities = ents.GetAll()
-		local EntTable = {}
-		for _, ent in pairs(Entities) do
+		local EntTable = {} -- Where to store the boxed items
+		local Entities = ents.GetAll() -- Don't use FindInBox
+		for i = 1, #Entities do -- Integer for loop is faster
+			local ent = Entities[i]
 			local pos = ent:GetPos()
 			if IsInBox(pos, min, max) then
 				-- if(ent:GetClass()~="C_BaseFlexclass")then
