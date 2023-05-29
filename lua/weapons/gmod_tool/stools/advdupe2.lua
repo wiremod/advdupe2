@@ -830,9 +830,10 @@ if(CLIENT)then
 	local YawTo = 0
 
 	local function MouseControl( cmd )
+		local ply = LocalPlayer()
 		local X =  cmd:GetMouseX() / 20
 		local Y = -cmd:GetMouseY() / 20
-		local ru = LocalPlayer():KeyDown(IN_SPEED)
+		local ru = ply:KeyDown(IN_SPEED)
 		local mm = input.IsMouseDown(MOUSE_MIDDLE)
 
 		if(mm) then
@@ -843,8 +844,8 @@ if(CLIENT)then
 				RunConsoleCommand("advdupe2_offset_roll" , 0)
 			else
 				if(Y ~= 0) then
-					local VR = tonumber(LocalPlayer():GetInfo("advdupe2_offset_roll"))
-					local VP = tonumber(LocalPlayer():GetInfo("advdupe2_offset_pitch"))
+					local VR = tonumber(ply:GetInfo("advdupe2_offset_roll"))  or 0
+					local VP = tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0
 					local P = math.NormalizeAngle(VP + Y)
 					local R = math.NormalizeAngle(VR + X)
 					RunConsoleCommand("advdupe2_offset_pitch", P)
@@ -853,7 +854,7 @@ if(CLIENT)then
 			end
 		else
 			if(X ~= 0)then
-				VY = tonumber(LocalPlayer():GetInfo("advdupe2_offset_yaw"))
+				VY = tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0
 				if(ru)then
 					YawTo = YawTo + X -- Integrate the mouse on the X value from the mouse
 					RunConsoleCommand("advdupe2_offset_yaw", math.SnapTo(math.NormalizeAngle(YawTo), 45))
