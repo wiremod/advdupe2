@@ -828,6 +828,24 @@ if(CLIENT)then
 	end
 
 	local YawTo = 0
+	local BsAng = Angle()
+
+	local function GetRotationSign(ply)
+		local AV = ply:GetAimVector()
+		local DP = BsAng:Right():Dot(AV)
+		local DR = BsAng:Forward():Dot(AV)
+		local AP, AR = math.abs(DP), math.abs(DR)
+		if(AR < AP) then
+			DP, DR = (DR / AR), (DP / AP)
+		else
+			DR, DP = (DR / AR), (DP / AP)
+		end
+
+		DR = ((DR == 0) and 1 or DR)
+		DP = ((DP == 0) and 1 or DP)
+
+		return DP, DR
+	end
 
 	local function MouseControl( cmd )
 		local ply = LocalPlayer()
@@ -846,8 +864,9 @@ if(CLIENT)then
 				if(Y ~= 0) then
 					local VR = tonumber(ply:GetInfo("advdupe2_offset_roll"))  or 0
 					local VP = tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0
-					local P = math.NormalizeAngle(VP + Y)
-					local R = math.NormalizeAngle(VR + X)
+					local SP, SR = GetRotationSign(ply)
+					local P = math.NormalizeAngle(VP + Y * SP)
+					local R = math.NormalizeAngle(VR + X * SR)
 					RunConsoleCommand("advdupe2_offset_pitch", P)
 					RunConsoleCommand("advdupe2_offset_roll" , R)
 				end
@@ -885,8 +904,6 @@ if(CLIENT)then
 				hook.Remove("PlayerBindPress", "AdvDupe2_BindPress")
 				hook.Remove("CreateMove", "AdvDupe2_MouseControl")
 			end
-
-			return
 		end
 	end
 
