@@ -831,20 +831,14 @@ if(CLIENT)then
 	local BsAng = Angle()
 
 	local function GetRotationSign(ply)
-		local AV = ply:GetAimVector()
-		local DP = BsAng:Right():Dot(AV)
-		local DR = BsAng:Forward():Dot(AV)
-		local AP, AR = math.abs(DP), math.abs(DR)
-		if(AR < AP) then
-			DP, DR = (DR / AR), (DP / AP)
-		else
-			DR, DP = (DR / AR), (DP / AP)
+		local PR = ply:GetRight()
+		local DP = BsAng:Right():Dot(PR)
+		local DR = BsAng:Forward():Dot(PR)
+		if(math.abs(DR) > math.abs(DP)) then -- Roll priority
+			if(DR >= 0) then return -1, 1 else return  1, -1 end
+		else -- Pitch axis takes priority. Normal X-Y map
+			if(DP >= 0) then return  1, 1 else return -1, -1 end
 		end
-
-		DR = ((DR == 0) and 1 or DR)
-		DP = ((DP == 0) and 1 or DP)
-
-		return DP, DR
 	end
 
 	local function MouseControl( cmd )
@@ -864,9 +858,14 @@ if(CLIENT)then
 				if(Y ~= 0) then
 					local VR = tonumber(ply:GetInfo("advdupe2_offset_roll"))  or 0
 					local VP = tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0
-					local SP, SR = GetRotationSign(ply)
-					local P = math.NormalizeAngle(VP + Y * SP)
-					local R = math.NormalizeAngle(VR + X * SR)
+					local SP, SR, P, R = GetRotationSign(ply)
+					if(SP ~= SR) then
+						P = math.NormalizeAngle(VP + X * SR)
+						R = math.NormalizeAngle(VR + Y * SP)
+					else
+						P = math.NormalizeAngle(VP + Y * SP)
+						R = math.NormalizeAngle(VR + X * SR)
+					end
 					RunConsoleCommand("advdupe2_offset_pitch", P)
 					RunConsoleCommand("advdupe2_offset_roll" , R)
 				end
