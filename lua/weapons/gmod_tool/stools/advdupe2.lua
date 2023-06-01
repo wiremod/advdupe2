@@ -827,73 +827,63 @@ if(CLIENT)then
 		GAMEMODE:PlayerBindPress(ply, bind, pressed)
 	end
 
-	local XTotal = 0
-	local YTotal = 0
-	local LastXDegree = 0
-	local function MouseControl( cmd )
-		local X = -cmd:GetMouseX()/-20
-		local Y = cmd:GetMouseY()/-20
+	local YawTo = 0
+	local BsAng = Angle()
 
-		local X2 = 0
-		local Y2 = 0
-
-		if(X~=0)then
-			X2 = tonumber(LocalPlayer():GetInfo("advdupe2_offset_yaw"))
-
-			if(LocalPlayer():KeyDown(IN_SPEED))then
-				XTotal = XTotal + X
-				local temp = XTotal + X2
-
-				local degree = math.Round(temp/45)*45
-				if(degree>=225)then
-					degree = -135
-				elseif(degree<=-225)then
-					degree = 135
-				end
-				if(degree~=LastXDegree)then
-					XTotal = 0
-					LastXDegree = degree
-				end
-
-				X2 = degree
-			else
-				X2 = X2 + X
-				if(X2<-180)then
-					X2 = X2+360
-				elseif(X2>180)then
-					X2 = X2-360
-				end
-			end
-			RunConsoleCommand("advdupe2_offset_yaw", X2)
+	local function GetRotationSign(ply)
+		local VY = tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0
+		BsAng:Zero(); BsAng:RotateAroundAxis(BsAng:Up(), VY)
+		local PR = ply:GetRight()
+		local DP = BsAng:Right():Dot(PR)
+		local DR = BsAng:Forward():Dot(PR)
+		if(math.abs(DR) > math.abs(DP)) then -- Roll priority
+			if(DR >= 0) then return -1, 1 else return  1, -1 end
+		else -- Pitch axis takes priority. Normal X-Y map
+			if(DP >= 0) then return  1, 1 else return -1, -1 end
 		end
+	end
 
-		/*if(Y~=0)then
-			local modyaw = LocalPlayer():GetAngles().y
-			local modyaw2 = tonumber(LocalPlayer():GetInfo("advdupe2_offset_yaw"))
+	local function MouseControl( cmd )
+		local ply = LocalPlayer()
+		local X =  cmd:GetMouseX() / 20
+		local Y = -cmd:GetMouseY() / 20
+		local ru = ply:KeyDown(IN_SPEED)
+		local mm = input.IsMouseDown(MOUSE_MIDDLE)
 
-			if(modyaw<0)then modyaw = modyaw + 360 else modyaw = modyaw + 180 end
-			if(modyaw2<0)then modyaw2 = modyaw2 + 360 else modyaw2 = modyaw2 + 180 end
-
-			modyaw = modyaw - modyaw2
-			local modyaw3 = modyaw
-			if(modyaw3<0)then
-				modyaw3 = modyaw3 * -1
+		if(mm) then
+			if(ru) then
+				YawTo = 0 -- Reset total integrated yaw
+				RunConsoleCommand("advdupe2_offset_pitch", 0)
+				RunConsoleCommand("advdupe2_offset_yaw"  , 0)
+				RunConsoleCommand("advdupe2_offset_roll" , 0)
+			else
+				if(Y ~= 0) then
+					local VR = tonumber(ply:GetInfo("advdupe2_offset_roll"))  or 0
+					local VP = tonumber(ply:GetInfo("advdupe2_offset_pitch")) or 0
+					local SP, SR, P, R = GetRotationSign(ply)
+					if(SP ~= SR) then
+						P = math.NormalizeAngle(VP + X * SR)
+						R = math.NormalizeAngle(VR + Y * SP)
+					else
+						P = math.NormalizeAngle(VP + Y * SP)
+						R = math.NormalizeAngle(VR + X * SR)
+					end
+					RunConsoleCommand("advdupe2_offset_pitch", P)
+					RunConsoleCommand("advdupe2_offset_roll" , R)
+				end
 			end
-
-			local pitch = tonumber(LocalPlayer():GetInfo("advdupe2_offset_pitch"))
-			local roll = tonumber(LocalPlayer():GetInfo("advdupe2_offset_roll"))
-
-				--print(modyaw3)
-			if(modyaw3 <= 90)then
-				pitch = pitch + (Y - Y * (modyaw3/90))
-				roll = roll - (Y*(modyaw3/90))
+		else
+			if(X ~= 0)then
+				VY = tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0
+				if(ru)then
+					YawTo = YawTo + X -- Integrate the mouse on the X value from the mouse
+					RunConsoleCommand("advdupe2_offset_yaw", math.SnapTo(math.NormalizeAngle(YawTo), 45))
+				else
+					YawTo = VY + X -- Update the last yaw with the current value from the mouse
+					RunConsoleCommand("advdupe2_offset_yaw", math.NormalizeAngle(YawTo))
+				end
 			end
-
-			--if(pitch>180)then pitch = -180
-
-			RunConsoleCommand("advdupe2_offset_pitch",pitch)
-			RunConsoleCommand("advdupe2_offset_roll",roll)
-		end*/
+		end
 	end
 
 	--Checks binds to modify dupes position and angles
@@ -915,12 +905,6 @@ if(CLIENT)then
 				hook.Remove("PlayerBindPress", "AdvDupe2_BindPress")
 				hook.Remove("CreateMove", "AdvDupe2_MouseControl")
 			end
-
-			XTotal = 0
-			YTotal = 0
-			LastXDegree = 0
-
-			return
 		end
 	end
 
@@ -1564,22 +1548,25 @@ if(CLIENT)then
 		tryToBuild()
 	end
 
-	local state = 0
-	local ToColor = {r=25, g=100, b=40, a=255}
+	local StColor  = {r=130, g=25, b=40, a=255}
+	local NoColor  = {r=25, g=100, b=40, a=255}
 	local CurColor = {r=25, g=100, b=40, a=255}
-	local rate
+	local CWhite   = Color(255,255,255,255)
 	surface.CreateFont ("AD2Font", {font="Arial", size=40, weight=1000}) ---Remember to use gm_clearfonts
 	surface.CreateFont ("AD2TitleFont", {font="Arial", size=24, weight=1000})
+
 	function TOOL:DrawToolScreen()
 		if(not AdvDupe2)then return true end
 
 		local text = "Ready"
+		local state, co = false
+		local ply = LocalPlayer()
+
 		if(AdvDupe2.Preview)then
 			text = "Preview"
 		end
-		local state=0
 		if(AdvDupe2.ProgressBar.Text)then
-			state=1
+			state = true
 			text = AdvDupe2.ProgressBar.Text
 		end
 
@@ -1588,30 +1575,32 @@ if(CLIENT)then
 			surface.SetDrawColor(32, 32, 32, 255)
 			surface.DrawRect(0, 0, 256, 256)
 
-			if(state==0)then
-				ToColor = {r=25, g=100, b=40, a=255}
+			if(state)then
+				co = StColor
 			else
-				ToColor = {r=130, g=25, b=40, a=255}
+				co = NoColor
 			end
 
-			rate = FrameTime()*160
-			CurColor.r = math.Approach( CurColor.r, ToColor.r, rate )
-			CurColor.g = math.Approach( CurColor.g, ToColor.g, rate )
+			local rate = FrameTime() * 160
+			CurColor.r = math.Approach( CurColor.r, co.r, rate )
+			CurColor.g = math.Approach( CurColor.g, co.g, rate )
 
 			surface.SetDrawColor(CurColor)
 			surface.DrawRect(13, 13, 230, 230)
 
 			surface.SetTextColor( 255, 255, 255, 255 )
 
-			draw.SimpleText("Advanced Duplicator 2", "AD2TitleFont", 128, 50, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
-			draw.SimpleText(text, "AD2Font", 128, 128, Color(255,255,255,255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
-			if(state~=0)then
+			draw.SimpleText("Advanced Duplicator 2", "AD2TitleFont", 128, 50, CWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+			draw.SimpleText(text, "AD2Font", 128, 128, CWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+			if(state)then
 				draw.RoundedBox( 6, 32, 178, 192, 28, Color( 255, 255, 255, 150 ) )
-				draw.RoundedBox( 6, 36, 182, 188*(AdvDupe2.ProgressBar.Percent/100), 24, Color( 0, 255, 0, 255 ) )
-			elseif(LocalPlayer():KeyDown(IN_USE))then
-				draw.SimpleText("Height: "..LocalPlayer():GetInfo("advdupe2_offset_z"), "AD2TitleFont", 25, 160, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
-				draw.SimpleText("Pitch: "..LocalPlayer():GetInfo("advdupe2_offset_pitch"), "AD2TitleFont", 25, 190, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
-				draw.SimpleText("Yaw: "..LocalPlayer():GetInfo("advdupe2_offset_yaw"), "AD2TitleFont", 25, 220, Color(255,255,255,255), TEXT_ALIGN_LEFT, TEXT_ALIGN_BOTTOM)
+				draw.RoundedBox( 6, 34, 180, 188*(AdvDupe2.ProgressBar.Percent / 100), 24, Color( 0, 255, 0, 255 ) )
+			elseif(ply:KeyDown(IN_USE))then
+				local font, align = "AD2TitleFont", TEXT_ALIGN_BOTTOM
+				draw.SimpleText("H: "..ply:GetInfo("advdupe2_offset_z")    , font, 20,  210, CWhite, TEXT_ALIGN_LEFT , align)
+				draw.SimpleText("P: "..ply:GetInfo("advdupe2_offset_pitch"), font, 236, 210, CWhite, TEXT_ALIGN_RIGHT, align)
+				draw.SimpleText("Y: "..ply:GetInfo("advdupe2_offset_yaw")  , font, 20 , 240, CWhite, TEXT_ALIGN_LEFT , align)
+				draw.SimpleText("R: "..ply:GetInfo("advdupe2_offset_roll") , font, 236, 240, CWhite, TEXT_ALIGN_RIGHT, align)
 			end
 
 		cam.End2D()
