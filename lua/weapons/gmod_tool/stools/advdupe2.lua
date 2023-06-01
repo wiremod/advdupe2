@@ -828,14 +828,18 @@ if(CLIENT)then
 	end
 
 	local YawTo = 0
+	local BsAng = Angle()
 
 	local function GetRotationSign(ply)
+		local VY = tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0
+		BsAng:Zero(); BsAng:RotateAroundAxis(BsAng:Up(), VY)
 		local PR = ply:GetRight()
-		local DP, DR = PR.y, PR.x
+		local DP = BsAng:Right():Dot(PR)
+		local DR = BsAng:Forward():Dot(PR)
 		if(math.abs(DR) > math.abs(DP)) then -- Roll priority
 			if(DR >= 0) then return -1, 1 else return  1, -1 end
 		else -- Pitch axis takes priority. Normal X-Y map
-			if(DP >= 0) then return  -1, -1 else return 1, 1 end
+			if(DP >= 0) then return  1, 1 else return -1, -1 end
 		end
 	end
 
