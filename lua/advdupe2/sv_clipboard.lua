@@ -978,7 +978,11 @@ local function CreateEntityFromTable(EntTable, Player)
 			ArgList[iNumber] = Arg
 
 		end
-
+		
+		if #EntityClass.Args > #ArgList then
+			return
+		end
+		
 		-- Create and return the entity
 		if (EntTable.Class == "prop_physics") then
 			valid = MakeProp(Player, unpack(ArgList, 1, #EntityClass.Args)) -- Create prop_physics like this because if the model doesn't exist it will cause
