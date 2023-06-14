@@ -131,8 +131,7 @@ if(SERVER)then
 
 	local function PlayerCanDupeTool(ply, ent)
 		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
-		local trace = WireLib and WireLib.dummytrace(ent) or { Entity = ent }
-		return hook.Run( "CanTool", ply,  trace, "advdupe2" ) ~= false
+		return hook.Run( "CanTool", ply, { Entity = ent }, "advdupe2" ) ~= false
 	end
 
 	--Find all the entities in a box, given the adjacent corners and the player
