@@ -129,9 +129,28 @@ if(SERVER)then
 		return ent:CPPIGetOwner()==ply
 	end
 
+	-- Code from WireLib.CanTool
+	local zero = Vector(0, 0, 0)
+	local norm = Vector(1, 0, 0)
+
+	local tr = { ---@type TraceResult
+		Hit = true, HitNonWorld = true, HitNoDraw = false, HitSky = false, AllSolid = true,
+		HitNormal = zero, Normal = norm,
+
+		Fraction = 1, FractionLeftSolid = 0,
+		HitBox = 0, HitGroup = 0, HitTexture = "**studio**",
+		MatType = 0, PhysicsBone = 0, SurfaceProps = 0, DispFlags = 0, Contents = 0,
+
+		Entity = NULL, HitPos = zero, StartPos = zero,
+	}
+
 	local function PlayerCanDupeTool(ply, ent)
 		if not AdvDupe2.duplicator.IsCopyable(ent) or areacopy_classblacklist[ent:GetClass()] then return false end
-		return hook.Run( "CanTool", ply, { Entity = ent }, "advdupe2" ) ~= false
+
+		local pos = ent:GetPos()
+		tr.Entity, tr.HitPos, tr.StartPos = ent, pos, pos
+
+		return hook.Run( "CanTool", ply, tr, "advdupe2" ) ~= false
 	end
 
 	--Find all the entities in a box, given the adjacent corners and the player
