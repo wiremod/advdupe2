@@ -54,7 +54,7 @@ local function CopyClassArgTable(tab)
 					newtable[k] = v
 				end
 			else
-				print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
+				print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
 			end
 		end
 		return newtable
