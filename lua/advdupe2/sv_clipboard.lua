@@ -13,6 +13,8 @@ AdvDupe2.JobManager = {}
 AdvDupe2.JobManager.PastingHook = false
 AdvDupe2.JobManager.Queue = {}
 
+local debugConvar = GetConVar("AdvDupe2_DebugInfo")
+
 local constraints = {
 	Weld       = true,
 	Axis       = true,
@@ -54,7 +56,9 @@ local function CopyClassArgTable(tab)
 					newtable[k] = v
 				end
 			else
-				print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
+                if debugConvar:GetBool() then
+                    print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
+                end
 			end
 		end
 		return newtable
@@ -143,9 +147,8 @@ local function CopyEntTable(Ent, Offset)
 					else
 						Tab[Key] = EntTable[Key]
 					end
-				elseif varType ~= TYPE_NIL then
-					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"" .. Ent:GetClass() ..
-									"\" has unsupported value of type \"" .. type(EntTable[Key]) .. "\"!\n")
+				elseif varType ~= TYPE_NIL and debugConvar:GetBool() then
+					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"" .. Ent:GetClass() .. "\" has unsupported value of type \"" .. type(EntTable[Key]) .. "\"!\n")
 				end
 			end
 		end

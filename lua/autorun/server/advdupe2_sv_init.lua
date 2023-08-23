@@ -5,6 +5,8 @@ AdvDupe2 = {
 
 AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
 
+CreateConVar("AdvDupe2_DebugInfo", "0", {FCVAR_ARCHIVE}, "Should extra info be printed to console?", 0, 1)
+
 include "advdupe2/sv_clipboard.lua"
 include "advdupe2/sh_codec.lua"
 include "advdupe2/sv_misc.lua"
