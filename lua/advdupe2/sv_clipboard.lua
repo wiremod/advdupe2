@@ -56,9 +56,9 @@ local function CopyClassArgTable(tab)
 					newtable[k] = v
 				end
 			else
-                if debugConvar:GetBool() then
-                    print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
-                end
+				if debugConvar:GetBool() then
+					print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
+				end
 			end
 		end
 		return newtable
