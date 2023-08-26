@@ -1476,7 +1476,7 @@ end
 local ticktotal = 0
 local function ErrorCatchSpawning()
 
-	ticktotal = ticktotal + AdvDupe2.SpawnRate
+	ticktotal = ticktotal + math.max(GetConVarNumber("AdvDupe2_SpawnRate"), 0.01)
 	while ticktotal >= 1 do
 		ticktotal = ticktotal - 1
 		local status, err = pcall(AdvDupe2_Spawn)

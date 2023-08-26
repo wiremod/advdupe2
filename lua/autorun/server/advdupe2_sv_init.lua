@@ -4,7 +4,6 @@ AdvDupe2 = {
 }
 
 AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
-AdvDupe2.SpawnRate = 1
 
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	net.Start("AdvDupe2Notify")
@@ -58,16 +57,6 @@ CreateConVar("AdvDupe2_UpdateFilesDelay", "10", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_LoadMap", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MapFileName", "", {FCVAR_ARCHIVE})
 
-cvars.AddChangeCallback("AdvDupe2_SpawnRate",
-function(cvar, preval, newval)
-	newval = tonumber(newval)
-	if(newval~=nil and newval>0)then
-		AdvDupe2.SpawnRate = newval
-	else
-		print("[AdvDupe2Notify]\tINVALID SPAWN RATE")
-	end
-end)
-	
 local function PasteMap()
 	if(GetConVarString("AdvDupe2_LoadMap")=="0")then return end
 	local filename = GetConVarString("AdvDupe2_MapFileName")
@@ -127,15 +116,6 @@ local function PasteMap()
 end
 hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
 hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
-
-hook.Add("Initialize", "AdvDupe2_CheckServerSettings",function()
-	AdvDupe2.SpawnRate = tonumber(GetConVarString("AdvDupe2_SpawnRate"))
-	if not AdvDupe2.SpawnRate or AdvDupe2.SpawnRate <= 0 then
-		AdvDupe2.SpawnRate = 1
-		print("[AdvDupe2Notify]\tINVALID SPAWN RATE DEFAULTING VALUE")
-	end
-end)
-
 hook.Add("PlayerInitialSpawn","AdvDupe2_AddPlayerTable",function(ply)
 	ply.AdvDupe2 = {}
 end)
