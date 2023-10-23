@@ -136,6 +136,9 @@ local function CopyEntTable(Ent, Offset)
 
 	if EntityClass then
 		for iNumber, Key in pairs(EntityClass.Args) do
+			if gtSetupTable.SPECIAL[Key] then
+				Tab = CopyClassArgTable(EntTable)
+			end
 			-- Ignore keys from old system
 			if (not gtSetupTable.POS[Key] and
 					not gtSetupTable.ANG[Key] and
