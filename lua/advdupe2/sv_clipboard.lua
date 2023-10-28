@@ -253,11 +253,11 @@ local function CopyEntTable(Ent, Offset)
 		local c = gtSetupTable.COMPARE
 		for i = 0, Ent:GetBoneCount() do
 			local s = Ent:GetManipulateBoneScale(i)
-						s = ((s ~= c.V1) and s or nil)
+			s = ((s ~= c.V1) and s or nil)
 			local a = Ent:GetManipulateBoneAngles(i)
-						a = ((a ~= c.A0) and a or nil)
+			a = ((a ~= c.A0) and a or nil)
 			local p = Ent:GetManipulateBonePosition(i)
-						p = ((p ~= c.V0) and p or nil)
+			p = ((p ~= c.V0) and p or nil)
 			-- Avoid making a vector just to compare it
 			if (s or a or p) then
 				Tab.BoneManip[i] = {s = s, a = a, p = p}
