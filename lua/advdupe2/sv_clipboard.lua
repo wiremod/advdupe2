@@ -243,33 +243,26 @@ local function CopyEntTable(Ent, Offset)
 		end
 	end
 
-	if(next(Tab.BodyG)==nil)then
+	if(next(Tab.BodyG) == nil)then
 		Tab.BodyG = nil
 	end
 
 	-- Bone Manipulator
 	if (Ent:HasBoneManipulations()) then
-
 		Tab.BoneManip = {}
-		local t, s, a, p
 		local c = gtSetupTable.COMPARE
 		for i = 0, Ent:GetBoneCount() do
-			t = {}
-			s = Ent:GetManipulateBoneScale(i)
-			a = Ent:GetManipulateBoneAngles(i)
-			p = Ent:GetManipulateBonePosition(i)
-
+			local s = Ent:GetManipulateBoneScale(i)
+			s = ((s ~= c.V1) and s or nil)
+			local a = Ent:GetManipulateBoneAngles(i)
+			a = ((a ~= c.A0) and a or nil)
+			local p = Ent:GetManipulateBonePosition(i)
+			p = ((p ~= c.V0) and p or nil)
 			-- Avoid making a vector just to compare it
-			if (s ~= c.V1) then t['s'] = s end
-			if (a ~= c.A0) then t['a'] = a end
-			if (p ~= c.V0) then t['p'] = p end
-
-			if (t['s'] or t['a'] or t['p']) then
-				Tab.BoneManip[i] = t
+			if (s or a or p) then
+				Tab.BoneManip[i] = {s = s, a = a, p = p}
 			end
-
 		end
-
 	end
 
 	if Ent.GetNetworkVars then Tab.DT = Ent:GetNetworkVars() end
