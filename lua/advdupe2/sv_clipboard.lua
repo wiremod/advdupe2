@@ -1550,7 +1550,7 @@ local function RemoveSpawnedEntities(tbl, i)
 	end
 end
 
-function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection, revision)
+function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
 	local i = #AdvDupe2.JobManager.Queue + 1
 
 	local Queue = {
@@ -1568,7 +1568,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		CreatedConstraints = {},
 		PositionOffset = PositionOffset or Vector(0, 0, 0),
 		AngleOffset = AngleOffset or Angle(0, 0, 0),
-		Revision = revision or Player.AdvDupe2.Revision,
+		Revision = Player.AdvDupe2.Revision,
 	}
 	AdvDupe2.JobManager.Queue[i] = Queue
 
