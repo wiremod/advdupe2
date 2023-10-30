@@ -66,6 +66,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 	ply.AdvDupe2.Entities = {}
 	ply.AdvDupe2.Constraints = {}
 	ply.AdvDupe2.HeadEnt={}
+	ply.AdvDupe2.Revision = info.revision
 
 	if(info.ad1)then
 
