@@ -1568,7 +1568,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		CreatedConstraints = {},
 		PositionOffset = PositionOffset or Vector(0, 0, 0),
 		AngleOffset = AngleOffset or Angle(0, 0, 0),
-		Revision = Player.AdvDupe2.Revision,
+		Revision = Player.AdvDupe2.Revision or AdvDupe2.CODEC_REVISION,
 	}
 	AdvDupe2.JobManager.Queue[i] = Queue
 

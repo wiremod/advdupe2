@@ -9,6 +9,7 @@
 ]]
 
 local REVISION = 5
+AdvDupe2.CODEC_REVISION = REVISION
 
 include "sh_codec_legacy.lua"
 AddCSLuaFile "sh_codec_legacy.lua"
