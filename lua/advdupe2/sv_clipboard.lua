@@ -1226,7 +1226,6 @@ local function AdvDupe2_Spawn()
 			AdvDupe2.InitProgressBar(Queue.Player, "Pasting:")
 			Queue.Player.AdvDupe2.Queued = false
 		end
-		local newpos
 		if (Queue.Current > #Queue.SortedEntities) then
 			Queue.Entity = false
 			Queue.Constraint = true
@@ -1242,14 +1241,14 @@ local function AdvDupe2_Spawn()
 		local v = Queue.EntityList[k]
 
 		if (not v.BuildDupeInfo) then v.BuildDupeInfo = {} end
-		if (v.LocalPos) then
-			for i, p in pairs(v.PhysicsObjects) do
+		if Queue.Revision < 1 and v.LocalPos then
+			for i, _ in pairs(v.PhysicsObjects) do
 				v.PhysicsObjects[i] = {Pos = v.LocalPos, Angle = v.LocalAngle}
 			end
 		end
 
 		v.BuildDupeInfo.PhysicsObjects = table.Copy(v.PhysicsObjects)
-		proppos = v.PhysicsObjects[0].Pos
+		local proppos = v.PhysicsObjects[0].Pos
 		v.BuildDupeInfo.PhysicsObjects[0].Pos = Vector(0, 0, 0)
 		if (Queue.OrigPos) then
 			for i, p in pairs(v.BuildDupeInfo.PhysicsObjects) do
@@ -1551,14 +1550,27 @@ local function RemoveSpawnedEntities(tbl, i)
 	end
 end
 
-function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
+function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection, revision)
 	local i = #AdvDupe2.JobManager.Queue + 1
-	AdvDupe2.JobManager.Queue[i] = {}
 
-	local Queue = AdvDupe2.JobManager.Queue[i]
-	Queue.Player = Player
-	Queue.SortedEntities = {}
-	Queue.EntityList = table.Copy(Player.AdvDupe2.Entities)
+	local Queue = {
+		Player = Player,
+		SortedEntities = {},
+		EntityList = table.Copy(Player.AdvDupe2.Entities),
+		Current = 1,
+		Name = Player.AdvDupe2.Name,
+		Entity = true,
+		Constraint = false,
+		Parenting = Parenting,
+		DisableParents = DisableParents,
+		DisableProtection = DisableProtection,
+		CreatedEntities = {},
+		CreatedConstraints = {},
+		PositionOffset = PositionOffset or Vector(0, 0, 0),
+		AngleOffset = AngleOffset or Angle(0, 0, 0),
+		Revision = revision or Player.AdvDupe2.Revision,
+	}
+	AdvDupe2.JobManager.Queue[i] = Queue
 
 	if (Constrs) then
 		Queue.ConstraintList = table.Copy(Player.AdvDupe2.Constraints)
@@ -1579,17 +1591,6 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 						" Entities and " .. #Player.AdvDupe2.Constraints .. " Constraints.")
 	end
 
-	Queue.Current = 1
-	Queue.Name = Player.AdvDupe2.Name
-	Queue.Entity = true
-	Queue.Constraint = false
-	Queue.Parenting = Parenting
-	Queue.DisableParents = DisableParents
-	Queue.DisableProtection = DisableProtection
-	Queue.CreatedEntities = {}
-	Queue.CreatedConstraints = {}
-	Queue.PositionOffset = PositionOffset or Vector(0, 0, 0)
-	Queue.AngleOffset = AngleOffset or Angle(0, 0, 0)
 	Queue.Plus = #Queue.SortedEntities
 	Queue.Percent = 1 / (#Queue.SortedEntities + #Queue.ConstraintList)
 	AdvDupe2.InitProgressBar(Player, "Queued:")
