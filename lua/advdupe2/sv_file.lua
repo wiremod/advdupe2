@@ -1,21 +1,38 @@
---Save a file to the client
+---@class Player : Entity
+---@field AdvDupe2 Player.AdvDupe2
+
+--- A struct containing the player's AdvDupe2 state.
+---@class Player.AdvDupe2
+---@field Entities Entity[]
+---@field Constraints Entity[]
+---@field HeadEnt { Z: integer, Pos: Vector, Index: integer }
+---@field Name string
+---@field Pasting boolean
+---@field Downloading boolean
+---@field Queued boolean
+---@field FileMod number
+
+--- Save a file to the client
+---@param ply Player
+---@param cmd string
+---@param args string[]
 local function SaveFile(ply, cmd, args)
 	if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or next(ply.AdvDupe2.Entities)==nil)then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
 	if(not game.SinglePlayer() and CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
 		AdvDupe2.Notify(ply,"Cannot save at the moment. Please Wait...", NOTIFY_ERROR)
 		return
 	end
-	
+
 	if(ply.AdvDupe2.Pasting || ply.AdvDupe2.Downloading)then
 		AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
-		return false 
+		return false
 	end
 
 	ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay")+2)
-	
+
 	local name = string.Explode("/", args[1])
 	ply.AdvDupe2.Name = name[#name]
-	
+
 	net.Start("AdvDupe2_SetDupeInfo")
 		net.WriteString(ply.AdvDupe2.Name)
 		net.WriteString(ply:Nick())
@@ -26,7 +43,8 @@ local function SaveFile(ply, cmd, args)
 		net.WriteString(table.Count(ply.AdvDupe2.Entities))
 		net.WriteString(#ply.AdvDupe2.Constraints)
 	net.Send(ply)
-	
+
+	---@type Dupe
 	local Tab = {Entities = ply.AdvDupe2.Entities, Constraints = ply.AdvDupe2.Constraints, HeadEnt = ply.AdvDupe2.HeadEnt, Description=args[2]}
 
 	AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
@@ -48,14 +66,20 @@ function AdvDupe2.SendToClient(ply, data, autosave)
 	net.Send(ply)
 end
 
-function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
+--- Loads a dupe
+---@param ply Player
+---@param success boolean
+---@param dupe table?
+---@param info table?
+---@param moreinfo table?
+local function loadDupe(ply,success,dupe,info,moreinfo)
 	if(not IsValid(ply))then return end
-			
+
 	if not success then 
 		AdvDupe2.Notify(ply,"Could not open "..dupe,NOTIFY_ERROR)
 		return
 	end
-			
+
 	if(not game.SinglePlayer())then
 		if(tonumber(GetConVarString("AdvDupe2_MaxConstraints"))~=0 and #dupe["Constraints"]>tonumber(GetConVarString("AdvDupe2_MaxConstraints")))then
 			AdvDupe2.Notify(ply,"Amount of constraints is greater than "..GetConVarString("AdvDupe2_MaxConstraints"),NOTIFY_ERROR)
@@ -101,7 +125,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 
 		ply.AdvDupe2.Entities = dupe["Entities"]
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
-		
+
 	else	
 		ply.AdvDupe2.Entities = dupe["Entities"]
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
@@ -109,7 +133,9 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 	end
 	AdvDupe2.ResetOffsets(ply, true)
 end
+AdvDupe2.LoadDupe = loadDupe
 
+---@param ply Player
 local function AdvDupe2_ReceiveFile(len, ply)
 	if not IsValid(ply) then return end
 	if not ply.AdvDupe2 then ply.AdvDupe2 = {} end
@@ -118,7 +144,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 
 	local stream = net.ReadStream(ply, function(data)
 		if data then
-			AdvDupe2.LoadDupe(ply, AdvDupe2.Decode(data))
+			loadDupe(ply, AdvDupe2.Decode(data))
 		else
 			AdvDupe2.Notify(ply, "Duplicator Upload Failed!", NOTIFY_ERROR, 5)
 		end

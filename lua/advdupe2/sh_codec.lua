@@ -360,12 +360,11 @@ local function deserialize(str, read)
 	end
 end
 
---[[
-	Name:	Encode
-	Desc:	Generates the string for a dupe file with the given data.
-	Params:	<table> dupe, <table> info, <function> callback, <...> args
-	Return:	runs callback(<string> encoded_dupe, <...> args)
-]]
+--- Generates the string for a dupe file with the given data.
+--- Runs `callback(encoded_dupe, ...)`.
+---@param dupe Dupe
+---@param info DupeInfo
+---@param callback fun(encoded_dupe:string, ...)
 function AdvDupe2.Encode(dupe, info, callback, ...)
 	local encodedTable = compress(serialize(dupe))
 	info.check = "\r\n\t\n"
@@ -420,6 +419,34 @@ versions[5] = function(encodedDupe)
 	return deserialize(decompress(dupestring), read5), info
 end
 
+---@class PhysicsObjects.AD1
+---@field LocalPos Vector
+---@field LocalAngle Angle
+
+---@class PhysicsObjects.AD2
+---@field Pos Vector
+---@field Angle Angle
+
+---@class Entity
+---@field PhysicsObjects PhysicsObjects.AD2[]|PhysicsObjects.AD1[]
+
+--- A struct representing a dupe
+---@class Dupe
+---@field HeadEnt { Z: integer, Pos: Vector, Index: integer }
+---@field Entities Entity[]
+---@field Constraints Entity[]
+---@field Description string
+
+---A struct representing a dupe's metadata
+---@class DupeInfo
+---@field revision integer
+---@field ad1 boolean? `true` if the dupe is an AdvDupe1 file
+---@field size integer
+---@field check string
+
+---@param dupe Dupe
+---@return boolean success `true` if the dupe passed all checks
+---@return Dupe|string info The checked dupe or an error message if check failed
 function AdvDupe2.CheckValidDupe(dupe, info)
 	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
 	if not dupe.Entities then return false, "Missing Entities table" end
@@ -442,12 +469,13 @@ function AdvDupe2.CheckValidDupe(dupe, info)
 	return true, dupe
 end
 
---[[
-	Name:	Decode
-	Desc:	Generates the table for a dupe from the given string. Inverse of Encode
-	Params:	<string> encodedDupe, <function> callback, <...> args
-	Return:	runs callback(<boolean> success, <table/string> tbl, <table> info)
-]]
+
+--- Generates the table for a dupe from the given string. Inverse of Encode
+---@param encodedDupe string A raw binary string representing a dupe
+---@return boolean success `true` if the decoding succeeded
+---@return string|Dupe dupe As a `string`, the error message if `success` is `false`. As a table, the info included in the dupe
+---@return DupeInfo? info A table of the info of the dupe
+---@return table? moreinfo Legacy. Only returned by AdvDupe1 files
 function AdvDupe2.Decode(encodedDupe)
 
 	local sig, rev = encodedDupe:match("^(....)(.)")
@@ -504,10 +532,13 @@ function AdvDupe2.Decode(encodedDupe)
 	elseif rev < 1 then
 		return false, format("Attempt to use an invalid format revision (rev %d)!", rev)
 	else
+		---@type boolean, Dupe|string, DupeInfo?
 		local success, tbl, info = pcall(versions[rev], encodedDupe)
 
 		if success then
+			---@cast tbl -string
 			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
+			---@cast tbl +string
 		end
 
 		if success then

@@ -116,8 +116,9 @@ local function PasteMap()
 end
 hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
 hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
-hook.Add("PlayerInitialSpawn","AdvDupe2_AddPlayerTable",function(ply)
-	ply.AdvDupe2 = {}
+hook.Add("PlayerInitialSpawn","AdvDupe2_AddPlayerTable", function(ply) ---@param ply Player
+	---@diagnostic disable-next-line
+	ply.AdvDupe2 = {} ---@type Player.AdvDupe2
 end)
 
 include "advdupe2/sv_clipboard.lua"

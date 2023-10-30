@@ -38,6 +38,7 @@ local serializable = {
 	[TYPE_STRING] = true
 }
 
+--- Returns a deep copy of all fields of the entity
 local function CopyClassArgTable(tab)
 	local done = {}
 	local function recursiveCopy(oldtable)
@@ -65,13 +66,6 @@ local function CopyClassArgTable(tab)
 	end
 	return recursiveCopy(tab)
 end
-
---[[
-	Name: CopyEntTable
-	Desc: Returns a copy of the passed entity's table
-	Params: <entity> Ent
-	Returns: <table> enttable
-]]
 
 --[[---------------------------------------------------------
 	Returns a copy of the passed entity's table
@@ -119,11 +113,33 @@ function AdvDupe2.duplicator.IsCopyable(Ent)
 	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
 
+---@class DupeData
+---@field Pos Vector
+---@field Class string
+---@field Model string
+---@field Skin number?
+---@field CollisionGroup number|COLLISION_GROUP
+---@field ModelScale number?
+---@field BuildDupeInfo table
+---@field BoneMods table
+---@field EntityMods table?
+---@field PhysicsObjects table?
+---@field BoneManip table?
+---@field Flex table?
+---@field FlexScale number?
+---@field BodyG table?
+---@field DT table?
+
+---Copies the entity's entire data table and returns it
+---@param Ent Entity
+---@param Offset Vector
+---@return DupeData
 local function CopyEntTable(Ent, Offset)
 	-- Filter duplicator blocked entities out.
 	if not AdvDupe2.duplicator.IsCopyable(Ent) then return nil end
 
-	local Tab = {}
+	---@type DupeData
+	local Tab = {} ---@diagnostic disable-line
 
 	if Ent.PreEntityCopy then
 		local status, valid = pcall(Ent.PreEntityCopy, Ent)
@@ -135,7 +151,7 @@ local function CopyEntTable(Ent, Offset)
 	local EntTable = Ent:GetTable()
 
 	if EntityClass then
-		for iNumber, Key in pairs(EntityClass.Args) do
+		for _, Key in pairs(EntityClass.Args) do
 			if gtSetupTable.SPECIAL[Key] then
 				Tab = CopyClassArgTable(EntTable)
 			end
@@ -369,12 +385,13 @@ local function CopyConstraintTable(Const, Offset)
 	return Constraint, Entities
 end
 
---[[
-	Name: Copy
-	Desc: Copy an entity and all entities constrained
-	Params: <entity> Entity
-	Returns: <table> Entities, <table> Constraints
-]]
+--- Deep copies all entities and constraints connected to `Ent` into `EntTable` and `ConstraintTable`.
+---@param Ent Entity The entity to be copied
+---@param EntTable table An empty table to store all visited entities
+---@param ConstraintTable table An empty table to store all visited constraints
+---@param Offset Vector An offset from the origin copy position
+---@return table Entities
+---@return table Constraints
 local function Copy(Ent, EntTable, ConstraintTable, Offset)
 
 	local index = Ent:EntIndex()
@@ -838,12 +855,14 @@ local function GenericDuplicatorFunction(data, Player)
 	return Entity
 end
 
---[[
-	Name: MakeProp
-	Desc: Make prop without spawn effects
-	Params: <player> Player, <vector> Pos, <angle> Ang, <string> Model, <table> PhysicsObject, <table> Data
-	Returns: <entity> Prop
-]]
+---Make prop without spawn effects
+---@param Player Player
+---@param Pos Vector
+---@param Ang Angle
+---@param Model string
+---@param PhysicsObject table
+---@param Data table
+---@return Entity Prop
 local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 
 	if (not util.IsValidModel(Model) and not file.Exists(Data.Model, "GAME")) then
@@ -1272,7 +1291,7 @@ local function AdvDupe2_Spawn()
 		end
 
 		AdvDupe2.SpawningEntity = true
-		local Ent = CreateEntityFromTable(v, Queue.Player)
+		Ent = CreateEntityFromTable(v, Queue.Player)
 		AdvDupe2.SpawningEntity = false
 
 		if Ent then
@@ -1287,8 +1306,6 @@ local function AdvDupe2_Spawn()
 			if (not Queue.DisableProtection) then Ent:SetNotSolid(true) end
 			if (v.CollisionGroup) then Ent:SetCollisionGroup(v.CollisionGroup) end
 			if (Ent.OnDuplicated) then Ent:OnDuplicated(v) end
-		elseif (Ent == false) then
-			Ent = nil
 		else
 			Ent = nil
 		end
@@ -1341,7 +1358,7 @@ local function AdvDupe2_Spawn()
 			end
 		elseif (next(Queue.ConstraintList) ~= nil) then
 			local tbl = {}
-			for k, v in pairs(Queue.ConstraintList) do
+			for _, v in pairs(Queue.ConstraintList) do
 				table.insert(tbl, v)
 			end
 			Queue.ConstraintList = tbl
@@ -1550,13 +1567,30 @@ local function RemoveSpawnedEntities(tbl, i)
 	end
 end
 
-function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
+
+
+
+
+--- Adds a `Queue` to the pasting queue.
+---@param Player Player
+---@param PositionOffset Vector?
+---@param AngleOffset Angle?
+---@param OrigPos Vector
+---@param Constrs boolean
+---@param Parenting boolean
+---@param DisableParents boolean
+---@param DisableProtection boolean
+---@param revision integer?
+---@see Queue
+function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection, revision)
 	local i = #AdvDupe2.JobManager.Queue + 1
 
+	---An element in the pasting queue.
+	---@class Queue
 	local Queue = {
 		Player = Player,
-		SortedEntities = {},
-		EntityList = table.Copy(Player.AdvDupe2.Entities),
+		SortedEntities = {}, ---@type Entity[]
+		EntityList = table.Copy(Player.AdvDupe2.Entities), ---@type Entity[]
 		Current = 1,
 		Name = Player.AdvDupe2.Name,
 		Entity = true,
@@ -1564,8 +1598,8 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		Parenting = Parenting,
 		DisableParents = DisableParents,
 		DisableProtection = DisableProtection,
-		CreatedEntities = {},
-		CreatedConstraints = {},
+		CreatedEntities = {}, ---@type Entity[]
+		CreatedConstraints = {}, ---@type Entity[]
 		PositionOffset = PositionOffset or Vector(0, 0, 0),
 		AngleOffset = AngleOffset or Angle(0, 0, 0),
 		Revision = Player.AdvDupe2.Revision,
