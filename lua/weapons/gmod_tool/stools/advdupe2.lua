@@ -349,7 +349,7 @@ if(SERVER)then
 		ply.AdvDupe2.HeadEnt = HeadEnt
 		ply.AdvDupe2.Entities = Entities
 		ply.AdvDupe2.Constraints = GetSortedConstraints(ply, Constraints)
-		ply.AdvDupe2.Revision = AdvDupe2.CODEC_REVISION
+		ply.AdvDupe2.Revision = AdvDupe2.CodecRevision
 
 		net.Start("AdvDupe2_SetDupeInfo")
 			net.WriteString("")

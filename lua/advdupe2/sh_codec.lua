@@ -9,7 +9,7 @@
 ]]
 
 local REVISION = 5
-AdvDupe2.CODEC_REVISION = REVISION
+AdvDupe2.CodecRevision = REVISION
 
 include "sh_codec_legacy.lua"
 AddCSLuaFile "sh_codec_legacy.lua"
@@ -30,8 +30,6 @@ local match = string.match
 local concat = table.concat
 local compress = util.Compress
 local decompress = util.Decompress
-
-AdvDupe2.CodecRevision = REVISION
 
 --[[
 	Name:	GenerateDupeStamp
