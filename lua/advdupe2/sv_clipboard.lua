@@ -5,7 +5,7 @@
 	Version: 1.0
 ]]
 
-require "duplicator"
+require( "duplicator" )
 
 AdvDupe2.duplicator = {}
 
@@ -15,7 +15,7 @@ AdvDupe2.JobManager.Queue = {}
 
 local debugConvar = GetConVar("AdvDupe2_DebugInfo")
 
-local constraints = {
+local gtConstraints = {
 	Weld       = true,
 	Axis       = true,
 	Ballsocket = true,
@@ -29,7 +29,7 @@ local constraints = {
 	Winch      = true
 }
 
-local serializable = {
+local gtSerializable = {
 	[TYPE_BOOL]   = true,
 	[TYPE_NUMBER] = true,
 	[TYPE_VECTOR] = true,
@@ -37,45 +37,6 @@ local serializable = {
 	[TYPE_TABLE]  = true,
 	[TYPE_STRING] = true
 }
-
-local function CopyClassArgTable(tab)
-	local done = {}
-	local function recursiveCopy(oldtable)
-		local newtable = {}
-		done[oldtable] = newtable
-		for k, v in pairs(oldtable) do
-			local varType = TypeID(v)
-			if serializable[varType] then
-				if varType == TYPE_TABLE then
-					if done[v] then
-						newtable[k] = done[v]
-					else
-						newtable[k] = recursiveCopy(v)
-					end
-				else
-					newtable[k] = v
-				end
-			else
-				if debugConvar:GetBool() then
-					print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
-				end
-			end
-		end
-		return newtable
-	end
-	return recursiveCopy(tab)
-end
-
---[[
-	Name: CopyEntTable
-	Desc: Returns a copy of the passed entity's table
-	Params: <entity> Ent
-	Returns: <table> enttable
-]]
-
---[[---------------------------------------------------------
-	Returns a copy of the passed entity's table
----------------------------------------------------------]]
 
 local gtSetupTable = {
 	POS = {
@@ -115,6 +76,45 @@ local gtSetupTable = {
 	}
 }
 
+local function CopyClassArgTable(tab)
+	local done = {}
+	local function recursiveCopy(oldtable)
+		local newtable = {}
+		done[oldtable] = newtable
+		for k, v in pairs(oldtable) do
+			local varType = TypeID(v)
+			if gtSerializable[varType] then
+				if varType == TYPE_TABLE then
+					if done[v] then
+						newtable[k] = done[v]
+					else
+						newtable[k] = recursiveCopy(v)
+					end
+				else
+					newtable[k] = v
+				end
+			else
+				if debugConvar:GetBool() then
+					print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
+				end
+			end
+		end
+		return newtable
+	end
+	return recursiveCopy(tab)
+end
+
+--[[
+	Name: CopyEntTable
+	Desc: Returns a copy of the passed entity's table
+	Params: <entity> Ent
+	Returns: <table> enttable
+]]
+
+--[[---------------------------------------------------------
+	Returns a copy of the passed entity's table
+---------------------------------------------------------]]
+
 function AdvDupe2.duplicator.IsCopyable(Ent)
 	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
@@ -144,7 +144,7 @@ local function CopyEntTable(Ent, Offset)
 					not gtSetupTable.ANG[Key] and
 					not gtSetupTable.MODEL[Key]) then
 				local varType = TypeID(EntTable[Key])
-				if serializable[varType] then
+				if gtSerializable[varType] then
 					if varType == TYPE_TABLE then
 						Tab[Key] = CopyClassArgTable(EntTable[Key])
 					else
@@ -1381,7 +1381,7 @@ local function AdvDupe2_Spawn()
 						v:SetParent(Queue.CreatedEntities[Queue.EntityList[k].BuildDupeInfo.DupeParentID])
 						if (v.Constraints ~= nil) then
 							for i, c in pairs(v.Constraints) do
-								if (c and constraints[c.Type]) then
+								if (c and gtConstraints[c.Type]) then
 									edit = false
 									break
 								end

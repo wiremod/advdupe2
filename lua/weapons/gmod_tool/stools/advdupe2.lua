@@ -10,7 +10,7 @@
 TOOL.Category = "Construction"
 TOOL.Name = "#Tool.advdupe2.name"
 cleanup.Register( "AdvDupe2" )
-require "controlpanel"
+require( "controlpanel" )
 
 if(SERVER)then
 	CreateConVar("sbox_maxgmod_contr_spawners",5)
