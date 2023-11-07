@@ -15,30 +15,28 @@ AdvDupe2.JobManager.Queue = {}
 
 local debugConvar = GetConVar("AdvDupe2_DebugInfo")
 
-local gtConstraints = {
-	Weld       = true,
-	Axis       = true,
-	Ballsocket = true,
-	Elastic    = true,
-	Hydraulic  = true,
-	Motor      = true,
-	Muscle     = true,
-	Pulley     = true,
-	Rope       = true,
-	Slider     = true,
-	Winch      = true
-}
-
-local gtSerializable = {
-	[TYPE_BOOL]   = true,
-	[TYPE_NUMBER] = true,
-	[TYPE_VECTOR] = true,
-	[TYPE_ANGLE]  = true,
-	[TYPE_TABLE]  = true,
-	[TYPE_STRING] = true
-}
-
 local gtSetupTable = {
+	SERIAL = {
+		[TYPE_BOOL]   = true,
+		[TYPE_NUMBER] = true,
+		[TYPE_VECTOR] = true,
+		[TYPE_ANGLE]  = true,
+		[TYPE_TABLE]  = true,
+		[TYPE_STRING] = true
+	},
+	CONSTRAINT = {
+		Weld       = true,
+		Axis       = true,
+		Ballsocket = true,
+		Elastic    = true,
+		Hydraulic  = true,
+		Motor      = true,
+		Muscle     = true,
+		Pulley     = true,
+		Rope       = true,
+		Slider     = true,
+		Winch      = true
+	},
 	POS = {
 		["pos"     ] = true,
 		["position"] = true,
@@ -83,7 +81,7 @@ local function CopyClassArgTable(tab)
 		done[oldtable] = newtable
 		for k, v in pairs(oldtable) do
 			local varType = TypeID(v)
-			if gtSerializable[varType] then
+			if gtSetupTable.SERIAL[varType] then
 				if varType == TYPE_TABLE then
 					if done[v] then
 						newtable[k] = done[v]
@@ -144,7 +142,7 @@ local function CopyEntTable(Ent, Offset)
 					not gtSetupTable.ANG[Key] and
 					not gtSetupTable.MODEL[Key]) then
 				local varType = TypeID(EntTable[Key])
-				if gtSerializable[varType] then
+				if gtSetupTable.SERIAL[varType] then
 					if varType == TYPE_TABLE then
 						Tab[Key] = CopyClassArgTable(EntTable[Key])
 					else
@@ -1381,7 +1379,7 @@ local function AdvDupe2_Spawn()
 						v:SetParent(Queue.CreatedEntities[Queue.EntityList[k].BuildDupeInfo.DupeParentID])
 						if (v.Constraints ~= nil) then
 							for i, c in pairs(v.Constraints) do
-								if (c and gtConstraints[c.Type]) then
+								if (c and gtSetupTable.CONSTRAINT[c.Type]) then
 									edit = false
 									break
 								end
