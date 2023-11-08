@@ -5,7 +5,7 @@
 	Version: 1.0
 ]]
 
-require "duplicator"
+require( "duplicator" )
 
 AdvDupe2.duplicator = {}
 
@@ -15,27 +15,63 @@ AdvDupe2.JobManager.Queue = {}
 
 local debugConvar = GetConVar("AdvDupe2_DebugInfo")
 
-local constraints = {
-	Weld       = true,
-	Axis       = true,
-	Ballsocket = true,
-	Elastic    = true,
-	Hydraulic  = true,
-	Motor      = true,
-	Muscle     = true,
-	Pulley     = true,
-	Rope       = true,
-	Slider     = true,
-	Winch      = true
-}
-
-local serializable = {
-	[TYPE_BOOL]   = true,
-	[TYPE_NUMBER] = true,
-	[TYPE_VECTOR] = true,
-	[TYPE_ANGLE]  = true,
-	[TYPE_TABLE]  = true,
-	[TYPE_STRING] = true
+local gtSetupTable = {
+	SERIAL = {
+		[TYPE_BOOL]   = true,
+		[TYPE_ANGLE]  = true,
+		[TYPE_TABLE]  = true,
+		[TYPE_NUMBER] = true,
+		[TYPE_VECTOR] = true,
+		[TYPE_STRING] = true
+	},
+	CONSTRAINT = {
+		Weld       = true,
+		Axis       = true,
+		Rope       = true,
+		Motor      = true,
+		Winch      = true,
+		Muscle     = true,
+		Pulley     = true,
+		Slider     = true,
+		Elastic    = true,
+		Hydraulic  = true,
+		Ballsocket = true
+	},
+	COMPARE = {
+		V1 = Vector(1, 1, 1),
+		A0 = Angle (0, 0, 0),
+		V0 = Vector(0, 0, 0)
+	},
+	POS = {
+		["pos"]      = true,
+		["Pos"]      = true,
+		["position"] = true,
+		["Position"] = true
+	},
+	ANG = {
+		["ang"]   = true,
+		["Ang"]   = true,
+		["angle"] = true,
+		["Angle"] = true
+	},
+	MODEL = {
+		["model"] = true,
+		["Model"] = true
+	},
+	PLAYER = {
+		["pl"]  = true,
+		["ply"] = true
+	},
+	ENT1 = {
+		["Ent"]  = true,
+		["Ent1"] = true,
+	},
+	TVEHICLE = {
+		["VehicleTable"] = true
+	},
+	SPECIAL = {
+		["Data"] = true
+	}
 }
 
 local function CopyClassArgTable(tab)
@@ -45,7 +81,7 @@ local function CopyClassArgTable(tab)
 		done[oldtable] = newtable
 		for k, v in pairs(oldtable) do
 			local varType = TypeID(v)
-			if serializable[varType] then
+			if gtSetupTable.SERIAL[varType] then
 				if varType == TYPE_TABLE then
 					if done[v] then
 						newtable[k] = done[v]
@@ -77,44 +113,6 @@ end
 	Returns a copy of the passed entity's table
 ---------------------------------------------------------]]
 
-local gtSetupTable = {
-	POS = {
-		["pos"     ] = true,
-		["position"] = true,
-		["Pos"     ] = true,
-		["Position"] = true
-	},
-	ANG = {
-		["ang"     ] = true,
-		["angle"   ] = true,
-		["Ang"     ] = true,
-		["Angle"   ] = true
-	},
-	MODEL = {
-		["model"   ] = true,
-		["Model"   ] = true
-	},
-	PLAYER = {
-		["pl"      ] = true,
-		["ply"     ] = true
-	},
-	ENT1 = {
-		["Ent"     ] = true,
-		["Ent1"    ] = true,
-	},
-	COMPARE = {
-		V1 = Vector(1, 1, 1),
-		A0 = Angle (0, 0, 0),
-		V0 = Vector(0, 0, 0)
-	},
-	TVEHICLE = {
-		["VehicleTable"] = true
-	},
-	SPECIAL = {
-		["Data"] = true
-	}
-}
-
 function AdvDupe2.duplicator.IsCopyable(Ent)
 	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
@@ -144,7 +142,7 @@ local function CopyEntTable(Ent, Offset)
 					not gtSetupTable.ANG[Key] and
 					not gtSetupTable.MODEL[Key]) then
 				local varType = TypeID(EntTable[Key])
-				if serializable[varType] then
+				if gtSetupTable.SERIAL[varType] then
 					if varType == TYPE_TABLE then
 						Tab[Key] = CopyClassArgTable(EntTable[Key])
 					else
@@ -1381,7 +1379,7 @@ local function AdvDupe2_Spawn()
 						v:SetParent(Queue.CreatedEntities[Queue.EntityList[k].BuildDupeInfo.DupeParentID])
 						if (v.Constraints ~= nil) then
 							for i, c in pairs(v.Constraints) do
-								if (c and constraints[c.Type]) then
+								if (c and gtSetupTable.CONSTRAINT[c.Type]) then
 									edit = false
 									break
 								end

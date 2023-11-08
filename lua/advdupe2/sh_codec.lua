@@ -11,8 +11,8 @@
 local REVISION = 5
 AdvDupe2.CodecRevision = REVISION
 
-include "sh_codec_legacy.lua"
-AddCSLuaFile "sh_codec_legacy.lua"
+include( "sh_codec_legacy.lua" )
+AddCSLuaFile( "sh_codec_legacy.lua" )
 
 local pairs = pairs
 local type = type
