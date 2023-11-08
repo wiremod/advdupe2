@@ -18,53 +18,53 @@ local debugConvar = GetConVar("AdvDupe2_DebugInfo")
 local gtSetupTable = {
 	SERIAL = {
 		[TYPE_BOOL]   = true,
-		[TYPE_NUMBER] = true,
-		[TYPE_VECTOR] = true,
 		[TYPE_ANGLE]  = true,
 		[TYPE_TABLE]  = true,
+		[TYPE_NUMBER] = true,
+		[TYPE_VECTOR] = true,
 		[TYPE_STRING] = true
 	},
 	CONSTRAINT = {
 		Weld       = true,
 		Axis       = true,
-		Ballsocket = true,
-		Elastic    = true,
-		Hydraulic  = true,
+		Rope       = true,
 		Motor      = true,
+		Winch      = true,
 		Muscle     = true,
 		Pulley     = true,
-		Rope       = true,
 		Slider     = true,
-		Winch      = true
-	},
-	POS = {
-		["pos"     ] = true,
-		["position"] = true,
-		["Pos"     ] = true,
-		["Position"] = true
-	},
-	ANG = {
-		["ang"     ] = true,
-		["angle"   ] = true,
-		["Ang"     ] = true,
-		["Angle"   ] = true
-	},
-	MODEL = {
-		["model"   ] = true,
-		["Model"   ] = true
-	},
-	PLAYER = {
-		["pl"      ] = true,
-		["ply"     ] = true
-	},
-	ENT1 = {
-		["Ent"     ] = true,
-		["Ent1"    ] = true,
+		Elastic    = true,
+		Hydraulic  = true,
+		Ballsocket = true
 	},
 	COMPARE = {
 		V1 = Vector(1, 1, 1),
 		A0 = Angle (0, 0, 0),
 		V0 = Vector(0, 0, 0)
+	},
+	POS = {
+		["pos"]      = true,
+		["Pos"]      = true,
+		["position"] = true,
+		["Position"] = true
+	},
+	ANG = {
+		["ang"]   = true,
+		["Ang"]   = true,
+		["angle"] = true,
+		["Angle"] = true
+	},
+	MODEL = {
+		["model"] = true,
+		["Model"] = true
+	},
+	PLAYER = {
+		["pl"]  = true,
+		["ply"] = true
+	},
+	ENT1 = {
+		["Ent"]  = true,
+		["Ent1"] = true,
 	},
 	TVEHICLE = {
 		["VehicleTable"] = true
