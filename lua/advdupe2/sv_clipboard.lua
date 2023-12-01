@@ -43,34 +43,34 @@ local gtSetupTable = {
 		V0 = Vector(0, 0, 0)
 	},
 	POS = {
-		["pos"]      = true,
-		["Pos"]      = true,
-		["position"] = true,
-		["Position"] = true
+		pos      = true,
+		Pos      = true,
+		position = true,
+		Position = true
 	},
 	ANG = {
-		["ang"]   = true,
-		["Ang"]   = true,
-		["angle"] = true,
-		["Angle"] = true
+		ang   = true,
+		Ang   = true,
+		angle = true,
+		Angle = true
 	},
 	MODEL = {
-		["model"] = true,
-		["Model"] = true
+		model = true,
+		Model = true
 	},
 	PLAYER = {
-		["pl"]  = true,
-		["ply"] = true
+		pl  = true,
+		ply = true
 	},
 	ENT1 = {
-		["Ent"]  = true,
-		["Ent1"] = true,
+		Ent  = true,
+		Ent1 = true,
 	},
 	TVEHICLE = {
-		["VehicleTable"] = true
+		VehicleTable = true
 	},
 	SPECIAL = {
-		["Data"] = true
+		Data = true
 	}
 }
 
