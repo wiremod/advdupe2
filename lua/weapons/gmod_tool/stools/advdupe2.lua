@@ -228,11 +228,13 @@ if(SERVER)then
 		if(tobool(ply:GetInfo("advdupe2_original_origin"))) then
 			origin = dupe.HeadEnt.Pos
 		end
+
 		AdvDupe2.InitPastingQueue(ply, dupe.Position, dupe.Angle, origin,
 			tobool(ply:GetInfo("advdupe2_paste_constraints")),
 			tobool(ply:GetInfo("advdupe2_paste_parents")),
 			tobool(ply:GetInfo("advdupe2_paste_disparents")),
 			tobool(ply:GetInfo("advdupe2_paste_protectoveride")))
+
 		return true
 	end
 
@@ -390,15 +392,11 @@ if(SERVER)then
 
 	--Checks table, re-draws loading bar, and recreates ghosts when tool is pulled out
 	function TOOL:Deploy()
-		local ply, dupe = self:GetOwner()
+		local ply = self:GetOwner()
 
-		if(not ply.AdvDupe2) then
-			ply.AdvDupe2 = {}
-			dupe = ply.AdvDupe2
-		else
-			dupe = ply.AdvDupe2
-		end
+		if(not ply.AdvDupe2) then ply.AdvDupe2 = {} end
 
+		local dupe = ply.AdvDupe2
 		if(not dupe.Entities) then return end
 
 		net.Start("AdvDupe2_StartGhosting")
