@@ -204,10 +204,9 @@ if(SERVER)then
 		if(not trace) then return false end
 
 		local ply = self:GetOwner()
-		if(not ply.AdvDupe2) then return false end
-
 		local dupe = ply.AdvDupe2
-		if(not dupe.Entities) then return false end
+
+		if not (dupe and dupe.Entities) then return false end
 
 		if(dupe.Pasting or dupe.Downloading) then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
@@ -246,13 +245,12 @@ if(SERVER)then
 	]]
 	function TOOL:RightClick( trace )
 		local ply = self:GetOwner()
+		local dupe = ply.AdvDupe2
 
-		if(not ply.AdvDupe2) then
+		if not dupe then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 in hold.", NOTIFY_ERROR)
 			return false
 		end
-
-		local dupe = ply.AdvDupe2
 
 		if(dupe.Pasting or dupe.Downloading)then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.", NOTIFY_ERROR)
@@ -393,10 +391,10 @@ if(SERVER)then
 	--Checks table, re-draws loading bar, and recreates ghosts when tool is pulled out
 	function TOOL:Deploy()
 		local ply = self:GetOwner()
-
-		if(not ply.AdvDupe2) then ply.AdvDupe2 = {} end
-
 		local dupe = ply.AdvDupe2
+
+		if not dupe then dupe = {} ply.AdvDupe2 = dupe end
+
 		if(not dupe.Entities) then return end
 
 		net.Start("AdvDupe2_StartGhosting")
@@ -437,9 +435,9 @@ if(SERVER)then
 		if(!trace.Hit)then return false end
 
 		local ply = self:GetOwner()
-		if(not ply.AdvDupe2) then return false end
-
 		local dupe = ply.AdvDupe2
+
+		if not dupe then dupe = {} ply.AdvDupe2 = dupe end
 
 		if(self:GetStage()==1)then
 			local areasize = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
