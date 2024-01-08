@@ -1002,7 +1002,7 @@ local function CreateEntityFromTable(EntTable, Player)
 				table.insert( CreatedEntities, ent )
 			end )
 
-			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
+			status, valid = xpcall(EntityClass.Func, ErrorNoHaltWithStack, Player, unpack(ArgList, 1, #EntityClass.Args))
 
 			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
 		else
@@ -1058,7 +1058,6 @@ local function CreateEntityFromTable(EntTable, Player)
 			for _, CreatedEntity in pairs(CreatedEntities) do
 				SafeRemoveEntity(CreatedEntity)
 			end
-			ErrorNoHaltWithStack(valid)
 		end
 
 		if (valid == false) then
