@@ -55,7 +55,7 @@ if(SERVER) then
 									for y = 1, 4 do
 										if target.Entity[y] and v.Entity[x].Index == target.Entity[y].Index then
 											system[#system + 1] = v
-											if #system==100 then
+											if #system == 100 then
 												fullSystems[#fullSystems + 1] = system
 												table.remove(sortingSystems, systemi)
 											end
@@ -107,7 +107,7 @@ if(SERVER) then
 			ret[#ret + 1] = k
 		end
 		table.sort(ret)
-		for i=1, #ret do
+		for i = 1, #ret do
 			ret[i] = constraints[ret[i]]
 		end
 		return ret
@@ -160,10 +160,12 @@ if(SERVER) then
 		local Entities = ents.GetAll() --Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
 		local pos, ent
-		for i=1, #Entities do
+		for i = 1, #Entities do
 			ent = Entities[i]
 			pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) and PPCheck( ply, ent ) then
+			if (pos.X>=min.X) and (pos.X<=max.X) and
+				 (pos.Y>=min.Y) and (pos.Y<=max.Y) and
+				 (pos.Z>=min.Z) and (pos.Z<=max.Z) and PPCheck( ply, ent ) then
 				EntTable[ent:EntIndex()] = ent
 			end
 		end
@@ -354,8 +356,13 @@ if(SERVER) then
 		end
 
 		if not HeadEnt.Z then
-			local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=HeadEnt.Pos+Vector(0,0,1), endpos=HeadEnt.Pos-Vector(0,0,50000)} )
-			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z-WorldTrace.HitPos.Z) or 0
+			local WorldTrace = util.TraceLine({
+				mask   = MASK_NPCWORLDSTATIC,
+				start  = HeadEnt.Pos + Vector(0,0,1),
+				endpos = HeadEnt.Pos-Vector(0,0,50000)
+			})
+
+			HeadEnt.Z = WorldTrace.Hit and math.abs(HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 		end
 
 		dupe.HeadEnt = HeadEnt
@@ -429,7 +436,7 @@ if(SERVER) then
 		Returns: <boolean> success
 	]]
 	function TOOL:Reload( trace )
-		if(!trace.Hit) then return false end
+		if(not trace.Hit) then return false end
 
 		local ply = self:GetOwner()
 		local dupe = ply.AdvDupe2
@@ -743,15 +750,19 @@ if(SERVER) then
 				Tab.HeadEnt.Index = dupe.AutoSaveEnt:EntIndex()
 				Tab.HeadEnt.Pos = dupe.AutoSaveEnt:GetPos()
 
-				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
-				if(WorldTrace.Hit) then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
+				local WorldTrace = util.TraceLine({
+					mask   = MASK_NPCWORLDSTATIC,
+					start  = Tab.HeadEnt.Pos + Vector(0,0,1),
+					endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)
+				})
 
+				Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 				AdvDupe2.duplicator.Copy( dupe.AutoSaveEnt, Tab.Entities, Tab.Constraints, Tab.HeadEnt.Pos )
 			else
 				local i = dupe.AutoSaveSize
 				local Pos = dupe.AutoSavePos
-				local T = (Pos + Vector( i, i, i))
-				local B = (Pos + Vector(-i,-i,-i))
+				local T = Vector( i, i, i); T:Add(Pos)
+				local B = Vector(-i,-i,-i); B:Add(Pos)
 
 				local Entities = FindInBox(B,T, ply)
 				local _, HeadEnt = next(Entities)
@@ -760,16 +771,20 @@ if(SERVER) then
 					return
 				end
 
-				if(dupe.AutoSaveEnt && Entities[dupe.AutoSaveEnt]) then
+				if(dupe.AutoSaveEnt and Entities[dupe.AutoSaveEnt]) then
 					Tab.HeadEnt.Index = dupe.AutoSaveEnt
 				else
 					Tab.HeadEnt.Index = HeadEnt:EntIndex()
 				end
 				Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
-				local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
-				if(WorldTrace.Hit) then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
+				local WorldTrace = util.TraceLine({
+					mask   = MASK_NPCWORLDSTATIC,
+					start  = Tab.HeadEnt.Pos + Vector(0,0,1),
+					endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)
+				})
 
+				Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, dupe.AutoSaveOutSide)
 			end
 			Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
@@ -811,8 +826,13 @@ if(SERVER) then
 		Tab.HeadEnt.Index = HeadEnt:EntIndex()
 		Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
-		local WorldTrace = util.TraceLine( {mask=MASK_NPCWORLDSTATIC, start=Tab.HeadEnt.Pos+Vector(0,0,1), endpos=Tab.HeadEnt.Pos-Vector(0,0,50000)} )
-		if(WorldTrace.Hit) then Tab.HeadEnt.Z = math.abs(Tab.HeadEnt.Pos.Z-WorldTrace.HitPos.Z) else Tab.HeadEnt.Z = 0 end
+		local WorldTrace = util.TraceLine({
+			mask   = MASK_NPCWORLDSTATIC,
+			start  = Tab.HeadEnt.Pos + Vector(0,0,1),
+			endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)
+		})
+
+		Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
 		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 
@@ -855,7 +875,7 @@ if(CLIENT) then
 	end
 
 	function TOOL:Reload( trace )
-		if(trace and (AdvDupe2.HeadGhost || self:GetStage()==1)) then
+		if(trace and (AdvDupe2.HeadGhost or self:GetStage() == 1)) then
 			return true
 		end
 		return false
@@ -864,8 +884,8 @@ if(CLIENT) then
 	--Take control of the mouse wheel bind so the player can modify the height of the dupe
 	local function MouseWheelScrolled(ply, bind, pressed)
 
-		if(bind=="invprev") then
-			if(ply:GetTool("advdupe2"):GetStage()==1) then
+		if(bind == "invprev") then
+			if(ply:GetTool("advdupe2"):GetStage() == 1) then
 				local size = math.min(tonumber(ply:GetInfo("advdupe2_area_copy_size")) + 25, 30720)
 				RunConsoleCommand("advdupe2_area_copy_size",size)
 			else
@@ -873,8 +893,8 @@ if(CLIENT) then
 				RunConsoleCommand("advdupe2_offset_z",Z)
 			end
 			return true
-		elseif(bind=="invnext") then
-			if(ply:GetTool("advdupe2"):GetStage()==1) then
+		elseif(bind == "invnext") then
+			if(ply:GetTool("advdupe2"):GetStage() == 1) then
 				local size = math.max(tonumber(ply:GetInfo("advdupe2_area_copy_size")) - 25, 25)
 				RunConsoleCommand("advdupe2_area_copy_size",size)
 			else
@@ -1691,16 +1711,16 @@ if(CLIENT) then
 		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 				
 		--Bottom Points
-		local B1 = (Vector(-i,-i,-i)+TraceRes.HitPos)
-		local B2 = (Vector(-i,i,-i)+TraceRes.HitPos)
-		local B3 = (Vector(i,i,-i)+TraceRes.HitPos)
-		local B4 = (Vector(i,-i,-i)+TraceRes.HitPos)
+		local B1 = (Vector(-i,-i,-i) + TraceRes.HitPos)
+		local B2 = (Vector(-i, i,-i) + TraceRes.HitPos)
+		local B3 = (Vector( i, i,-i) + TraceRes.HitPos)
+		local B4 = (Vector( i,-i,-i) + TraceRes.HitPos)
 
 		--Top Points
-		local T1 = (Vector(-i,-i,i)+TraceRes.HitPos):ToScreen()
-		local T2 = (Vector(-i,i,i)+TraceRes.HitPos):ToScreen()
-		local T3 = (Vector(i,i,i)+TraceRes.HitPos):ToScreen()
-		local T4 = (Vector(i,-i,i)+TraceRes.HitPos):ToScreen()
+		local T1 = (Vector(-i,-i, i) + TraceRes.HitPos):ToScreen()
+		local T2 = (Vector(-i, i, i) + TraceRes.HitPos):ToScreen()
+		local T3 = (Vector( i, i, i) + TraceRes.HitPos):ToScreen()
+		local T4 = (Vector( i,-i, i) + TraceRes.HitPos):ToScreen()
 
 		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate) then
 
