@@ -346,7 +346,8 @@ if(SERVER) then
 			else
 				--select all owned props
 				Entities = {}
-				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI ~= nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
+				local PPFlag = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI ~= nil)
+				local PPCheck = PPFlag and PlayerCanDupeCPPI or PlayerCanDupeTool
 				for _, ent in pairs(ents.GetAll()) do
 					if PPCheck( ply, ent ) then
 						Entities[ent:EntIndex()] = ent
