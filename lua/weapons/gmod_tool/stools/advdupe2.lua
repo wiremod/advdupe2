@@ -32,9 +32,9 @@ if(SERVER) then
 		WireHydraulic = true
 	}
 
-	local heS = Vector(0, 0, 1)
-	local heE = Vector(0, 0, 50000)
 	local function UpdateHeadEntityZ( hent )
+		local heS = Vector(0, 0, 1)
+		local heE = Vector(0, 0, 50000)
 		local tr = util.TraceLine({
 			mask   = MASK_NPCWORLDSTATIC,
 			start  = hent.Pos + heS,
@@ -172,8 +172,7 @@ if(SERVER) then
 		local PPFlag = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner ~= nil)
 		local PPCheck = PPFlag and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local Entities, EntTable = ents.GetAll(), {} --Don't use FindInBox. It has a 512 entity limit.
-		for i = 1, #Entities do
-			local ent = Entities[i]
+		for _, ent in ipairs(Entities)
 			local pos = ent:GetPos()
 			if (pos.X >= min.X) and (pos.X <= max.X) and
 			   (pos.Y >= min.Y) and (pos.Y <= max.Y) and
@@ -289,10 +288,8 @@ if(SERVER) then
 		if(self:GetStage() == 1) then
 			local sz = math.Clamp(tonumber(ply:GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 			local Pos = trace.HitNonWorld and trace.Entity:GetPos() or trace.HitPos
-			local T = Vector( sz,  sz,  sz); T:Add(Pos)
-			local B = Vector(-sz, -sz, -sz); B:Add(Pos)
-
-			local Ents = FindInBox(B, T, ply)
+			local S = Vector(sz, sz, sz)
+			local Ents = FindInBox(Pos+S, Pos-S, ply)
 			local _, Ent = next(Ents)
 			if not Ent then
 				self:SetStage(0)
@@ -759,10 +756,8 @@ if(SERVER) then
 			else
 				local sz = dupe.AutoSaveSize
 				local Pos = dupe.AutoSavePos
-				local T = Vector( sz,  sz,  sz); T:Add(Pos)
-				local B = Vector(-sz, -sz, -sz); B:Add(Pos)
-
-				local Entities = FindInBox(B, T, ply)
+				local S = Vector(sz, sz, sz)
+				local Entities = FindInBox(Pos+S, Pos-S, ply)
 				local _, HeadEnt = next(Entities)
 				if not HeadEnt then
 					AdvDupe2.Notify(ply, "Area Auto Save copied 0 entities; be sure to turn it off.", NOTIFY_ERROR)
@@ -1676,8 +1671,7 @@ if(CLIENT) then
 
 	local function FindInBox(min, max, ply)
 		local Entities, EntTable = ents.GetAll(), {}
-		for i = 1, #Entities do
-			local ent = Entities[i]
+		for _, ent in ipairs(Entities)
 			local pos = ent:GetPos()
 			if (pos.X >= min.X) and (pos.X <= max.X) and
 			   (pos.Y >= min.Y) and (pos.Y <= max.Y) and
@@ -1772,7 +1766,6 @@ if(CLIENT) then
 		surface.DrawLine(T2.x, T2.y, T3.x, T3.y)
 		surface.DrawLine(T3.x, T3.y, T4.x, T4.y)
 		surface.DrawLine(T4.x, T4.y, T1.x, T1.y)
-
 	end
 
 	net.Receive("AdvDupe2_DrawSelectBox", function()
