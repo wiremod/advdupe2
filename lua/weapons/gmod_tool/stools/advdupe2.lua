@@ -1615,9 +1615,9 @@ if(CLIENT) then
 		tryToBuild()
 	end
 
-	local StColor  = {r=130, g=25, b=40, a=255}
-	local NoColor  = {r=25, g=100, b=40, a=255}
-	local CurColor = {r=25, g=100, b=40, a=255}
+	local StColor  = {r=130, g=25 , b=40, a=255}
+	local NoColor  = {r=25 , g=100, b=40, a=255}
+	local CurColor = {r=25 , g=100, b=40, a=255}
 	local CWhite   = Color(255, 255, 255, 255)
 	surface.CreateFont ("AD2Font", {font="Arial", size=40, weight=1000}) ---Remember to use gm_clearfonts
 	surface.CreateFont ("AD2TitleFont", {font="Arial", size=24, weight=1000})
@@ -1664,7 +1664,7 @@ if(CLIENT) then
 				draw.RoundedBox( 6, 34, 180, 188*(AdvDupe2.ProgressBar.Percent / 100), 24, Color( 0, 255, 0, 255 ) )
 			elseif(ply:KeyDown(IN_USE)) then
 				local font, align = "AD2TitleFont", TEXT_ALIGN_BOTTOM
-				draw.SimpleText("H: "..ply:GetInfo("advdupe2_offset_z")    , font, 20, 210, CWhite, TEXT_ALIGN_LEFT , align)
+				draw.SimpleText("H: "..ply:GetInfo("advdupe2_offset_z")    , font, 20 , 210, CWhite, TEXT_ALIGN_LEFT , align)
 				draw.SimpleText("P: "..ply:GetInfo("advdupe2_offset_pitch"), font, 236, 210, CWhite, TEXT_ALIGN_RIGHT, align)
 				draw.SimpleText("Y: "..ply:GetInfo("advdupe2_offset_yaw")  , font, 20 , 240, CWhite, TEXT_ALIGN_LEFT , align)
 				draw.SimpleText("R: "..ply:GetInfo("advdupe2_offset_roll") , font, 236, 240, CWhite, TEXT_ALIGN_RIGHT, align)
