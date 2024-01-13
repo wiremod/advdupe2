@@ -172,7 +172,7 @@ if(SERVER) then
 		local PPFlag = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner ~= nil)
 		local PPCheck = PPFlag and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local Entities, EntTable = ents.GetAll(), {} --Don't use FindInBox. It has a 512 entity limit.
-		for _, ent in ipairs(Entities)
+		for _, ent in ipairs(Entities) do
 			local pos = ent:GetPos()
 			if (pos.X >= min.X) and (pos.X <= max.X) and
 			   (pos.Y >= min.Y) and (pos.Y <= max.Y) and
@@ -1671,7 +1671,7 @@ if(CLIENT) then
 
 	local function FindInBox(min, max, ply)
 		local Entities, EntTable = ents.GetAll(), {}
-		for _, ent in ipairs(Entities)
+		for _, ent in ipairs(Entities) do
 			local pos = ent:GetPos()
 			if (pos.X >= min.X) and (pos.X <= max.X) and
 			   (pos.Y >= min.Y) and (pos.Y <= max.Y) and
