@@ -5,7 +5,7 @@
 	Version: 1.0
 ]]
 
-require "duplicator"
+require( "duplicator" )
 
 AdvDupe2.duplicator = {}
 
@@ -13,27 +13,65 @@ AdvDupe2.JobManager = {}
 AdvDupe2.JobManager.PastingHook = false
 AdvDupe2.JobManager.Queue = {}
 
-local constraints = {
-	Weld       = true,
-	Axis       = true,
-	Ballsocket = true,
-	Elastic    = true,
-	Hydraulic  = true,
-	Motor      = true,
-	Muscle     = true,
-	Pulley     = true,
-	Rope       = true,
-	Slider     = true,
-	Winch      = true
-}
+local debugConvar = GetConVar("AdvDupe2_DebugInfo")
 
-local serializable = {
-	[TYPE_BOOL]   = true,
-	[TYPE_NUMBER] = true,
-	[TYPE_VECTOR] = true,
-	[TYPE_ANGLE]  = true,
-	[TYPE_TABLE]  = true,
-	[TYPE_STRING] = true
+local gtSetupTable = {
+	SERIAL = {
+		[TYPE_BOOL]   = true,
+		[TYPE_ANGLE]  = true,
+		[TYPE_TABLE]  = true,
+		[TYPE_NUMBER] = true,
+		[TYPE_VECTOR] = true,
+		[TYPE_STRING] = true
+	},
+	CONSTRAINT = {
+		Weld       = true,
+		Axis       = true,
+		Rope       = true,
+		Motor      = true,
+		Winch      = true,
+		Muscle     = true,
+		Pulley     = true,
+		Slider     = true,
+		Elastic    = true,
+		Hydraulic  = true,
+		Ballsocket = true
+	},
+	COMPARE = {
+		V1 = Vector(1, 1, 1),
+		A0 = Angle (0, 0, 0),
+		V0 = Vector(0, 0, 0)
+	},
+	POS = {
+		pos      = true,
+		Pos      = true,
+		position = true,
+		Position = true
+	},
+	ANG = {
+		ang   = true,
+		Ang   = true,
+		angle = true,
+		Angle = true
+	},
+	MODEL = {
+		model = true,
+		Model = true
+	},
+	PLAYER = {
+		pl  = true,
+		ply = true
+	},
+	ENT1 = {
+		Ent  = true,
+		Ent1 = true,
+	},
+	TVEHICLE = {
+		VehicleTable = true
+	},
+	SPECIAL = {
+		Data = true
+	}
 }
 
 local function CopyClassArgTable(tab)
@@ -43,7 +81,7 @@ local function CopyClassArgTable(tab)
 		done[oldtable] = newtable
 		for k, v in pairs(oldtable) do
 			local varType = TypeID(v)
-			if serializable[varType] then
+			if gtSetupTable.SERIAL[varType] then
 				if varType == TYPE_TABLE then
 					if done[v] then
 						newtable[k] = done[v]
@@ -54,7 +92,9 @@ local function CopyClassArgTable(tab)
 					newtable[k] = v
 				end
 			else
-				print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!\n")
+				if debugConvar:GetBool() then
+					print("[AdvDupe2] ClassArg table with key \"" .. tostring(k) .. "\" has unsupported value of type \"".. type(v) .."\"!")
+				end
 			end
 		end
 		return newtable
@@ -72,44 +112,6 @@ end
 --[[---------------------------------------------------------
 	Returns a copy of the passed entity's table
 ---------------------------------------------------------]]
-
-local gtSetupTable = {
-	POS = {
-		["pos"     ] = true,
-		["position"] = true,
-		["Pos"     ] = true,
-		["Position"] = true
-	},
-	ANG = {
-		["ang"     ] = true,
-		["angle"   ] = true,
-		["Ang"     ] = true,
-		["Angle"   ] = true
-	},
-	MODEL = {
-		["model"   ] = true,
-		["Model"   ] = true
-	},
-	PLAYER = {
-		["pl"      ] = true,
-		["ply"     ] = true
-	},
-	ENT1 = {
-		["Ent"     ] = true,
-		["Ent1"    ] = true,
-	},
-	COMPARE = {
-		V1 = Vector(1, 1, 1),
-		A0 = Angle (0, 0, 0),
-		V0 = Vector(0, 0, 0)
-	},
-	TVEHICLE = {
-		["VehicleTable"] = true
-	},
-	SPECIAL = {
-		["Data"] = true
-	}
-}
 
 function AdvDupe2.duplicator.IsCopyable(Ent)
 	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
@@ -132,20 +134,22 @@ local function CopyEntTable(Ent, Offset)
 
 	if EntityClass then
 		for iNumber, Key in pairs(EntityClass.Args) do
+			if gtSetupTable.SPECIAL[Key] then
+				Tab = CopyClassArgTable(EntTable)
+			end
 			-- Ignore keys from old system
 			if (not gtSetupTable.POS[Key] and
 					not gtSetupTable.ANG[Key] and
 					not gtSetupTable.MODEL[Key]) then
 				local varType = TypeID(EntTable[Key])
-				if serializable[varType] then
+				if gtSetupTable.SERIAL[varType] then
 					if varType == TYPE_TABLE then
 						Tab[Key] = CopyClassArgTable(EntTable[Key])
 					else
 						Tab[Key] = EntTable[Key]
 					end
-				elseif varType ~= TYPE_NIL then
-					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"" .. Ent:GetClass() ..
-									"\" has unsupported value of type \"" .. type(EntTable[Key]) .. "\"!\n")
+				elseif varType ~= TYPE_NIL and debugConvar:GetBool() then
+					print("[AdvDupe2] Entity ClassArg \"" .. Key .. "\" of type \"" .. Ent:GetClass() .. "\" has unsupported value of type \"" .. type(EntTable[Key]) .. "\"!\n")
 				end
 			end
 		end
@@ -237,33 +241,26 @@ local function CopyEntTable(Ent, Offset)
 		end
 	end
 
-	if(next(Tab.BodyG)==nil)then
+	if(next(Tab.BodyG) == nil)then
 		Tab.BodyG = nil
 	end
 
 	-- Bone Manipulator
 	if (Ent:HasBoneManipulations()) then
-
 		Tab.BoneManip = {}
-		local t, s, a, p
 		local c = gtSetupTable.COMPARE
 		for i = 0, Ent:GetBoneCount() do
-			t = {}
-			s = Ent:GetManipulateBoneScale(i)
-			a = Ent:GetManipulateBoneAngles(i)
-			p = Ent:GetManipulateBonePosition(i)
-
+			local s = Ent:GetManipulateBoneScale(i)
+			s = ((s ~= c.V1) and s or nil)
+			local a = Ent:GetManipulateBoneAngles(i)
+			a = ((a ~= c.A0) and a or nil)
+			local p = Ent:GetManipulateBonePosition(i)
+			p = ((p ~= c.V0) and p or nil)
 			-- Avoid making a vector just to compare it
-			if (s ~= c.V1) then t['s'] = s end
-			if (a ~= c.A0) then t['a'] = a end
-			if (p ~= c.V0) then t['p'] = p end
-
-			if (t['s'] or t['a'] or t['p']) then
-				Tab.BoneManip[i] = t
+			if (s or a or p) then
+				Tab.BoneManip[i] = {s = s, a = a, p = p}
 			end
-
 		end
-
 	end
 
 	if Ent.GetNetworkVars then Tab.DT = Ent:GetNetworkVars() end
@@ -916,6 +913,7 @@ local function CreateEntityFromTable(EntTable, Player)
 	local sent = false
 	local status, valid
 	local GENERIC = false
+	local CreatedEntities = {}
 
 	-- This class is unregistered. Instead of failing try using a generic
 	-- Duplication function to make a new copy.
@@ -1000,8 +998,13 @@ local function CreateEntityFromTable(EntTable, Player)
 				sent = true
 			end
 
-			status, valid = pcall(EntityClass.Func, Player, unpack(ArgList, 1, #EntityClass.Args))
-			if not status then ErrorNoHalt(valid) end
+			hook.Add( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated", function( ent )
+				table.insert( CreatedEntities, ent )
+			end )
+
+			status, valid = xpcall(EntityClass.Func, ErrorNoHaltWithStack, Player, unpack(ArgList, 1, #EntityClass.Args))
+
+			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
@@ -1050,6 +1053,13 @@ local function CreateEntityFromTable(EntTable, Player)
 
 		return valid
 	else
+		if (status == false) then
+			print("Advanced Duplicator 2: Error creating entity, removing last created entities")
+			for _, CreatedEntity in pairs(CreatedEntities) do
+				SafeRemoveEntity(CreatedEntity)
+			end
+		end
+
 		if (valid == false) then
 			return false
 		else
@@ -1213,7 +1223,6 @@ local function AdvDupe2_Spawn()
 			AdvDupe2.InitProgressBar(Queue.Player, "Pasting:")
 			Queue.Player.AdvDupe2.Queued = false
 		end
-		local newpos
 		if (Queue.Current > #Queue.SortedEntities) then
 			Queue.Entity = false
 			Queue.Constraint = true
@@ -1229,14 +1238,14 @@ local function AdvDupe2_Spawn()
 		local v = Queue.EntityList[k]
 
 		if (not v.BuildDupeInfo) then v.BuildDupeInfo = {} end
-		if (v.LocalPos) then
-			for i, p in pairs(v.PhysicsObjects) do
+		if Queue.Revision < 1 and v.LocalPos then
+			for i, _ in pairs(v.PhysicsObjects) do
 				v.PhysicsObjects[i] = {Pos = v.LocalPos, Angle = v.LocalAngle}
 			end
 		end
 
 		v.BuildDupeInfo.PhysicsObjects = table.Copy(v.PhysicsObjects)
-		proppos = v.PhysicsObjects[0].Pos
+		local proppos = v.PhysicsObjects[0].Pos
 		v.BuildDupeInfo.PhysicsObjects[0].Pos = Vector(0, 0, 0)
 		if (Queue.OrigPos) then
 			for i, p in pairs(v.BuildDupeInfo.PhysicsObjects) do
@@ -1369,7 +1378,7 @@ local function AdvDupe2_Spawn()
 						v:SetParent(Queue.CreatedEntities[Queue.EntityList[k].BuildDupeInfo.DupeParentID])
 						if (v.Constraints ~= nil) then
 							for i, c in pairs(v.Constraints) do
-								if (c and constraints[c.Type]) then
+								if (c and gtSetupTable.CONSTRAINT[c.Type]) then
 									edit = false
 									break
 								end
@@ -1459,7 +1468,7 @@ end
 local ticktotal = 0
 local function ErrorCatchSpawning()
 
-	ticktotal = ticktotal + AdvDupe2.SpawnRate
+	ticktotal = ticktotal + math.max(GetConVarNumber("AdvDupe2_SpawnRate"), 0.01)
 	while ticktotal >= 1 do
 		ticktotal = ticktotal - 1
 		local status, err = pcall(AdvDupe2_Spawn)
@@ -1540,11 +1549,26 @@ end
 
 function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos, Constrs, Parenting, DisableParents, DisableProtection)
 	local i = #AdvDupe2.JobManager.Queue + 1
-	AdvDupe2.JobManager.Queue[i] = {}
-	local Queue = AdvDupe2.JobManager.Queue[i]
-	Queue.Player = Player
-	Queue.SortedEntities = {}
-	Queue.EntityList = table.Copy(Player.AdvDupe2.Entities)
+
+	local Queue = {
+		Player = Player,
+		SortedEntities = {},
+		EntityList = table.Copy(Player.AdvDupe2.Entities),
+		Current = 1,
+		Name = Player.AdvDupe2.Name,
+		Entity = true,
+		Constraint = false,
+		Parenting = Parenting,
+		DisableParents = DisableParents,
+		DisableProtection = DisableProtection,
+		CreatedEntities = {},
+		CreatedConstraints = {},
+		PositionOffset = PositionOffset or Vector(0, 0, 0),
+		AngleOffset = AngleOffset or Angle(0, 0, 0),
+		Revision = Player.AdvDupe2.Revision,
+	}
+	AdvDupe2.JobManager.Queue[i] = Queue
+
 	if (Constrs) then
 		Queue.ConstraintList = table.Copy(Player.AdvDupe2.Constraints)
 	else
@@ -1564,17 +1588,6 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 						" Entities and " .. #Player.AdvDupe2.Constraints .. " Constraints.")
 	end
 
-	Queue.Current = 1
-	Queue.Name = Player.AdvDupe2.Name
-	Queue.Entity = true
-	Queue.Constraint = false
-	Queue.Parenting = Parenting
-	Queue.DisableParents = DisableParents
-	Queue.DisableProtection = DisableProtection
-	Queue.CreatedEntities = {}
-	Queue.CreatedConstraints = {}
-	Queue.PositionOffset = PositionOffset or Vector(0, 0, 0)
-	Queue.AngleOffset = AngleOffset or Angle(0, 0, 0)
 	Queue.Plus = #Queue.SortedEntities
 	Queue.Percent = 1 / (#Queue.SortedEntities + #Queue.ConstraintList)
 	AdvDupe2.InitProgressBar(Player, "Queued:")

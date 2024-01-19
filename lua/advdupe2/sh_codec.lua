@@ -9,9 +9,10 @@
 ]]
 
 local REVISION = 5
+AdvDupe2.CodecRevision = REVISION
 
-include "sh_codec_legacy.lua"
-AddCSLuaFile "sh_codec_legacy.lua"
+include( "sh_codec_legacy.lua" )
+AddCSLuaFile( "sh_codec_legacy.lua" )
 
 local pairs = pairs
 local type = type
@@ -29,8 +30,6 @@ local match = string.match
 local concat = table.concat
 local compress = util.Compress
 local decompress = util.Decompress
-
-AdvDupe2.CodecRevision = REVISION
 
 --[[
 	Name:	GenerateDupeStamp
@@ -423,6 +422,7 @@ end
 function AdvDupe2.CheckValidDupe(dupe, info)
 	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
 	if not dupe.Entities then return false, "Missing Entities table" end
+	if not dupe.Constraints then return false, "Missing Constraints table" end
 	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
 	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
