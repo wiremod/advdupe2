@@ -794,7 +794,7 @@ local function reportclass(ply, class)
 end
 
 local function reportmodel(ply, model)
-	net.Start("AdvDupe2_ReportClass")
+	net.Start("AdvDupe2_ReportModel")
 	net.WriteString(model)
 	net.Send(ply)
 end
