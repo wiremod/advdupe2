@@ -903,6 +903,7 @@ local function IsAllowed(Player, Class, EntityClass)
 end
 
 local function CreateEntityFromTable(EntTable, Player)
+	hook.Run("AdvDupe2_PreCreateEntity", EntTable, Player)
 
 	local EntityClass = duplicator.FindEntityClass(EntTable.Class)
 	if not IsAllowed(Player, EntTable.Class, EntityClass) then
