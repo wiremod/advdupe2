@@ -107,31 +107,11 @@ local function clamp(number)
 end
 
 local function ClampVector(vec)
-	vec.x = clamp(vec.x)
-	vec.y = clamp(vec.y)
-	vec.z = clamp(vec.z)
+	return Vector(clamp(vec.x), clamp(vec.y), clamp(vec.z))
 end
 
 local function ClampAngle(ang)
-	ang.p = clamp(ang.p)
-	ang.y = clamp(ang.y)
-	ang.r = clamp(ang.r)
-end
-
-local function RecursiveClamp(tab, handled)
-	handled = handled or {}
-	if handled[tab] then return end
-	handled[tab] = true
-
-	for k, v in pairs(tab) do
-		if isvector(v) then
-			ClampVector(v)
-		elseif isangle(v) then
-			ClampAngle(v)
-		elseif istable(v) then
-			RecursiveClamp(v, handled)
-		end
-	end
+	return Angle(clamp(ang.p), clamp(ang.y), clamp(ang.r))
 end
 
 --[[
@@ -536,9 +516,6 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
-	RecursiveClamp(Constraint)
-	RecursiveClamp(EntityTable)
-
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
@@ -796,7 +773,6 @@ end
 	Returns: <entity> Entity, <table> data
 ]]
 local function DoGenericPhysics(Entity, data, Player)
-
 	if (not data) then return end
 	if (not data.PhysicsObjects) then return end
 	local Phys
@@ -804,8 +780,10 @@ local function DoGenericPhysics(Entity, data, Player)
 		for Bone, Args in pairs(data.PhysicsObjects) do
 			Phys = Entity:GetPhysicsObjectNum(Bone)
 			if (IsValid(Phys)) then
-				Phys:SetPos(Args.Pos)
-				Phys:SetAngles(Args.Angle)
+				local pos = ClampVector(Args.Pos)
+				local ang = ClampAngle(Args.Angle)
+				Phys:SetPos(pos)
+				Phys:SetAngles(ang)
 				Phys:EnableMotion(false)
 				Player:AddFrozenPhysicsObject(Entity, Phys)
 			end
@@ -814,8 +792,10 @@ local function DoGenericPhysics(Entity, data, Player)
 		for Bone, Args in pairs(data.PhysicsObjects) do
 			Phys = Entity:GetPhysicsObjectNum(Bone)
 			if (IsValid(Phys)) then
-				Phys:SetPos(Args.Pos)
-				Phys:SetAngles(Args.Angle)
+				local pos = ClampVector(Args.Pos)
+				local ang = ClampAngle(Args.Angle)
+				Phys:SetPos(pos)
+				Phys:SetAngles(ang)
 				Phys:EnableMotion(false)
 			end
 		end
@@ -888,8 +868,8 @@ local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 		return nil
 	end
 
-	Data.Pos = Pos
-	Data.Angle = Ang
+	Data.Pos = ClampVector(Pos)
+	Data.Angle = ClampAngle(Ang)
 	Data.Model = Model
 	Data.Frozen = true
 	-- Make sure this is allowed
@@ -945,8 +925,6 @@ local function CreateEntityFromTable(EntTable, Player)
 		Player:ChatPrint([[Entity Class Black listed, "]] .. EntTable.Class .. [["]])
 		return nil
 	end
-
-	RecursiveClamp(EntTable)
 
 	local sent = false
 	local status, valid
