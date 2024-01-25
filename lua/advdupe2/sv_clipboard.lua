@@ -102,6 +102,38 @@ local function CopyClassArgTable(tab)
 	return recursiveCopy(tab)
 end
 
+local function clamp(number)
+	return math.Clamp(number, -10000, 10000)
+end
+
+local function ClampVector(vec)
+	vec.x = clamp(vec.x)
+	vec.y = clamp(vec.y)
+	vec.z = clamp(vec.z)
+end
+
+local function ClampAngle(ang)
+	ang.p = clamp(ang.p)
+	ang.y = clamp(ang.y)
+	ang.r = clamp(ang.r)
+end
+
+local function RecursiveClamp(tab, handled)
+	handled = handled or {}
+	if handled[tab] then return end
+	handled[tab] = true
+
+	for k, v in pairs(tab) do
+		if isvector(v) then
+			ClampVector(v)
+		elseif isangle(v) then
+			ClampAngle(v)
+		elseif istable(v) then
+			RecursiveClamp(v, handled)
+		end
+	end
+end
+
 --[[
 	Name: CopyEntTable
 	Desc: Returns a copy of the passed entity's table
@@ -503,6 +535,9 @@ end
 local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Player, DontEnable)
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
+
+	RecursiveClamp(Constraint)
+	RecursiveClamp(EntityTable)
 
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
@@ -910,6 +945,8 @@ local function CreateEntityFromTable(EntTable, Player)
 		Player:ChatPrint([[Entity Class Black listed, "]] .. EntTable.Class .. [["]])
 		return nil
 	end
+
+	RecursiveClamp(EntTable)
 
 	local sent = false
 	local status, valid
