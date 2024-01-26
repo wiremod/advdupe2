@@ -780,10 +780,8 @@ local function DoGenericPhysics(Entity, data, Player)
 		for Bone, Args in pairs(data.PhysicsObjects) do
 			Phys = Entity:GetPhysicsObjectNum(Bone)
 			if (IsValid(Phys)) then
-				local pos = ClampVector(Args.Pos)
-				local ang = ClampAngle(Args.Angle)
-				Phys:SetPos(pos)
-				Phys:SetAngles(ang)
+				Phys:SetPos(ClampVector(Args.Pos))
+				Phys:SetAngles(ClampAngle(Args.Angle))
 				Phys:EnableMotion(false)
 				Player:AddFrozenPhysicsObject(Entity, Phys)
 			end
@@ -792,10 +790,8 @@ local function DoGenericPhysics(Entity, data, Player)
 		for Bone, Args in pairs(data.PhysicsObjects) do
 			Phys = Entity:GetPhysicsObjectNum(Bone)
 			if (IsValid(Phys)) then
-				local pos = ClampVector(Args.Pos)
-				local ang = ClampAngle(Args.Angle)
-				Phys:SetPos(pos)
-				Phys:SetAngles(ang)
+				Phys:SetPos(ClampVector(Args.Pos))
+				Phys:SetAngles(ClampAngle(Args.Angle))
 				Phys:EnableMotion(false)
 			end
 		end
