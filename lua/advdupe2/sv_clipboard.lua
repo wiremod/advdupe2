@@ -844,6 +844,8 @@ end
 ]]
 local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 
+    if Data.ModelScale then Data.ModelScale = math.Clamp(Data.ModelScale, 1e-5, 1e5) end
+
 	if (not util.IsValidModel(Model) and not file.Exists(Data.Model, "GAME")) then
 		if (Player) then
 			reportmodel(Player, Data.Model)
