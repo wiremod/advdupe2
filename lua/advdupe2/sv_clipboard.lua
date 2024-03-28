@@ -844,7 +844,7 @@ end
 ]]
 local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
 
-    if Data.ModelScale and Data.ModelScale == 0 then return end // Crashes dedicated servers when model scale is set to 0 in dupes. Skip the prop.
+    if Data.ModelScale then Data.ModelScale = math.Clamp(Data.ModelScale, 1e-5, 1e5) end
 
 	if (not util.IsValidModel(Model) and not file.Exists(Data.Model, "GAME")) then
 		if (Player) then
