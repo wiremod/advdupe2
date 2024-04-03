@@ -157,12 +157,9 @@ if(SERVER) then
 	--Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
 		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
-		local Entities = ents.GetAll() --Don't use FindInBox. It has a 512 entity limit.
 		local EntTable = {}
-		local pos, ent
-		for i = 1, #Entities do
-			ent = Entities[i]
-			pos = ent:GetPos()
+		for _, ent in ents.Iterator() do
+			local pos = ent:GetPos()
 			if (pos.X>=min.X) and (pos.X<=max.X) and
 				 (pos.Y>=min.Y) and (pos.Y<=max.Y) and
 				 (pos.Z>=min.Z) and (pos.Z<=max.Z) and PPCheck( ply, ent ) then
@@ -335,7 +332,7 @@ if(SERVER) then
 				--select all owned props
 				Entities = {}
 				local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and CPPI~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
-				for _, ent in pairs(ents.GetAll()) do
+				for _, ent in ents.Iterator() do
 					if PPCheck( ply, ent ) then
 						Entities[ent:EntIndex()] = ent
 					end
@@ -663,18 +660,18 @@ if(SERVER) then
 		net.Start("AdvDupe2_DrawSelectBox")
 		net.Send(ply)
 	end
-	
+
 	function AdvDupe2.RemoveSelectBox(ply)
 		net.Start("AdvDupe2_RemoveSelectBox")
 		net.Send(ply)
 	end
-	
+
 	function AdvDupe2.UpdateProgressBar(ply,percent)
 		net.Start("AdvDupe2_UpdateProgressBar")
 			net.WriteFloat(percent)
 		net.Send(ply)
 	end
-	
+
 	function AdvDupe2.RemoveProgressBar(ply)
 		net.Start("AdvDupe2_RemoveProgressBar")
 		net.Send(ply)
@@ -812,10 +809,10 @@ if(SERVER) then
 			return
 		end
 
-		local Entities = ents.GetAll()
-		for k,v in pairs(Entities) do
+		local Entities = {}
+		for _, ents.Iterator() do
 			if v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v) then
-				Entities[k]=nil
+				table.insert(Entities, v)
 			end
 		end
 
@@ -1688,10 +1685,8 @@ if(CLIENT) then
 
 
 	local function FindInBox(min, max, ply)
-
-		local Entities = ents.GetAll()
 		local EntTable = {}
-		for _,ent in pairs(Entities) do
+		for _,ent in ents.Iterator() do
 			local pos = ent:GetPos()
 			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) then
 				--if(ent:GetClass()~="C_BaseFlexclass") then
@@ -1709,7 +1704,7 @@ if(CLIENT) then
 
 		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
 		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
-				
+
 		--Bottom Points
 		local B1 = (Vector(-i,-i,-i) + TraceRes.HitPos)
 		local B2 = (Vector(-i, i,-i) + TraceRes.HitPos)
@@ -1854,7 +1849,7 @@ if(CLIENT) then
 	net.Receive("AdvDupe2_ReportClass", function()
 		print("Advanced Duplicator 2: Invalid Class: "..net.ReadString())
 	end)
-	
+
 	net.Receive("AdvDupe2_ResetDupeInfo", function()
 		if not AdvDupe2.Info then return end
 		AdvDupe2.Info.File:SetText("File:")
