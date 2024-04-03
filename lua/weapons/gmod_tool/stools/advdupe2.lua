@@ -810,7 +810,7 @@ if(SERVER) then
 		end
 
 		local Entities = {}
-		for _, ents.Iterator() do
+		for _, v in ents.Iterator() do
 			if v:CreatedByMap() or not AdvDupe2.duplicator.IsCopyable(v) then
 				table.insert(Entities, v)
 			end
