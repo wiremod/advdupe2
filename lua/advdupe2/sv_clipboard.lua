@@ -373,65 +373,71 @@ end
 	Params: <entity> Entity
 	Returns: <table> Entities, <table> Constraints
 ]]
-local function Copy(Ent, EntTable, ConstraintTable, Offset)
+local function Copy(ply, Ent, EntTable, ConstraintTable, Offset)
 
-	local index = Ent:EntIndex()
-	if EntTable[index] then return EntTable, ConstraintTable end
+	local function RecursiveCopy(Ent)
+		local index = Ent:EntIndex()
+		if EntTable[index] then return end
 
-	local EntData = CopyEntTable(Ent, Offset)
-	if EntData == nil then return EntTable, ConstraintTable end
-	EntTable[index] = EntData
+		local cantool = Ent.CPPICanTool
+		if cantool and not cantool(Ent, ply, "advdupe2") then return end
 
-	if Ent.Constraints then
-		for k, Constraint in pairs(Ent.Constraints) do
-			if Constraint:IsValid() then
-				index = Constraint:GetCreationID()
-				if index and not ConstraintTable[index] then
-					local ConstTable, EntTab = CopyConstraintTable(table.Copy(Constraint:GetTable()), Offset)
-					ConstraintTable[index] = ConstTable
-					for j, e in pairs(EntTab) do
-						if e and (e:IsWorld() or e:IsValid()) then
-							Copy(e, EntTable, ConstraintTable, Offset)
+		local EntData = CopyEntTable(Ent, Offset)
+		if EntData == nil then return end
+		EntTable[index] = EntData
+
+		if Ent.Constraints then
+			for k, Constraint in pairs(Ent.Constraints) do
+				if Constraint:IsValid() then
+					index = Constraint:GetCreationID()
+					if index and not ConstraintTable[index] then
+						local ConstTable, EntTab = CopyConstraintTable(table.Copy(Constraint:GetTable()), Offset)
+						ConstraintTable[index] = ConstTable
+						for j, e in pairs(EntTab) do
+							if e and (e:IsWorld() or e:IsValid()) then
+								RecursiveCopy(e)
+							end
 						end
 					end
 				end
 			end
 		end
-	end
 
-	do -- Wiremod Wire Connections
-		if istable(Ent.Inputs) then
-			for k, v in pairs(Ent.Inputs) do
-				if isentity(v.Src) and v.Src:IsValid() then
-					Copy(v.Src, EntTable, ConstraintTable, Offset)
+		do -- Wiremod Wire Connections
+			if istable(Ent.Inputs) then
+				for k, v in pairs(Ent.Inputs) do
+					if isentity(v.Src) and v.Src:IsValid() then
+						RecursiveCopy(v.Src)
+					end
 				end
 			end
-		end
 
-		if istable(Ent.Outputs) then
-			for k, v in pairs(Ent.Outputs) do
-				if istable(v.Connected) then
-					for k, v in pairs(v.Connected) do
-						if isentity(v.Entity) and v.Entity:IsValid() then
-							Copy(v.Entity, EntTable, ConstraintTable, Offset)
+			if istable(Ent.Outputs) then
+				for k, v in pairs(Ent.Outputs) do
+					if istable(v.Connected) then
+						for k, v in pairs(v.Connected) do
+							if isentity(v.Entity) and v.Entity:IsValid() then
+								RecursiveCopy(v.Entity)
+							end
 						end
 					end
 				end
 			end
 		end
-	end
 
-	do -- Parented stuff
-		local parent = Ent:GetParent()
-		if IsValid(parent) then Copy(parent, EntTable, ConstraintTable, Offset) end
-		for k, child in pairs(Ent:GetChildren()) do
-			Copy(child, EntTable, ConstraintTable, Offset)
+		do -- Parented stuff
+			local parent = Ent:GetParent()
+			if IsValid(parent) then RecursiveCopy(parent) end
+			for k, child in pairs(Ent:GetChildren()) do
+				RecursiveCopy(child)
+			end
+		end
+
+		for k, v in pairs(EntData.PhysicsObjects) do
+			Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 		end
 	end
-
-	for k, v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects) do
-		Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
-	end
+	RecursiveCopy(Ent)
 
 	return EntTable, ConstraintTable
 end

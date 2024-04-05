@@ -308,7 +308,7 @@ if(SERVER) then
 				Constraints = dupe.Constraints
 				HeadEnt = dupe.HeadEnt
 
-				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, HeadEnt.Pos)
+				AdvDupe2.duplicator.Copy( ply, trace.Entity, Entities, Constraints, HeadEnt.Pos)
 
 				--Only add the one ghost
 				AddOne = Entities[trace.Entity:EntIndex()]
@@ -318,7 +318,7 @@ if(SERVER) then
 				HeadEnt.Index = trace.Entity:EntIndex()
 				HeadEnt.Pos = trace.HitPos
 
-				AdvDupe2.duplicator.Copy( trace.Entity, Entities, Constraints, trace.HitPos )
+				AdvDupe2.duplicator.Copy( ply, trace.Entity, Entities, Constraints, trace.HitPos )
 			end
 		else --Non valid entity or clicked the world
 			if dupe.Entities then
@@ -757,7 +757,7 @@ if(SERVER) then
 				})
 
 				Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
-				AdvDupe2.duplicator.Copy( dupe.AutoSaveEnt, Tab.Entities, Tab.Constraints, Tab.HeadEnt.Pos )
+				AdvDupe2.duplicator.Copy( ply, dupe.AutoSaveEnt, Tab.Entities, Tab.Constraints, Tab.HeadEnt.Pos )
 			else
 				local i = dupe.AutoSaveSize
 				local Pos = dupe.AutoSavePos
