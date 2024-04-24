@@ -446,10 +446,9 @@ AdvDupe2.duplicator.Copy = Copy
 --[[
 	Name: AreaCopy
 	Desc: Copy based on a box
-	Params: <entity> Entity
 	Returns: <table> Entities, <table> Constraints
 ]]
-function AdvDupe2.duplicator.AreaCopy(Entities, Offset, CopyOutside, ply)
+function AdvDupe2.duplicator.AreaCopy(ply, Entities, Offset, CopyOutside)
 	local Constraints, EntTable, ConstraintTable = {}, {}, {}
 	local index, add, AddEnts, AddConstrs, ConstTable, EntTab
 
