@@ -289,7 +289,7 @@ if(SERVER) then
 			HeadEnt.Index = Ent:EntIndex()
 			HeadEnt.Pos = Ent:GetPos()
 
-			Entities, Constraints = AdvDupe2.duplicator.AreaCopy(Ents, HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
+			Entities, Constraints = AdvDupe2.duplicator.AreaCopy(ply, Ents, HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
 
 			self:SetStage(0)
 			AdvDupe2.RemoveSelectBox(ply)
@@ -348,7 +348,7 @@ if(SERVER) then
 				HeadEnt.Index = Ent:EntIndex()
 				HeadEnt.Pos = Ent:GetPos()
 
-				Entities, Constraints = AdvDupe2.duplicator.AreaCopy(Entities, HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
+				Entities, Constraints = AdvDupe2.duplicator.AreaCopy(ply, Entities, HeadEnt.Pos, tobool(ply:GetInfo("advdupe2_copy_outside")))
 			end
 		end
 
@@ -782,7 +782,7 @@ if(SERVER) then
 				})
 
 				Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
-				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, dupe.AutoSaveOutSide)
+				Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(ply, Entities, Tab.HeadEnt.Pos, dupe.AutoSaveOutSide)
 			end
 			Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 			Tab.Description = dupe.AutoSaveDesc
@@ -830,7 +830,7 @@ if(SERVER) then
 		})
 
 		Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
-		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(Entities, Tab.HeadEnt.Pos, true)
+		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(ply, Entities, Tab.HeadEnt.Pos, true)
 		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
 
 		Tab.Map = true
