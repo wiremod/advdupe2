@@ -139,9 +139,9 @@ local function GetNodePath(node)
 	local name = ""
 	node = node.ParentNode
 	if (not node.ParentNode) then
-		if (path == "-Public-") then
+		if (path == "Public") then
 			area = 1
-		elseif (path == "-Advanced Duplicator 1-") then
+		elseif (path == "Advanced Duplicator 1") then
 			area = 2
 		end
 		return "", area
@@ -150,12 +150,12 @@ local function GetNodePath(node)
 	while (true) do
 
 		name = node.Label:GetText()
-		if (name == "-Advanced Duplicator 2-") then
+		if (name == "Advanced Duplicator 2") then
 			break
-		elseif (name == "-Public-") then
+		elseif (name == "Public") then
 			area = 1
 			break
-		elseif (name == "-Advanced Duplicator 1-") then
+		elseif (name == "Advanced Duplicator 1") then
 			area = 2
 			break
 		end
@@ -933,13 +933,21 @@ function FOLDER:AddFolder(text)
 	node.Files = {}
 
 	self.Nodes = self.Nodes + 1
-	table.insert(self.Folders, node)
+	self.Folders[#self.Folders + 1] = node
 
 	if (self.m_bExpanded) then
 		self.Control:Extend(self)
 	end
 
 	return node
+end
+
+function FOLDER:Clear()
+	for _, node in ipairs(self.Folders) do
+		node:Remove() end
+	for _, node in ipairs(self.Files) do
+		node:Remove() end
+	self.Nodes = 0
 end
 
 function FOLDER:AddFile(text)
@@ -968,6 +976,45 @@ function FOLDER:AddFile(text)
 
 	return node
 end
+
+
+function FOLDER:LoadDataFolder(folderPath)
+	self:Clear()
+	self.LoadingPath = folderPath
+	self.LoadingFiles, self.LoadingDirectories = file.Find(folderPath .. "*", "DATA", "nameasc")
+	self.FileI, self.DirI = 1, 1
+	self.LoadingFirst = true
+end
+
+function FOLDER:Think()
+	if self.LoadingPath then
+		local path, files, dirs, fileI, dirI = self.LoadingPath, self.LoadingFiles, self.LoadingDirectories, self.FileI, self.DirI
+		if dirI > #dirs then
+			if fileI > #files then
+				self.LoadingPath = nil
+				return
+			else
+				local fileName = files[fileI]
+				local fileNode = self:AddFile(string.StripExtension(fileName))
+				fileI = fileI + 1
+			end
+		else
+			local dirName = dirs[dirI]
+			local dirNode = self:AddFolder(dirName)
+			dirNode:LoadDataFolder(path .. dirName .. "/")
+			dirI = dirI + 1
+		end
+
+		self.FileI = fileI
+		self.DirI = dirI
+
+		if self.LoadingFirst then
+			if self.LoadingPath == "advdupe2/" then self:SetExpanded(true) end
+			self.LoadingFirst = false
+		end
+	end
+end
+
 
 function FOLDER:SetExpanded(bool)
 	if (not self.Expander) then return end
@@ -1101,23 +1148,6 @@ local function PanelSetSize(self, x, y)
 
 end
 
-local function PurgeFiles(path, curParent)
-	local files, directories = file.Find(path .. "*", "DATA")
-	if (directories) then
-		for k, v in pairs(directories) do
-			curParent = curParent:AddFolder(v)
-			PurgeFiles(path .. v .. "/", curParent)
-			curParent = curParent.ParentNode
-		end
-	end
-
-	if (files) then
-		for k, v in pairs(files) do
-			curParent:AddFile(string.sub(v, 1, #v - 4))
-		end
-	end
-end
-
 local function UpdateClientFiles()
 
 	local pnlCanvas = AdvDupe2.FileBrowser.Browser.pnlCanvas
@@ -1128,9 +1158,11 @@ local function UpdateClientFiles()
 		end
 	end
 
-	PurgeFiles("advdupe2/", pnlCanvas:AddFolder("-Advanced Duplicator 2-"))
+	local advdupe2 = pnlCanvas:AddFolder("Advanced Duplicator 2")
+	local advdupe1 = pnlCanvas:AddFolder("Advanced Duplicator 1")
 
-	PurgeFiles("adv_duplicator/", pnlCanvas:AddFolder("-Advanced Duplicator 1-"))
+	advdupe1:LoadDataFolder("adv_duplicator/")
+	advdupe2:LoadDataFolder("advdupe2/")
 
 	if (pnlCanvas.Folders[2]) then
 		if (#pnlCanvas.Folders[2].Folders == 0 and #pnlCanvas.Folders[2].Files == 0) then
