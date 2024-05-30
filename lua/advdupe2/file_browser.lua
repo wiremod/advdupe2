@@ -1226,8 +1226,7 @@ function PANEL:Init()
 	self.FileName.OnTextChanged = function()
 
 		if (self.FileName.FirstChar) then
-			if (string.lower(self.FileName:GetValue()[1] or "") ==
-				string.lower(input.LookupBinding("menu"))) then
+			if (string.lower(self.FileName:GetValue()[1] or "") == string.lower(input.LookupBinding("menu") or "q")) then
 				self.FileName:SetText(self.FileName.PrevText)
 				self.FileName:SelectAll()
 				self.FileName.FirstChar = false
