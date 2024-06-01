@@ -835,6 +835,10 @@ if(SERVER) then
 
 		Tab.Map = true
 		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
+			if #data > AdvDupe2.MaxDupeSize then
+				AdvDupe2.Notify(ply, "Copied duplicator filesize is too big!",NOTIFY_ERROR)
+				return 
+			end
 			if(not file.IsDir("advdupe2_maps", "DATA")) then
 				file.CreateDir("advdupe2_maps")
 			end

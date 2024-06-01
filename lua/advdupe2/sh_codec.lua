@@ -10,6 +10,7 @@
 
 local REVISION = 5
 AdvDupe2.CodecRevision = REVISION
+AdvDupe2.MaxDupeSize = 32e6 -- 32 MB
 
 include( "sh_codec_legacy.lua" )
 AddCSLuaFile( "sh_codec_legacy.lua" )
@@ -411,12 +412,12 @@ end
 
 versions[4] = function(encodedDupe)
 	local info, dupestring = getInfo(encodedDupe:sub(7))
-	return deserialize(decompress(dupestring), read4), info
+	return deserialize(decompress(dupestring, AdvDupe2.MaxDupeSize), read4), info
 end
 
 versions[5] = function(encodedDupe)
 	local info, dupestring = getInfo(encodedDupe:sub(7))
-	return deserialize(decompress(dupestring), read5), info
+	return deserialize(decompress(dupestring, AdvDupe2.MaxDupeSize), read5), info
 end
 
 function AdvDupe2.CheckValidDupe(dupe, info)
@@ -508,11 +509,8 @@ function AdvDupe2.Decode(encodedDupe)
 		if success then
 			success, tbl = AdvDupe2.CheckValidDupe(tbl, info)
 		end
-
 		if success then
 			info.revision = rev
-		else
-			ErrorNoHalt(tbl)
 		end
 
 		return success, tbl, info
