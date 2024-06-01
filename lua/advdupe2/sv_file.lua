@@ -37,6 +37,11 @@ concommand.Add("AdvDupe2_SaveFile", SaveFile)
 
 function AdvDupe2.SendToClient(ply, data, autosave)
 	if(not IsValid(ply))then return end
+	if #data > AdvDupe2.MaxDupeSize then
+		AdvDupe2.Notify(ply,"Copied duplicator filesize is too big!",NOTIFY_ERROR)
+		return
+	end
+
 	ply.AdvDupe2.Downloading = true
 	AdvDupe2.InitProgressBar(ply,"Saving:")
 
