@@ -1163,7 +1163,10 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 					print("AD2 PostEntityPaste Error: " .. tostring(valid))
 				end
 			end
-			v:GetPhysicsObject():EnableMotion(false)
+
+			if IsValid(v:GetPhysicsObject()) then
+				v:GetPhysicsObject():EnableMotion(false)
+			end
 
 			if (EntityList[_].BuildDupeInfo.DupeParentID and Parenting) then
 				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
@@ -1185,7 +1188,10 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 					print("AD2 PostEntityPaste Error: " .. tostring(valid))
 				end
 			end
-			v:GetPhysicsObject():EnableMotion(false)
+
+			if IsValid(v:GetPhysicsObject()) then
+				v:GetPhysicsObject():EnableMotion(false)
+			end
 
 			if (EntityList[_].BuildDupeInfo.DupeParentID and Parenting) then
 				v:SetParent(CreatedEntities[EntityList[_].BuildDupeInfo.DupeParentID])
