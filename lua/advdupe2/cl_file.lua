@@ -7,7 +7,7 @@ function AdvDupe2.SanitizeFilename(filename)
 
 	return filename
 end
---path = string.Replace(path, " ", "_")
+
 local function AdvDupe2_ReceiveFile(len, ply)
 	local AutoSave = net.ReadUInt(8) == 1
 
