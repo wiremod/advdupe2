@@ -524,6 +524,8 @@ if CLIENT then
 		local readFileName = "advdupe2/"..arg[1]
 		local writeFileName = "advdupe2/"..string.StripExtension(arg[1])..".json"
 
+		writeFileName = AdvDupe2.SanitizeFilename(writeFileName)
+
 		local readFile = file.Open(readFileName, "rb", "DATA")
 		if not readFile then print("File could not be read or found! ("..readFileName..")") return end
 		local readData = readFile:Read(readFile:Size())

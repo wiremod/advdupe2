@@ -306,6 +306,8 @@ local function RenameFileCl(node, name)
 		AdvDupe2.Notify("Rename limit exceeded, could not rename.", NOTIFY_ERROR)
 		return
 	end
+
+	FilePath = AdvDupe2.SanitizeFilename(FilePath)
 	file.Write(FilePath, File)
 	if (file.Exists(FilePath, "DATA")) then
 		file.Delete(tempFilePath .. ".txt")

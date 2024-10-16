@@ -1,3 +1,13 @@
+local invalidCharacters = { "\"", ":"}
+function AdvDupe2.SanitizeFilename(filename)
+	for i=1, #invalidCharacters do
+		filename = string.gsub(filename, invalidCharacters[i], "_")
+	end
+	filename = string.gsub(filename, "%s+", " ")
+
+	return filename
+end
+
 local function AdvDupe2_ReceiveFile(len, ply)
 	local AutoSave = net.ReadUInt(8) == 1
 
@@ -18,6 +28,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 			path = AdvDupe2.GetFilename(AdvDupe2.SavePath)
 		end
 
+		path = AdvDupe2.SanitizeFilename(path)
 		local dupefile = file.Open(path, "wb", "DATA")
 		if(!dupefile)then
 			AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
