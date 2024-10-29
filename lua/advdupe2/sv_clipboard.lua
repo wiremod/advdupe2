@@ -509,6 +509,9 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
+	if not Player:CheckLimit( "constraints" ) then return end
+	if not Player:CheckLimit( "ropeconstraints" ) then return end
+
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
@@ -648,6 +651,11 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 			print("DUPLICATOR: ERROR, Failed to create " .. Constraint.Type .. " Constraint!")
 		end
 		return
+	end
+
+	if Player then
+		local constraintType = Ent:GetClass() == "keyframe_rope" and "ropeconstraints" or "constraints"
+		Player:AddCount( constraintType, Ent )
 	end
 
 	Ent.BuildDupeInfo = table.Copy(buildInfo)
