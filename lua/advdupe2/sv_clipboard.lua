@@ -505,24 +505,11 @@ end
 	Params: <table>Constraint, <table> EntityList, <table> EntityTable
 	Returns: <entity> CreatedConstraint
 ]]
-local ropeConstraintTypes = {
-	Elastic = true,
-	Hydraulic = true,
-	Muscle = true,
-	Pulley = true,
-	Rope = true,
-	Slider = true,
-	Winch = true,
-}
-
 local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Player, DontEnable)
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
-	local isRopeConstraint = ropeConstraintTypes[Constraint.Type]
-	local constraintType = isRopeConstraint and "ropeconstraints" or "constraints"
-	if not Player:CheckLimit( constraintType ) then return end
-
+	if not Player:CheckLimit( "constraints" ) then return end
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
@@ -665,7 +652,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	end
 
 	if Player then
-		Player:AddCount( constraintType, Ent )
+		Player:AddCount( "constraints", Ent )
 	end
 
 	Ent.BuildDupeInfo = table.Copy(buildInfo)
