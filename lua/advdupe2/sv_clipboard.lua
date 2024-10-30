@@ -520,7 +520,6 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	if not Factory then return end
 
 	local isRopeConstraint = ropeConstraintTypes[Constraint.Type]
-	print(Constraint.Type, isRopeConstraint)
 	local constraintType = isRopeConstraint and "ropeconstraints" or "constraints"
 	if not Player:CheckLimit( constraintType ) then return end
 
