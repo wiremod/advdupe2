@@ -509,7 +509,7 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
-	if not Player:CheckLimit( "constraints" ) then return end
+	if Player and not Player:CheckLimit( "constraints" ) then return end
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
