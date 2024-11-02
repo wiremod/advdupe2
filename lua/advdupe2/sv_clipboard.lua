@@ -1415,8 +1415,10 @@ local function AdvDupe2_Spawn()
 						edit = false
 					end
 
+					local physCount = v:GetPhysicsObjectCount() - 1
+
 					if (unfreeze) then
-						for i = 0, v:GetPhysicsObjectCount() do
+						for i = 0, physCount do
 							phys = v:GetPhysicsObjectNum(i)
 							if (IsValid(phys)) then
 								phys:EnableMotion(true) -- Unfreeze the entitiy and all of its objects
@@ -1424,7 +1426,7 @@ local function AdvDupe2_Spawn()
 							end
 						end
 					elseif (preservefrozenstate) then
-						for i = 0, v:GetPhysicsObjectCount() do
+						for i = 0, physCount do
 							phys = v:GetPhysicsObjectNum(i)
 							if (IsValid(phys)) then
 								if (Queue.EntityList[k].BuildDupeInfo.PhysicsObjects[i].Frozen) then
@@ -1436,7 +1438,7 @@ local function AdvDupe2_Spawn()
 							end
 						end
 					else
-						for i = 0, v:GetPhysicsObjectCount() do
+						for i = 0, physCount do
 							phys = v:GetPhysicsObjectNum(i)
 							if (IsValid(phys)) then
 								if (phys:IsMoveable()) then
