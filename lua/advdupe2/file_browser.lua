@@ -984,6 +984,8 @@ function FOLDER:LoadDataFolder(folderPath)
 	self:Clear()
 	self.LoadingPath = folderPath
 	self.LoadingFiles, self.LoadingDirectories = file.Find(folderPath .. "*", "DATA", "nameasc")
+	if self.LoadingFiles == nil then self.LoadingFiles = {} end
+	if self.LoadingDirectories == nil then self.LoadingDirectories = {} end
 	self.FileI, self.DirI = 1, 1
 	self.LoadingFirst = true
 end
