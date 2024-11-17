@@ -9,7 +9,6 @@ function AdvDupe2.SanitizeFilename(filename)
 end
 
 function AdvDupe2.ReceiveFile(data, autoSave)
-	print("AdvDupe2.ReceiveFile", data, autoSave)
 	AdvDupe2.RemoveProgressBar()
 	if not data then
 		AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
