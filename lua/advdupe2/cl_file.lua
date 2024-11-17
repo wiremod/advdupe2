@@ -27,7 +27,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 
 	path = AdvDupe2.SanitizeFilename(path)
 	local dupefile = file.Open(path, "wb", "DATA")
-	if dupefile then
+	if not dupefile then
 		AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
 		return
 	end
