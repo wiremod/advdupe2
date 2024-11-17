@@ -83,10 +83,10 @@ net.Receive("AdvDupe2_ReceiveFile", function()
 end)
 
 AdvDupe2.Uploading = false
-function AdvDupe2.SendFile(name, file)
+function AdvDupe2.SendFile(name, data)
 	net.Start("AdvDupe2_ReceiveFile")
 	net.WriteString(name)
-	AdvDupe2.Uploading = net.WriteStream(file, function()
+	AdvDupe2.Uploading = net.WriteStream(data, function()
 		AdvDupe2.Uploading = nil
 		AdvDupe2.File = nil
 		AdvDupe2.RemoveProgressBar()
