@@ -199,6 +199,11 @@ if(SERVER) then
 		Params: <trace> trace
 		Returns: <boolean> success
 	]]
+	local messages = {
+		["Pasting"] = "pasting.",
+		["Downloading"] = "downloading.",
+		["Uploading"] = "uploading."
+	}
 	function TOOL:LeftClick( trace )
 		if(not trace) then return false end
 
@@ -207,9 +212,11 @@ if(SERVER) then
 
 		if not (dupe and dupe.Entities) then return false end
 
-		if(dupe.Pasting or dupe.Downloading or dupe.Uploading) then
-			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
-			return false
+		for key, msg in pairs(messages) do
+			if dupe[key] then
+				AdvDupe2.Notify(ply, "Advanced Duplicator 2 is busy " .. msg, NOTIFY_ERROR)
+				return false
+			end
 		end
 
 		dupe.Angle = GetDupeAngleOffset(ply)
