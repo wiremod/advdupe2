@@ -137,7 +137,7 @@ local function AdvDupe2_ReceiveFile(len, ply)
 		AdvDupe2.Notify(ply, "Duplicator is Busy!", NOTIFY_ERROR, 5)
 	elseif stream then
 		ply.AdvDupe2.Uploading = true
-		AdvDupe2.InitProgressBar(ply, "Opening: ")
+		AdvDupe2.InitProgressBar(ply, "Uploading: ")
 	end
 end
 net.Receive("AdvDupe2_ReceiveFile", AdvDupe2_ReceiveFile)

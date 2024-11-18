@@ -418,7 +418,7 @@ if(SERVER) then
 			return
 		else
 			if(dupe.Uploading) then
-				AdvDupe2.InitProgressBar(ply, "Opening: ")
+				AdvDupe2.InitProgressBar(ply, "Uploading: ")
 				return
 			elseif(dupe.Downloading) then
 				AdvDupe2.InitProgressBar(ply, "Saving: ")
