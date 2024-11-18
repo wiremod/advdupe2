@@ -207,7 +207,7 @@ if(SERVER) then
 
 		if not (dupe and dupe.Entities) then return false end
 
-		if(dupe.Pasting or dupe.Downloading) then
+		if(dupe.Pasting or dupe.Downloading or dupe.Uploading) then
 			AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
 			return false
 		end
