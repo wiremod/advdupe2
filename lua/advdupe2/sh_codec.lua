@@ -390,7 +390,7 @@ local function getInfo(str)
 		if info.check == "\10\9\10" then
 			error("Detected AD2 file corrupted in file transfer (newlines homogenized)(when using FTP, transfer AD2 files in image/binary mode, not ASCII/text mode)!")
 		else
-			error("Attempt to read AD2 file with malformed info block!")
+			error("Detected AD2 file corrupted by newline replacements (copy/pasting the data in various editors can cause this!)")
 		end
 	end
 	return info, str:sub(last+2)
