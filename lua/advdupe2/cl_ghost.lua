@@ -180,6 +180,13 @@ local function MakeGhostsFromTable(EntTable)
 	return GhostEntity
 end
 
+local function StopGhosting()
+	AdvDupe2.Ghosting = false
+	hook.Remove( "Tick", "AdvDupe2_SpawnGhosts" )
+
+	if not BusyBar then AdvDupe2.RemoveProgressBar() end
+end
+
 local function SpawnGhosts()
 	local ghostsPerTick     = GetConVar( "advdupe2_ghost_rate" ):GetInt()
 	local ghostPercentLimit = GetConVar( "advdupe2_limit_ghost" ):GetFloat()
@@ -201,6 +208,7 @@ local function SpawnGhosts()
 	if allowedByPercent < 0 then allowedByPercent = 0 end
 
 	local spawnThisTick = math.min( ghostsPerTick, ghostsRemaining, allowedByPercent )
+	local target = currentGhost + spawnThisTick - 1
 
 	for _ = 1, spawnThisTick do
 		local g = ghostToSpawn[currentGhost]
@@ -214,14 +222,12 @@ local function SpawnGhosts()
 	AdvDupe2.UpdateGhosts( true )
 	if not BusyBar then ProgressBar.Percent = (currentGhost / totalGhosts) * 100 end
 
+	-- If the loop broke early
+	if (currentGhost - 1) ~= target then StopGhosting() return end
+
+	-- If all ghosts are spawned
 	local maxGhosts = math.min( totalGhosts, maxByPercent )
-	if currentGhost <= maxGhosts then return end
-
-	-- Done
-	AdvDupe2.Ghosting = false
-	hook.Remove( "Tick", "AdvDupe2_SpawnGhosts" )
-
-	if not BusyBar then AdvDupe2.RemoveProgressBar() end
+	if currentGhost > maxGhosts then StopGhosting() return end
 end
 
 net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
