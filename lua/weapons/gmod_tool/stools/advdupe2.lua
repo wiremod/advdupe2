@@ -1039,7 +1039,7 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_copy_outside", 0, false, true)
 	CreateClientConVar("advdupe2_copy_only_mine", 1, false, true)
 	CreateClientConVar("advdupe2_limit_ghost", 100, false, true)
-	CreateClientConVar("advdupe2_ghost_rate", 5, false, true, nil, 1, 50)
+	CreateClientConVar("advdupe2_ghost_rate", 5, true, true, nil, 1, 50)
 	CreateClientConVar("advdupe2_area_copy_size", 300, false, true)
 	CreateClientConVar("advdupe2_auto_save_contraption", 0, false, true)
 	CreateClientConVar("advdupe2_auto_save_overwrite", 1, false, true)
