@@ -1039,6 +1039,7 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_copy_outside", 0, false, true)
 	CreateClientConVar("advdupe2_copy_only_mine", 1, false, true)
 	CreateClientConVar("advdupe2_limit_ghost", 100, false, true)
+	CreateClientConVar("advdupe2_ghost_rate", 5, false, true, nil, 1, 50)
 	CreateClientConVar("advdupe2_area_copy_size", 300, false, true)
 	CreateClientConVar("advdupe2_auto_save_contraption", 0, false, true)
 	CreateClientConVar("advdupe2_auto_save_overwrite", 1, false, true)
@@ -1143,6 +1144,7 @@ if(CLIENT) then
 		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
 		CPanel:AddItem(Check)
 
+		-- Ghost Percentage
 		local NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Ghost Percentage:" )
 		NumSlider.Label:SetDark(true)
@@ -1160,6 +1162,18 @@ if(CLIENT) then
 		NumSlider.Wang.Panel.OnLoseFocus = function(txtBox) func3(txtBox) AdvDupe2.StartGhosting() end
 		CPanel:AddItem(NumSlider)
 
+		-- Ghost Rate
+		NumSlider = vgui.Create( "DNumSlider" )
+		NumSlider:SetText( "Ghost speed:" )
+		NumSlider.Label:SetDark(true)
+		NumSlider:SetMin( 1 )
+		NumSlider:SetMax( 100 )
+		NumSlider:SetDecimals( 0 )
+		NumSlider:SetConVar( "advdupe2_ghost_rate" )
+		NumSlider:SetToolTip("Change how quickly the ghosts are generated")
+		CPanel:AddItem(NumSlider)
+
+		-- Area Copy Size
 		NumSlider = vgui.Create( "DNumSlider" )
 		NumSlider:SetText( "Area Copy Size:" )
 		NumSlider.Label:SetDark(true)

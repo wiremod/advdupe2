@@ -181,26 +181,47 @@ local function MakeGhostsFromTable(EntTable)
 end
 
 local function SpawnGhosts()
+	local ghostsPerTick     = GetConVar( "advdupe2_ghost_rate" ):GetInt()
+	local ghostPercentLimit = GetConVar( "advdupe2_limit_ghost" ):GetFloat()
 
-	if AdvDupe2.CurrentGhost == AdvDupe2.HeadEnt then AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1 end
+	local currentGhost      = AdvDupe2.CurrentGhost
+	local totalGhosts       = AdvDupe2.TotalGhosts
+	local ghostToSpawn      = AdvDupe2.GhostToSpawn
+	local ghostEntities     = AdvDupe2.GhostEntities
+	local ProgressBar       = AdvDupe2.ProgressBar
+	local BusyBar           = AdvDupe2.BusyBar
 
-	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
-	if g and AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100 <= GetConVar("advdupe2_limit_ghost"):GetFloat() then
-		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g)
-		if(not AdvDupe2.BusyBar) then
-			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100
-		end
+	if currentGhost == AdvDupe2.HeadEnt then currentGhost = currentGhost + 1 end
 
-		AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
-		AdvDupe2.UpdateGhosts(true)
-	else
-		AdvDupe2.Ghosting = false
-		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
+	local maxByPercent = math.floor((ghostPercentLimit / 100) * totalGhosts )
+	if maxByPercent > totalGhosts then maxByPercent = totalGhosts end
 
-		if(not AdvDupe2.BusyBar) then
-			AdvDupe2.RemoveProgressBar()
-		end
+	local ghostsRemaining = totalGhosts - currentGhost + 1
+	local allowedByPercent = maxByPercent - currentGhost + 1
+	if allowedByPercent < 0 then allowedByPercent = 0 end
+
+	local spawnThisTick = math.min( ghostsPerTick, ghostsRemaining, allowedByPercent )
+
+	for _ = 1, spawnThisTick do
+		local g = ghostToSpawn[currentGhost]
+		if not g then break end
+
+		ghostEntities[currentGhost] = MakeGhostsFromTable( g )
+		currentGhost = currentGhost + 1
 	end
+
+	AdvDupe2.CurrentGhost = currentGhost
+	AdvDupe2.UpdateGhosts( true )
+	if not BusyBar then ProgressBar.Percent = (currentGhost / totalGhosts) * 100 end
+
+	local maxGhosts = math.min( totalGhosts, maxByPercent )
+	if currentGhost <= maxGhosts then return end
+
+	-- Done
+	AdvDupe2.Ghosting = false
+	hook.Remove( "Tick", "AdvDupe2_SpawnGhosts" )
+
+	if not BusyBar then AdvDupe2.RemoveProgressBar() end
 end
 
 net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
