@@ -1167,7 +1167,7 @@ if(CLIENT) then
 		NumSlider:SetText( "Ghost speed:" )
 		NumSlider.Label:SetDark(true)
 		NumSlider:SetMin( 1 )
-		NumSlider:SetMax( 100 )
+		NumSlider:SetMax( 50 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_ghost_rate" )
 		NumSlider:SetToolTip("Change how quickly the ghosts are generated")
