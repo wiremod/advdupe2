@@ -188,15 +188,15 @@ local function StopGhosting()
 end
 
 local function SpawnGhosts()
-	local ghostsPerTick     = GetConVar( "advdupe2_ghost_rate" ):GetInt()
+	local ghostsPerTick = GetConVar( "advdupe2_ghost_rate" ):GetInt()
 	local ghostPercentLimit = GetConVar( "advdupe2_limit_ghost" ):GetFloat()
 
-	local currentGhost      = AdvDupe2.CurrentGhost
-	local totalGhosts       = AdvDupe2.TotalGhosts
-	local ghostToSpawn      = AdvDupe2.GhostToSpawn
-	local ghostEntities     = AdvDupe2.GhostEntities
-	local ProgressBar       = AdvDupe2.ProgressBar
-	local BusyBar           = AdvDupe2.BusyBar
+	local currentGhost = AdvDupe2.CurrentGhost
+	local totalGhosts = AdvDupe2.TotalGhosts
+	local ghostToSpawn = AdvDupe2.GhostToSpawn
+	local ghostEntities = AdvDupe2.GhostEntities
+	local ProgressBar = AdvDupe2.ProgressBar
+	local BusyBar = AdvDupe2.BusyBar
 
 	if currentGhost == AdvDupe2.HeadEnt then currentGhost = currentGhost + 1 end
 
