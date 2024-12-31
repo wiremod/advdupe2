@@ -192,18 +192,12 @@ local function SpawnGhosts()
 	local ghostPercentLimit = GetConVar( "advdupe2_limit_ghost" ):GetFloat()
 
 	local currentGhost = AdvDupe2.CurrentGhost
-	local totalGhosts = AdvDupe2.TotalGhosts
-	local ghostToSpawn = AdvDupe2.GhostToSpawn
-	local ghostEntities = AdvDupe2.GhostEntities
-	local ProgressBar = AdvDupe2.ProgressBar
-	local BusyBar = AdvDupe2.BusyBar
-
 	if currentGhost == AdvDupe2.HeadEnt then currentGhost = currentGhost + 1 end
 
-	local maxByPercent = math.floor((ghostPercentLimit / 100) * totalGhosts )
-	if maxByPercent > totalGhosts then maxByPercent = totalGhosts end
+	local maxByPercent = math.floor((ghostPercentLimit / 100) * AdvDupe2.TotalGhosts )
+	if maxByPercent > AdvDupe2.TotalGhosts then maxByPercent = AdvDupe2.TotalGhosts end
 
-	local ghostsRemaining = totalGhosts - currentGhost + 1
+	local ghostsRemaining = AdvDupe2.TotalGhosts - currentGhost + 1
 	local allowedByPercent = maxByPercent - currentGhost + 1
 	if allowedByPercent < 0 then allowedByPercent = 0 end
 
@@ -211,22 +205,24 @@ local function SpawnGhosts()
 	local target = currentGhost + spawnThisTick - 1
 
 	for _ = 1, spawnThisTick do
-		local g = ghostToSpawn[currentGhost]
+		local g = AdvDupe2.GhostToSpawn[currentGhost]
 		if not g then break end
 
-		ghostEntities[currentGhost] = MakeGhostsFromTable( g )
+		AdvDupe2.GhostEntities[currentGhost] = MakeGhostsFromTable( g )
 		currentGhost = currentGhost + 1
 	end
 
 	AdvDupe2.CurrentGhost = currentGhost
 	AdvDupe2.UpdateGhosts( true )
-	if not BusyBar then ProgressBar.Percent = (currentGhost / totalGhosts) * 100 end
+	if not AdvDupe2.BusyBar then
+		AdvDupe2.ProgressBar.Percent = (currentGhost / AdvDupe2.TotalGhosts) * 100
+	end
 
 	-- If the loop broke early
 	if (currentGhost - 1) ~= target then StopGhosting() return end
 
 	-- If all ghosts are spawned
-	local maxGhosts = math.min( totalGhosts, maxByPercent )
+	local maxGhosts = math.min( AdvDupe2.TotalGhosts, maxByPercent )
 	if currentGhost > maxGhosts then StopGhosting() return end
 end
 
