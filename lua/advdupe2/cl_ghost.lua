@@ -180,26 +180,33 @@ local function MakeGhostsFromTable(EntTable)
 	return GhostEntity
 end
 
+local function StopGhosting()
+	AdvDupe2.Ghosting = false
+	hook.Remove( "Tick", "AdvDupe2_SpawnGhosts" )
+
+	if not BusyBar then AdvDupe2.RemoveProgressBar() end
+end
+
 local function SpawnGhosts()
+	local ghostsPerTick = GetConVar( "advdupe2_ghost_rate" ):GetInt()
+	local ghostPercentLimit = GetConVar( "advdupe2_limit_ghost" ):GetFloat()
 
-	if AdvDupe2.CurrentGhost == AdvDupe2.HeadEnt then AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1 end
+	local finalGhost = math.min( AdvDupe2.TotalGhosts, math.max( math.Round( (ghostPercentLimit / 100) * AdvDupe2.TotalGhosts ), 0 ) )
+	local finalGhostInFrame = math.min( AdvDupe2.CurrentGhost + ghostsPerTick - 1, finalGhost )
 
-	local g = AdvDupe2.GhostToSpawn[AdvDupe2.CurrentGhost]
-	if g and AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100 <= GetConVar("advdupe2_limit_ghost"):GetFloat() then
-		AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(g)
-		if(not AdvDupe2.BusyBar) then
-			AdvDupe2.ProgressBar.Percent = AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts * 100
-		end
+	for i = AdvDupe2.CurrentGhost, finalGhostInFrame do
+		local g = AdvDupe2.GhostToSpawn[i]
+		if g and i ~= AdvDupe2.HeadEnt then AdvDupe2.GhostEntities[i] = MakeGhostsFromTable( g ) end
+	end
+	AdvDupe2.CurrentGhost = finalGhostInFrame + 1
 
-		AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
-		AdvDupe2.UpdateGhosts(true)
-	else
-		AdvDupe2.Ghosting = false
-		hook.Remove("Tick", "AdvDupe2_SpawnGhosts")
+	AdvDupe2.UpdateGhosts( true )
+	if not AdvDupe2.BusyBar then
+		AdvDupe2.ProgressBar.Percent = (AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts) * 100
+	end
 
-		if(not AdvDupe2.BusyBar) then
-			AdvDupe2.RemoveProgressBar()
-		end
+	if AdvDupe2.CurrentGhost > finalGhost then
+		StopGhosting()
 	end
 end
 
