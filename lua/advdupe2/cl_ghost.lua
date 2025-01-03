@@ -196,7 +196,7 @@ local function SpawnGhosts()
 
 	for i = AdvDupe2.CurrentGhost, finalGhostInFrame do
 		local g = AdvDupe2.GhostToSpawn[i]
-		if g then AdvDupe2.GhostEntities[i] = MakeGhostsFromTable( g ) end
+		if g and i ~= AdvDupe2.HeadEnt then AdvDupe2.GhostEntities[i] = MakeGhostsFromTable( g ) end
 	end
 	AdvDupe2.CurrentGhost = finalGhostInFrame + 1
 
