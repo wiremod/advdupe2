@@ -191,39 +191,23 @@ local function SpawnGhosts()
 	local ghostsPerTick = GetConVar( "advdupe2_ghost_rate" ):GetInt()
 	local ghostPercentLimit = GetConVar( "advdupe2_limit_ghost" ):GetFloat()
 
-	local currentGhost = AdvDupe2.CurrentGhost
-	if currentGhost == AdvDupe2.HeadEnt then currentGhost = currentGhost + 1 end
+	local finalGhost = math.min( AdvDupe2.TotalGhosts, math.max( math.Round( (ghostPercentLimit / 100) * AdvDupe2.TotalGhosts ), 0 ) )
+	local finalGhostInFrame = math.min( AdvDupe2.CurrentGhost + ghostsPerTick - 1, finalGhost )
 
-	local maxByPercent = math.floor((ghostPercentLimit / 100) * AdvDupe2.TotalGhosts )
-	if maxByPercent > AdvDupe2.TotalGhosts then maxByPercent = AdvDupe2.TotalGhosts end
-
-	local ghostsRemaining = AdvDupe2.TotalGhosts - currentGhost + 1
-	local allowedByPercent = maxByPercent - currentGhost + 1
-	if allowedByPercent < 0 then allowedByPercent = 0 end
-
-	local spawnThisTick = math.min( ghostsPerTick, ghostsRemaining, allowedByPercent )
-	local target = currentGhost + spawnThisTick - 1
-
-	for _ = 1, spawnThisTick do
-		local g = AdvDupe2.GhostToSpawn[currentGhost]
-		if not g then break end
-
-		AdvDupe2.GhostEntities[currentGhost] = MakeGhostsFromTable( g )
-		currentGhost = currentGhost + 1
+	for i = AdvDupe2.CurrentGhost, finalGhostInFrame do
+		local g = AdvDupe2.GhostToSpawn[i]
+		if g then AdvDupe2.GhostEntities[i] = MakeGhostsFromTable( g ) end
 	end
+	AdvDupe2.CurrentGhost = finalGhostInFrame + 1
 
-	AdvDupe2.CurrentGhost = currentGhost
 	AdvDupe2.UpdateGhosts( true )
 	if not AdvDupe2.BusyBar then
-		AdvDupe2.ProgressBar.Percent = (currentGhost / AdvDupe2.TotalGhosts) * 100
+		AdvDupe2.ProgressBar.Percent = (AdvDupe2.CurrentGhost / AdvDupe2.TotalGhosts) * 100
 	end
 
-	-- If the loop broke early
-	if (currentGhost - 1) ~= target then StopGhosting() return end
-
-	-- If all ghosts are spawned
-	local maxGhosts = math.min( AdvDupe2.TotalGhosts, maxByPercent )
-	if currentGhost > maxGhosts then StopGhosting() return end
+	if AdvDupe2.CurrentGhost > finalGhost then
+		StopGhosting()
+	end
 end
 
 net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
