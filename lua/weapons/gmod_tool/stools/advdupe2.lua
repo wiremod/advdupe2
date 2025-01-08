@@ -1004,7 +1004,7 @@ if(CLIENT) then
 	TOOL.Information = {
 		{ name = "left" },
 		{ name = "right", stage = 0 },
-		{ name = "right_world", stage = 0, icon2 = "gui/info" },
+		{ name = "right_world", stage = 0, icon2 = "icon16/world.png" },
 		{ name = "right_shift", stage = 0, icon2 = "gui/info" },
 		{ name = "right_alt", stage = 1 },
 		{ name = "reload_alt", stage = 1 },
