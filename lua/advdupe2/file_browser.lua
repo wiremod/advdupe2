@@ -172,6 +172,12 @@ function BROWSER:DoNodeLeftClick(node)
 			if (node.Expander) then
 				node:SetExpanded() -- It's a folder, expand/collapse it
 			end
+		elseif (node.Derma.ClassName == "advdupe2_browser_file") then
+			if (node.Control.Search) then
+				AdvDupe2.UploadFile(GetNodePath(node.Ref))
+			else
+				AdvDupe2.UploadFile(GetNodePath(node))
+			end
 		else
 			AdvDupe2.UploadFile(GetNodePath(node))
 		end
