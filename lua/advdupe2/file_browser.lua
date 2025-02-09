@@ -179,7 +179,7 @@ function BROWSER:DoNodeLeftClick(node)
 				AdvDupe2.UploadFile(GetNodePath(node))
 			end
 		else
-			AdvDupe2.UploadFile(GetNodePath(node))
+			AdvDupe2.UploadFile(GetNodePath(node.Ref))
 		end
 	else
 		self:SetSelected(node) -- A node was clicked, select it
@@ -446,7 +446,7 @@ function BROWSER:DoNodeRightClick(node)
 			end)
 		else
 			Menu:AddOption("Open", function()
-				AdvDupe2.UploadFile(GetNodePath(node))
+				AdvDupe2.UploadFile(GetNodePath(node.Ref))
 			end)
 			Menu:AddOption("Preview", function()
 				local ReadPath, ReadArea = GetNodePath(node)
