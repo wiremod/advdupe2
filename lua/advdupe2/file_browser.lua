@@ -446,7 +446,7 @@ function BROWSER:DoNodeRightClick(node)
 			end)
 		else
 			Menu:AddOption("Open", function()
-				AdvDupe2.UploadFile(GetNodePath(node.Ref))
+				AdvDupe2.UploadFile(GetNodePath(node))
 			end)
 			Menu:AddOption("Preview", function()
 				local ReadPath, ReadArea = GetNodePath(node)
