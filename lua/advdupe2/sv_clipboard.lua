@@ -923,9 +923,14 @@ local function CreateEntityFromTable(EntTable, Player)
 		return nil
 	end
 
-	local blocked, blockReason = hook.Run( "AdvDupe2_BlockCreateEntity", Player, Class )
+	local blocked, blockReason = hook.Run( "AdvDupe2_BlockCreateEntity", Player, EntTable.Class )
 	if blocked == true then
-		Player:ChatPrint([[Entity Class, "]] .. EntTable.Class .. [[" Blocked! ']] .. blockReason .. [[']] )
+		local msg = [[Entity Class, "]] .. EntTable.Class .. [[" is Blocked! ]]
+		if isstring( blockReason ) then
+			msg = msg .. blockReason
+
+		end
+		Player:ChatPrint( msg )
 		return nil
 	end
 
