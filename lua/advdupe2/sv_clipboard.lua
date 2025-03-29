@@ -923,8 +923,8 @@ local function CreateEntityFromTable(EntTable, Player)
 		return nil
 	end
 
-	local blocked, blockReason = hook.Run( "AdvDupe2_BlockCreateEntity", Player, EntTable.Class )
-	if blocked == true then
+	local canCreate, blockReason = hook.Run( "AdvDupe2_CanCreateClass", Player, EntTable.Class )
+	if canCreate == false then
 		local msg = [[Entity Class, "]] .. EntTable.Class .. [[" is Blocked! ]]
 		if isstring( blockReason ) then -- allow nil blockReason
 			msg = msg .. blockReason
