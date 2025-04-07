@@ -44,6 +44,7 @@ CreateConVar("AdvDupe2_SpawnRate", "1", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxFileSize", "200", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxEntities", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxConstraints", "0", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_Strict", "0", {FCVAR_ARCHIVE}, "Prevents entities from being duped with unauthorized data. Can fix certain exploits at the cost of some entities potentially duping incorrectly")
 
 CreateConVar("AdvDupe2_MaxContraptionEntities", "10", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxContraptionConstraints", "15", {FCVAR_ARCHIVE})
@@ -60,28 +61,28 @@ CreateConVar("AdvDupe2_MapFileName", "", {FCVAR_ARCHIVE})
 local function PasteMap()
 	if(GetConVarString("AdvDupe2_LoadMap")=="0")then return end
 	local filename = GetConVarString("AdvDupe2_MapFileName")
-	
+
 	if(not filename or filename == "")then
 		print("[AdvDupe2Notify]\tInvalid file name to loap map save.")
 		return
 	end
-	
+
 	if(not file.Exists("advdupe2_maps/"..filename..".txt", "DATA"))then
 		print("[AdvDupe2Notify]\tFile does not exist for a map save.")
 		return
 	end
-	
+
 	local map = file.Read("advdupe2_maps/"..filename..".txt")
-	local success,dupe,info,moreinfo = AdvDupe2.Decode(map) 
+	local success,dupe,info,moreinfo = AdvDupe2.Decode(map)
 	if not success then
 		print("[AdvDupe2Notify]\tCould not open map save "..dupe)
 		return
-	end	
-	
+	end
+
 	local Tab = {Entities=dupe["Entities"], Constraints=dupe["Constraints"], HeadEnt=dupe["HeadEnt"]}
 	local Entities = AdvDupe2.duplicator.Paste(nil, table.Copy(Tab.Entities), Tab.Constraints, nil, nil, Tab.HeadEnt.Pos, true)
 	local maptype = GetConVarString("AdvDupe2_LoadMap")
-	
+
 	if(maptype=="1")then
 		local PhysObj
 		for k,v in pairs(Entities) do
@@ -111,7 +112,7 @@ local function PasteMap()
 			end
 		end
 	end
-	
+
 	print("[AdvDupe2Notify]\tMap save pasted.")
 end
 hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
@@ -125,4 +126,3 @@ include( "advdupe2/sh_codec.lua" )
 include( "advdupe2/sv_misc.lua" )
 include( "advdupe2/sv_file.lua" )
 include( "advdupe2/sv_ghost.lua" )
-
