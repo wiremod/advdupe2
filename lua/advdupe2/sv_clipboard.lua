@@ -809,6 +809,8 @@ local function reportmodel(ply, model)
 	net.Send(ply)
 end
 
+local strictConvar = GetConVar("AdvDupe2_Strict")
+
 --[[
 	Name: GenericDuplicatorFunction
 	Desc: Override the default duplicator's GenericDuplicatorFunction function
@@ -842,7 +844,9 @@ local function GenericDuplicatorFunction(data, Player)
 	Entity:Activate()
 	DoGenericPhysics(Entity, data, Player)
 
-	table.Add(Entity:GetTable(), data)
+	if (not strictConvar:GetBool()) then
+		table.Add(Entity:GetTable(), data)
+	end
 	return Entity
 end
 
