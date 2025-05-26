@@ -61,8 +61,10 @@ function AdvDupe2.SendGhosts(ply)
 			net.WriteInt(mdls[i], 16)
 			net.WriteInt(#temp[i].PhysicsObjects, 8)
 			for k=0, #temp[i].PhysicsObjects do
-				net.WriteAngle(temp[i].PhysicsObjects[k].Angle)
-				net.WriteVector(temp[i].PhysicsObjects[k].Pos)
+				if IsValid(temp[i]) then
+					net.WriteAngle(temp[i].PhysicsObjects[k].Angle)
+					net.WriteVector(temp[i].PhysicsObjects[k].Pos)
+				end
 			end
 		end
 	net.Send(ply)
