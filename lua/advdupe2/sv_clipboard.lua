@@ -464,7 +464,11 @@ function AdvDupe2.duplicator.AreaCopy(ply, Entities, Offset, CopyOutside)
 
 			if (not constraint.HasConstraints(Ent)) then
 				for k, v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects) do
-					Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
+					local phys = Ent:GetPhysicsObjectNum(k)
+
+					if IsValid(phys) then
+						Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
+					end
 				end
 			else
 				for k, v in pairs(Ent.Constraints) do
