@@ -467,7 +467,7 @@ function AdvDupe2.duplicator.AreaCopy(ply, Entities, Offset, CopyOutside)
 					local phys = Ent:GetPhysicsObjectNum(k)
 
 					if IsValid(phys) then
-						Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
+						phys:EnableMotion(v.Frozen)
 					end
 				end
 			else
