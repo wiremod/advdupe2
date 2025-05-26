@@ -341,9 +341,12 @@ function AdvDupe2.UpdateGhosts(force)
 
 		for k, ghost in ipairs(AdvDupe2.GhostEntities) do
 			local phys = ghost.Phys
-			local pos, ang = LocalToWorld(phys.Pos, phys.Angle, originpos, originang)
-			ghost:SetPos(pos)
-			ghost:SetAngles(ang)
+
+			if phys then
+				local pos, ang = LocalToWorld(phys.Pos, phys.Angle, originpos, originang)
+				ghost:SetPos(pos)
+				ghost:SetAngles(ang)
+			end
 		end
 
 	end
