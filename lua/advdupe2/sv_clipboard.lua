@@ -114,7 +114,7 @@ end
 ---------------------------------------------------------]]
 
 function AdvDupe2.duplicator.IsCopyable(Ent)
-	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
+	return IsValid(Ent) and not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
 
 local function CopyEntTable(Ent, Offset)
