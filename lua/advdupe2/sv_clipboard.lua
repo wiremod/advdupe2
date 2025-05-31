@@ -962,7 +962,7 @@ local function CreateEntityFromTable(EntTable, Player)
 			if(EntTable.Class=="prop_effect")then
 				sent = gamemode.Call( "PlayerSpawnEffect", Player, EntTable.Model)
 			else
-				local weapon = list.Get("Weapon")
+				local weapon = list.Get("Weapon")[EntTable.Class]
 
 				if weapon then
 					sent = gamemode.Call("PlayerSpawnSWEP", Player, EntTable.Class, weapon)
