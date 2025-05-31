@@ -913,7 +913,7 @@ local function IsAllowed(Player, Class, EntityClass)
 	if (IsValid(Player) and not Player:IsAdmin()) then
 		if not duplicator.IsAllowed(Class) then return false end
 
-		local weapon = list.GetForEdit("Weapon")[Class]
+		local weapon = list.Get("Weapon")[Class]
 
 		if weapon then
 			if (not weapon.Spawnable) then return false end
@@ -962,7 +962,13 @@ local function CreateEntityFromTable(EntTable, Player)
 			if(EntTable.Class=="prop_effect")then
 				sent = gamemode.Call( "PlayerSpawnEffect", Player, EntTable.Model)
 			else
-				sent = gamemode.Call( "PlayerSpawnSENT", Player, EntTable.Class)
+				local weapon = list.Get("Weapon")
+
+				if weapon then
+					sent = gamemode.Call("PlayerSpawnSWEP", Player, EntTable.Class, weapon)
+				else
+					sent = gamemode.Call("PlayerSpawnSENT", Player, EntTable.Class)
+				end
 			end
 		else
 			sent = true
@@ -1022,7 +1028,13 @@ local function CreateEntityFromTable(EntTable, Player)
 
 			if Player then
 				if (not EntTable.BuildDupeInfo.IsVehicle and not EntTable.BuildDupeInfo.IsNPC and EntTable.Class ~= "prop_ragdoll" and EntTable.Class ~= "prop_effect") then
-					sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+					local weapon = list.Get("Weapon")[EntTable.Class]
+
+					if weapon then
+						sent = hook.Call("PlayerSpawnSWEP", nil, Player, EntTable.Class, weapon)
+					else
+						sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+					end
 				end
 			else
 				sent = true
@@ -1079,6 +1091,8 @@ local function CreateEntityFromTable(EntTable, Player)
 			if GENERIC and Player then
 				if(EntTable.Class=="prop_effect")then
 					gamemode.Call("PlayerSpawnedEffect", Player, valid:GetModel(), valid)
+				elseif valid:IsWeapon() then
+					gamemode.Call("PlayerSpawnedSWEP", Player, valid)
 				else
 					gamemode.Call("PlayerSpawnedSENT", Player, valid)
 				end
