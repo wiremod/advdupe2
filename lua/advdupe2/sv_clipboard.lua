@@ -1031,9 +1031,9 @@ local function CreateEntityFromTable(EntTable, Player)
 					local weapon = list.Get("Weapon")[EntTable.Class]
 
 					if weapon then
-						sent = hook.Call("PlayerSpawnSWEP", nil, Player, EntTable.Class, weapon)
+						sent = gamemode.Run("PlayerSpawnSWEP", Player, EntTable.Class, weapon)
 					else
-						sent = hook.Call("PlayerSpawnSENT", nil, Player, EntTable.Class)
+						sent = gamemode.Run("PlayerSpawnSENT", Player, EntTable.Class)
 					end
 				end
 			else
