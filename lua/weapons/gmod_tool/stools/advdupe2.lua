@@ -1724,15 +1724,11 @@ if(CLIENT) then
 	end
 
 
-	local function FindInBox(min, max, ply)
+	local function FindInBox(min, max)
 		local EntTable = {}
-		for _,ent in ents.Iterator() do
-			local pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and (pos.Y>=min.Y) and (pos.Y<=max.Y) and (pos.Z>=min.Z) and (pos.Z<=max.Z) then
-				--if(ent:GetClass()~="C_BaseFlexclass") then
-					EntTable[ent:EntIndex()] = ent
-				--end
-			end
+
+		for _, ent in ipairs(ents.FindInBox(min, max)) do
+			EntTable[ent:EntIndex()] = ent
 		end
 
 		return EntTable
