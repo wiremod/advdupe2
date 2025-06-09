@@ -160,7 +160,7 @@ if(SERVER) then
 		local EntTable = {}
 
 		for _, ent in ipairs(ents.FindInBox(min, max)) do
-			if not PPCheck(ply, ent) then
+			if PPCheck(ply, ent) then
 				EntTable[ent:EntIndex()] = ent
 			end
 		end
