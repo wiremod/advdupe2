@@ -158,11 +158,9 @@ if(SERVER) then
 	local function FindInBox(min, max, ply)
 		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
 		local EntTable = {}
-		for _, ent in ents.Iterator() do
-			local pos = ent:GetPos()
-			if (pos.X>=min.X) and (pos.X<=max.X) and
-				 (pos.Y>=min.Y) and (pos.Y<=max.Y) and
-				 (pos.Z>=min.Z) and (pos.Z<=max.Z) and PPCheck( ply, ent ) then
+
+		for _, ent in ipairs(ents.FindInBox(min, max)) do
+			if not PPCheck(ply, ent) then
 				EntTable[ent:EntIndex()] = ent
 			end
 		end
