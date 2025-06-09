@@ -913,7 +913,7 @@ local function IsAllowed(Player, Class, EntityClass)
 	if (IsValid(Player) and not Player:IsAdmin()) then
 		if not duplicator.IsAllowed(Class) then return false end
 
-		local weapon = list.Get("Weapon")[Class]
+		local weapon = list.GetForEdit("Weapon")[Class]
 
 		if weapon then
 			if (not weapon.Spawnable) then return false end
