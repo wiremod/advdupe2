@@ -555,7 +555,7 @@ if(SERVER) then
 			undo.Create("gmod_contr_spawner")
 				undo.AddEntity( spawner )
 				undo.SetPlayer( ply )
-			undo.Finish()
+			undo.Finish( "AdvDupe2: Spawner ("..tostring(spawner:EntIndex())..")" )
 
 			return true
 		end

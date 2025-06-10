@@ -1174,7 +1174,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 
 	if (Player) then
 
-		undo.Create("AdvDupe2")
+		undo.Create("post_entity_paste")
 		for _, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
@@ -1195,7 +1195,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			undo.AddEntity(v)
 		end
 		undo.SetPlayer(Player)
-		undo.Finish()
+		undo.Finish("AdvDupe2: Configure paste")
 
 		-- if(Tool)then AdvDupe2.FinishPasting(Player, true) end
 	else
@@ -1388,7 +1388,7 @@ local function AdvDupe2_Spawn()
 			local preservefrozenstate = tobool(Queue.Player:GetInfo("advdupe2_preserve_freeze")) or false
 
 			-- Remove the undo for stopping pasting
-			local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
+			local undotxt = "AdvDupe2"..(Queue.Name and (": ("..tostring(Queue.Name)..")") or "")
 			local undos = undo.GetTable()[Queue.Player:UniqueID()]
 			for i = #undos, 1, -1 do
 				if (undos[i] and undos[i].Name == undotxt) then
@@ -1635,7 +1635,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		AdvDupe2.JobManager.CurrentPlayer = 1
 	end
 
-	local undotxt = Player.AdvDupe2.Name and ("AdvDupe2 ("..Player.AdvDupe2.Name..")") or "AdvDupe2"
+	local undotxt = "AdvDupe2"..(Player.AdvDupe2.Name and (": ("..tostring(Player.AdvDupe2.Name)..")") or "")
 	undo.Create(undotxt)
 	undo.SetPlayer(Player)
 	undo.AddFunction(RemoveSpawnedEntities, i)

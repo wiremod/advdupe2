@@ -197,7 +197,7 @@ function ENT:DoSpawn( ply )
 		end
 
 		undo.SetPlayer(ply)
-	undo.Finish()
+	undo.Finish("AdvDupe2: Contraption spawn")
 	
 	if(self.undo_delay>0)then
 		timer.Simple(self.undo_delay, function()
