@@ -177,7 +177,9 @@ function ENT:DoSpawn( ply )
 	local i = #self.UndoList+1
 	self.UndoList[i] = Ents
 	
-	undo.Create("contraption_spawns")
+	local undotxt = "AdvDupe2: Contraption"..(ply.AdvDupe2.Name and " ("..tostring(ply.AdvDupe2.Name)..")" or "")
+
+	undo.Create(undotxt)
 		local phys
 		for k,ent in pairs(Ents)do
 			phys = ent:GetPhysicsObject()
@@ -197,7 +199,7 @@ function ENT:DoSpawn( ply )
 		end
 
 		undo.SetPlayer(ply)
-	undo.Finish("AdvDupe2: Contraption spawn")
+	undo.Finish(undotxt)
 	
 	if(self.undo_delay>0)then
 		timer.Simple(self.undo_delay, function()

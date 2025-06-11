@@ -1173,8 +1173,9 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 	end
 
 	if (Player) then
+		local undotxt = "AdvDupe2"..(Player.AdvDupe2.Name and (": ("..tostring(Player.AdvDupe2.Name)..")") or "")
 
-		undo.Create("post_entity_paste")
+		undo.Create(undotxt)
 		for _, v in pairs(CreatedEntities) do
 			-- If the entity has a PostEntityPaste function tell it to use it now
 			if v.PostEntityPaste then
@@ -1195,7 +1196,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			undo.AddEntity(v)
 		end
 		undo.SetPlayer(Player)
-		undo.Finish("AdvDupe2: Configure paste")
+		undo.Finish(undotxt)
 
 		-- if(Tool)then AdvDupe2.FinishPasting(Player, true) end
 	else
