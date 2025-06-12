@@ -35,7 +35,7 @@ function ENT:Initialize()
 	self.UndoLastValue = 0
 	
 	self.LastSpawnTime = 0
-
+	self.DupeName = ""
 	self.CurrentPropCount = 0
 
 	if WireLib then
@@ -43,8 +43,6 @@ function ENT:Initialize()
 		self.Outputs = WireLib.CreateSpecialOutputs(self.Entity, {"Out"}, { "NORMAL" })
 	end
 end
-
-
 
 /*-----------------------------------------------------------------------*
  * Sets options for this spawner
@@ -57,15 +55,19 @@ function ENT:SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag,
 	--Key bindings
 	self.key = key
 	self.undo_key = undo_key
-
 	numpad.Remove( self.CreateKey )
 	numpad.Remove( self.UndoKey )
-	self.CreateKey 	= numpad.OnDown( ply, self.key, "ContrSpawnerCreate", self.Entity, true )
-	self.UndoKey 	= numpad.OnDown( ply, self.undo_key, "ContrSpawnerUndo", self.Entity, true )
+	self.CreateKey = numpad.OnDown( ply, self.key     , "ContrSpawnerCreate", self.Entity, true )
+	self.UndoKey   = numpad.OnDown( ply, self.undo_key, "ContrSpawnerUndo"  , self.Entity, true )
+
+	-- Other parameters
 	self.DisableGravity = disgrav
 	self.DisableDrag = disdrag
 	self.AddVelocity = addvel
 	self.HideProps = hideprops
+
+	-- Store the player's current dupe name
+	self.DupeName  = tostring(ply.AdvDupe2.Name)
 
 	self:ShowOutput()
 end
@@ -74,15 +76,12 @@ function ENT:UpdateOptions( options )
 	self:SetOptions( options["delay"], options["undo_delay"], options["key"], options["undo_key"])
 end
 
-
 function ENT:AddGhosts()
 	if self.HideProps then return end
 	local moveable = self:GetPhysicsObject():IsMoveable()
 	self:GetPhysicsObject():EnableMotion(false)
-	local EntTable
-	local GhostEntity
+	local EntTable, GhostEntity, Phys
 	local Offset = self.DupeAngle - self.EntAngle
-	local Phys
 	for EntIndex,v in pairs(self.EntityTable)do
 		if(EntIndex!=self.HeadEnt)then
 			if(self.EntityTable[EntIndex].Class=="gmod_contr_spawner")then self.EntityTable[EntIndex] = nil continue end
@@ -152,9 +151,6 @@ function ENT:SetDupeInfo( HeadEnt, EntityTable, ConstraintTable )
 	end
 end
 
-
-
- 
 function ENT:DoSpawn( ply )
 	-- Explicitly allow spawning if no player is provided, but an invalid player gets denied. This can happen when a player leaves the server.
 	if not (ply and ply:IsValid()) then return end
@@ -176,8 +172,8 @@ function ENT:DoSpawn( ply )
 	local Ents, Constrs = AdvDupe2.duplicator.Paste(ply, self.EntityTable, self.ConstraintTable, nil, nil, Vector(0,0,0), true) 
 	local i = #self.UndoList+1
 	self.UndoList[i] = Ents
-	
-	local undotxt = "AdvDupe2: Contraption"..(ply.AdvDupe2.Name and " ("..tostring(ply.AdvDupe2.Name)..")" or "")
+
+	local undotxt = "AdvDupe2: Contraption ("..tostring(self.DupeName)..")"
 
 	undo.Create(undotxt)
 		local phys
@@ -195,11 +191,11 @@ function ENT:DoSpawn( ply )
 				end
 			end
 
-			undo.AddEntity(ent)	
+			undo.AddEntity(ent)
 		end
 
 		undo.SetPlayer(ply)
-	undo.Finish(undotxt)
+	undo.Finish()
 	
 	if(self.undo_delay>0)then
 		timer.Simple(self.undo_delay, function()
@@ -212,10 +208,7 @@ function ENT:DoSpawn( ply )
 			end	
 		end)
 	end
-	
 end
-
-
 
 function ENT:DoUndo( ply )
 	
@@ -253,23 +246,19 @@ function ENT:TriggerInput(iname, value)
 	end
 end
 
-local text2 = {"Enabled", "Disabled"}
+local flags = {"Enabled", "Disabled"}
 function ENT:ShowOutput()
-	local text = "\nGravity: "
-	if(self.DisableGravity==1)then text=text.."Enabled" else text=text.."Disabled" end
-	text=text.."\nDrag: "
-	if(self.DisableDrag==1)then text=text.."Enabled" else text=text.."Disabled" end
-	text=text.."\nVelocity: "
-	if(self.AddVelocity==1)then text=text.."Enabled" else text=text.."Disabled" end
-	
+	local text = "\nGravity: "..((self.DisableGravity == 1) and flags[1] or flags[2])
+	text = text.."\nDrag: "   ..((self.DisableDrag == 1) and flags[1] or flags[2])
+	text = text.."\nVelocity: "..((self.AddVelocity == 1) and flags[1] or flags[2])
+
 	self.Entity:SetOverlayText(
-		"Spawn Delay: " .. tostring(self:GetCreationDelay()) ..
+		"Spawn Name: " .. tostring(self.DupeName) ..
+		"\nSpawn Delay: " .. tostring(self:GetCreationDelay()) ..
 		"\nUndo Delay: ".. tostring(self:GetDeletionDelay()) ..
 		text
 		)
-		
 end
-
 
 /*-----------------------------------------------------------------------*
  * Handler for spawn keypad input
@@ -298,5 +287,5 @@ function UndoContrSpawner( ply, ent )
 	ent:DoUndo( ply, true )
 end
 
-numpad.Register( "ContrSpawnerCreate",	SpawnContrSpawner )
-numpad.Register( "ContrSpawnerUndo",		UndoContrSpawner  )
+numpad.Register( "ContrSpawnerCreate", SpawnContrSpawner )
+numpad.Register( "ContrSpawnerUndo"  , UndoContrSpawner  )

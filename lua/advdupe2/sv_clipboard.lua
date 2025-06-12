@@ -1196,7 +1196,7 @@ function AdvDupe2.duplicator.Paste(Player, EntityList, ConstraintList, Position,
 			undo.AddEntity(v)
 		end
 		undo.SetPlayer(Player)
-		undo.Finish(undotxt)
+		undo.Finish()
 
 		-- if(Tool)then AdvDupe2.FinishPasting(Player, true) end
 	else
@@ -1473,7 +1473,7 @@ local function AdvDupe2_Spawn()
 				end
 			end
 			undo.SetPlayer(Queue.Player)
-			undo.Finish(undotxt)
+			undo.Finish()
 
 			hook.Call("AdvDupe_FinishPasting", nil, {
 				{
@@ -1640,5 +1640,5 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 	undo.Create(undotxt)
 	undo.SetPlayer(Player)
 	undo.AddFunction(RemoveSpawnedEntities, i)
-	undo.Finish(undotxt)
+	undo.Finish()
 end
