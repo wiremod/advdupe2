@@ -557,7 +557,7 @@ if(SERVER) then
 			undo.Create( undotxt )
 				undo.AddEntity( spawner )
 				undo.SetPlayer( ply )
-			undo.Finish( undotxt )
+			undo.Finish()
 
 			return true
 		end
