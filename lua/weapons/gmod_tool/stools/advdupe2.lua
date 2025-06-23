@@ -550,7 +550,6 @@ if(SERVER) then
 				tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0)
 
 			if not spawner then
-				AdvDupe2.Notify(ply, "Failed to create contraption spawner.")
 				return false
 			end
 
