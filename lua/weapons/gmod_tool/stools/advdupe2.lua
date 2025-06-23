@@ -549,6 +549,10 @@ if(SERVER) then
 				tonumber(ply:GetInfo("advdupe2_contr_spawner_addvel")) or 1,
 				tonumber(ply:GetInfo("advdupe2_contr_spawner_hideprops")) or 0)
 
+			if not spawner then
+				return false
+			end
+
 			local undotxt = "AdvDupe2: Spawner ["..tostring(spawner:EntIndex()).."]"..(dupe.Name and "("..tostring(dupe.Name)..")" or "")
 
 			ply:AddCleanup( "AdvDupe2", spawner )
