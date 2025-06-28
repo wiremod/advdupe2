@@ -3,15 +3,21 @@
 
 	Desc: Displays and interfaces with duplication files.
 
-	Author: TB
+	Authors: March (v2.0), TB (v1.0)
 
-	Version: 1.0
+	Version: 2.0
 ]]
+
+-- Enums
+local ADVDUPE2_AREA_ADVDUPE2   = AdvDupe2.AREA_ADVDUPE2
+local ADVDUPE2_AREA_PUBLIC     = AdvDupe2.AREA_PUBLIC
+local ADVDUPE2_AREA_ADVDUPE1   = AdvDupe2.AREA_ADVDUPE1
+local ADVDUPE2_NODETYPE_FOLDER = AdvDupe2.NODETYPE_FOLDER
+local ADVDUPE2_NODETYPE_FILE   = AdvDupe2.NODETYPE_FILE
 
 local History = {}
 local Narrow = {}
 
-local switch = true
 local count = 0
 
 local function AddHistory(txt)
@@ -102,14 +108,565 @@ function BROWSERPNL:Init()
 end
 
 function BROWSERPNL:OnVScroll(iOffset)
-	self.pnlCanvas:SetPos(0, iOffset)
+	-- self.pnlCanvas:SetPos(0, iOffset)
 end
 
 derma.DefineControl("advdupe2_browser_panel", "AD2 File Browser", BROWSERPNL, "Panel")
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local NODE_MT = {}
+local NODE    = setmetatable({}, NODE_MT)
+
+function NODE:Init(Type, Browser)
+	self.Type      = Type
+	self.Browser   = Browser
+	self.Files     = {}
+	self.Folders   = {}
+	self.Sorted    = {}
+	self.Expanded  = false
+	self.Selected  = false
+
+	self:MarkSortDirty()
+end
+
+function NODE_MT:__call(Type, Browser)
+	if Type == nil then return error("Cannot create typeless node") end
+	if not IsValid(Browser) then return error ("Cannot create a headless node (we need a browser)") end
+
+	local Node   = setmetatable({}, {__index = NODE})
+	Node:Init(Type, Browser)
+
+	return Node
+end
+
+function NODE:IsRoot()   return (self.Root or error("No root?")) == self end
+function NODE:IsFolder() return self.Type == ADVDUPE2_NODETYPE_FOLDER    end
+function NODE:IsFile()   return self.Type == ADVDUPE2_NODETYPE_FILE      end
+
+function NODE:AddFolder(Text)
+	local Node = NODE(ADVDUPE2_NODETYPE_FOLDER, self.Browser)
+	Node.Text = Text
+	Node.ParentNode = self
+	Node.Root = self.Root
+	if self.Expanded then self:MarkSortDirty() end
+	self.Folders[#self.Folders + 1] = Node
+
+	return Node
+end
+
+function NODE:AddFile(Text)
+	local Node = NODE(ADVDUPE2_NODETYPE_FILE, self.Browser)
+	Node.Text = Text
+	Node.ParentNode = self
+	Node.Root = self.Root
+	if self.Expanded then self:MarkSortDirty() end
+	self.Files[#self.Files + 1] = Node
+
+	return Node
+end
+
+function NODE:Count() return #self.Files + #self.Folders end
+
+function NODE:MarkSortDirty()
+	self.SortDirty         = true
+	self.Browser.SortDirty = true
+end
+
+function NODE:Clear()
+	table.Empty(self.Files)
+	table.Empty(self.Folders)
+	table.Empty(self.Sorted)
+	self:MarkSortDirty()
+end
+
+function NODE:RemoveNode(Node)
+	if Node:IsFolder() then
+		table.RemoveByValue(self.Folders, Node)
+	else
+		table.RemoveByValue(self.Files, Node)
+	end
+
+	self:MarkSortDirty()
+end
+
+function NODE:Remove()
+	local ParentNode = self.ParentNode
+
+	if ParentNode then
+		ParentNode:RemoveNode(self)
+	else
+		self:MarkSortDirty()
+	end
+end
+
+function NODE:SetExpanded(Expanded)
+	if Expanded == self.Expanded then return end
+
+	self.Expanded = Expanded
+	self:MarkSortDirty()
+end
+
+function NODE:Expand()         self:SetExpanded(true)              end
+function NODE:Collapse()       self:SetExpanded(false)             end
+function NODE:ToggleExpanded() self:SetExpanded(not self.Expanded) end
+
+local function SetupDataFile(Node, Path, Name)
+	Node.Text = Name
+	Node.Path = Path
+end
+
+local function SetupDataSubfolder(Node, Path, Name)
+	Node.Text = Name
+	Node.Path = Path
+end
+
+-- Expects a directory path ending in a forward slash.
+local LoadDataFolderInternal
+function LoadDataFolderInternal(Node, Path)
+	local Files, Directories = file.Find(Path .. "*", "DATA", "nameasc")
+	if not Files or not Directories then return end
+
+	for _, File in ipairs(Files) do
+		local FilePath = Path .. File
+		local FileNode = Node:AddFile(FilePath)
+		SetupDataFile(FileNode, FilePath, File)
+	end
+
+	for _, Directory in ipairs(Directories) do
+		local DirectoryPath = Path .. Directory
+		local DirectoryNode = Node:AddFolder(DirectoryPath)
+		SetupDataSubfolder(DirectoryNode, DirectoryPath, Directory)
+		DirectoryNode.FirstObserved = function(DirNode) -- note FirstObserved will be destroyed after first call
+			LoadDataFolderInternal(DirNode, DirectoryPath .. "/")
+		end
+	end
+end
+
+
+function NODE:LoadDataFolder(Path)
+	self:Clear()
+	LoadDataFolderInternal(self, Path)
+end
+
+-- Defines GetNumericalFilename
+-- May need optimization and refactoring later - especially for non-ASCII strings...
+-- This handles things very similarly to how Windows does in terms of sorting, but also adds sorting by month
+-- May also be a good idea in the future to add a setting for the above functionality.
+local GetNumericalFilename
+do
+	local isDigit = {
+		['0'] = 0,
+		['1'] = 1,
+		['2'] = 2,
+		['3'] = 3,
+		['4'] = 4,
+		['5'] = 5,
+		['6'] = 6,
+		['7'] = 7,
+		['8'] = 8,
+		['9'] = 9
+	}
+
+	-- faster than string.byte calls
+	local char2byte = {}
+	for i = 1, 255 do char2byte[string.char(i)] = string.byte(string.lower(string.char(i))) end
+	char2byte['_'] = 2000
+
+	local buildMonth = {}
+	for k, v in ipairs{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"} do
+		local tbl = buildMonth
+		for i = 1, #v do
+			local c = v[i]
+			if i == #v then
+				tbl[c] = k
+			else
+				if not tbl[c] then
+					tbl[c] = {}
+				end
+
+				tbl = tbl[c]
+			end
+		end
+	end
+
+	local numericalStore = {}
+	function GetNumericalFilename(name)
+		if numericalStore[name] then return numericalStore[name] end
+
+		local ret = {}
+		local digit = nil
+		local monthTester = buildMonth
+		local monthStoreJustInCase = {}
+
+		for i = 1, #name do
+			local c = name[i]
+			local cIsDigit = isDigit[c]
+			if cIsDigit then
+				if digit == nil then
+					digit = 0
+				end
+				digit = (digit * 10) + cIsDigit
+			else
+				if monthTester[c] then
+					monthTester = monthTester[c]
+					monthStoreJustInCase[#monthStoreJustInCase + 1] = char2byte[c]
+					if type(monthTester) == "number" then
+						local nextC = name[i + 1]
+						local nextIfine = nextC == ' ' or nextC == '_' or nextC == '-'
+						if i == #name or nextIfine then
+							ret[#ret + 1] = monthTester
+							monthStoreJustInCase = {}
+							monthTester = buildMonth
+							if nextIfine then
+								i = i + 1
+							end
+						else
+							for i = 1, #monthStoreJustInCase do
+								ret[#ret + 1] = monthStoreJustInCase[i]
+							end
+							monthStoreJustInCase = {}
+							monthTester = buildMonth
+						end
+					end
+				elseif digit ~= nil then
+					ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+					digit = nil
+				else
+					if monthTester ~= buildMonth then
+						for i = 1, #monthStoreJustInCase do
+							ret[#ret + 1] = monthStoreJustInCase[i]
+						end
+						monthStoreJustInCase = {}
+						monthTester = buildMonth
+					end
+					ret[#ret + 1] = char2byte[c]
+				end
+			end
+		end
+
+		if digit ~= nil then
+			ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+		end
+		if monthTester ~= buildMonth then
+			for i = 1, #monthStoreJustInCase do
+				ret[#ret + 1] = monthStoreJustInCase[i]
+			end
+		end
+
+		numericalStore[name] = ret -- store so this doesnt have to be calculated multiple times for no reason
+		return ret
+	end
+end
+
+function NODE.SortFunction(A, B)
+	local IsFileA, IsFileB = A:IsFile(), B:IsFile()
+
+	if not IsFileA and IsFileB then return true end
+	if IsFileA and not IsFileB then return false end
+
+	local NameA, NameB = GetNumericalFilename(string.StripExtension(A.Text)), GetNumericalFilename(string.StripExtension(B.Text))
+
+	for I = 1, math.max(#NameA, #NameB) do
+		local AC, BC = NameA[I], NameB[I]
+
+		if AC == nil then return true end
+		if BC == nil then return false end
+
+		if AC ~= BC then
+			return AC < BC
+		end
+	end
+end
+
+function NODE:PerformResort()
+	if not self.SortDirty then return end
+
+	local Sorted   = self.Sorted
+	local Files    = self.Files
+	local Folders  = self.Folders
+	table.Empty(Sorted)
+
+	for I = 1, #Files   do Sorted[#Sorted + 1] = Files[I]   end
+	for I = 1, #Folders do Sorted[#Sorted + 1] = Folders[I] end
+
+	-- For each node, check FirstObserved and call if it exists
+	for _, Node in ipairs(Sorted) do
+		if Node.FirstObserved then
+			Node:FirstObserved()
+			Node.FirstObserved = nil
+		end
+	end
+
+	-- Perform actual resort
+	table.sort(Sorted, self.SortFunction)
+end
+
+-- Returns an enumerator<Node>
+function NODE:GetSortedChildNodes()
+	self:PerformResort()
+	return ipairs(self.Sorted)
+end
+
+function NODE.InjectIntoBrowser(Browser)
+	for FuncName, Func in pairs(NODE) do
+		Browser[FuncName] = Func
+	end
+
+	NODE.Init(Browser, ADVDUPE2_NODETYPE_FOLDER, Browser)
+end
+
+
+
+
+-- This interface describes the logic behind a root folder (like AdvDupe1 or AdvDupe2).
+
+local IRootFolder_MT = {}
+local IRootFolder    = setmetatable({}, IRootFolder_MT)
+AdvDupe2.IRootFolder = IRootFolder -- If other addons want to post-verify their IRootFolder implementations like we do
+
+-- todo; debug.getinfo and determine argument counts to further sanity check?
+IRootFolder.Init             = function(Impl, Browser, Node) end
+IRootFolder.GetFolderName    = function(Impl) end
+-- These define node operations
+-- These are RAW operations, as in the underlying Browser might do some prompts first
+-- But for example, calling IRootFolder:UserDelete() is expected to actually delete the node
+-- (and the browser will create the prompt)
+IRootFolder.UserUpload       = function(Impl, Browser, Node) end
+IRootFolder.UserPreview      = function(Impl, Browser, Node) end
+IRootFolder.UserSave         = function(Impl, Browser, Node, Filename, Description) end
+IRootFolder.UserRename       = function(Impl, Browser, Node, RenameTo) end
+IRootFolder.UserMenu         = function(Impl, Browser, Node, Menu) end
+IRootFolder.UserDelete       = function(Impl, Browser, Node) end
+
+-- Ensures the implementor implemented the interface correctly
+-- if they didn't throw non-halting errors since it might be an optional method
+function IRootFolder_MT:__call(RootFolderType)
+	for FuncName, _ in pairs(IRootFolder) do
+		if not RootFolderType[FuncName] then
+			ErrorNoHaltWithStack("AdvDupe2: IRootFolder implementation failed to implement " .. FuncName .. ", this may not work as intended...")
+		end
+	end
+
+	return RootFolderType
+end
+
+
+
+
+
+
+
+
+
+
+
+
+-- This turns a data-folder path name into something AdvDupe2.UploadFile can tolerate
+local function GetNodeDataPath(Node)
+	local Path                = Node.Path
+	local FirstSlash          = string.find(Path, "/")
+	local RemovedFirstDirPath = string.sub(Path, FirstSlash + 1)
+	return string.StripExtension(RemovedFirstDirPath)
+end
+
+-- wraps File.Exists and throws a notification
+local function FileExists(Path)
+	if not Path then
+		AdvDupe2.Notify("Expected path, got nil!")
+		return false
+	end
+
+	if not file.Exists(Path, "DATA") then
+		AdvDupe2.Notify("File '" .. Path .. "' does not exist.")
+		return false
+	end
+
+	return true
+end
+
+local function OpenPreview(Node, Area)
+	local Path     = GetNodeDataPath(Node)
+	local ReadPath
+
+	if Area == ADVDUPE2_AREA_ADVDUPE2 then
+		ReadPath = AdvDupe2.DataFolder .. "/" .. Path .. ".txt"
+	elseif Area == ADVDUPE2_AREA_PUBLIC then
+		ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
+	else
+		ReadPath = "adv_duplicator/" .. Path .. ".txt"
+	end
+
+	if not FileExists(ReadPath) then return end
+
+	local Read = file.Read(ReadPath)
+	local Name = string.StripExtension(string.GetFileFromFilename(Path))
+
+	local Success, Dupe, Info, MoreInfo = AdvDupe2.Decode(Read)
+
+	if Success then
+		AdvDupe2.LoadGhosts(Dupe, Info, MoreInfo, Name, true)
+	end
+end
+
+
+
+local AdvDupe1Folder, AdvDupe2Folder
+
+do
+	AdvDupe1Folder = {}
+	function AdvDupe1Folder:GetFolderName() return "Advanced Duplicator 1" end
+	function AdvDupe1Folder:Init(Browser, Node)
+		Node:LoadDataFolder("adv_duplicator/")
+
+		if Node:Count() < 0 then
+			Node:Remove()
+		end
+	end
+
+	function AdvDupe1Folder:UserUpload(Browser, Node)
+		AdvDupe2.UploadFile(GetNodeDataPath(Node), ADVDUPE2_AREA_ADVDUPE1)
+	end
+
+	function AdvDupe1Folder:UserPreview(Browser, Node)
+		OpenPreview(Node, ADVDUPE2_AREA_ADVDUPE1)
+	end
+
+
+	function AdvDupe1Folder:UserSave(Browser, Node, Filename, Description)
+
+	end
+
+	function AdvDupe1Folder:UserRename(Browser, Node, RenameTo)
+
+	end
+
+	function AdvDupe1Folder:UserMenu(Browser, Node, Menu)
+
+	end
+
+	function AdvDupe1Folder:UserDelete(Browser, Node)
+
+	end
+
+	IRootFolder(AdvDupe1Folder) -- validation
+end
+
+do
+	AdvDupe2Folder = {}
+	function AdvDupe2Folder:GetFolderName() return "Advanced Duplicator 2" end
+	function AdvDupe2Folder:Init(Browser, Node)
+		Node:LoadDataFolder("advdupe2/")
+	end
+
+	function AdvDupe2Folder:UserUpload(Browser, Node)
+		AdvDupe2.UploadFile(GetNodeDataPath(Node), ADVDUPE2_AREA_ADVDUPE2)
+	end
+
+	function AdvDupe2Folder:UserPreview(Browser, Node)
+		OpenPreview(Node, ADVDUPE2_AREA_ADVDUPE2)
+	end
+
+	function AdvDupe2Folder:UserSave(Browser, Node, Filename, Description)
+
+	end
+
+	function AdvDupe2Folder:UserRename(Browser, Node, RenameTo)
+
+	end
+
+	function AdvDupe2Folder:UserMenu(Browser, Node, Menu)
+		if Node:IsFile() then
+			Menu:AddOption("Open", function() self:UserUpload(Browser, Node) end, "icon16/page_go.png")
+			Menu:AddOption("Preview", function() self:UserPreview(Browser, Node) end, "icon16/information.png")
+			Menu:AddSpacer()
+			Menu:AddOption("Rename...", nil, "icon16/textfield_rename.png")
+			Menu:AddOption("Move...", nil, "icon16/arrow_right.png")
+			Menu:AddOption("Delete", nil, "icon16/bin_closed.png")
+		else
+			Menu:AddOption("Save", nil, "icon16/disk.png")
+			Menu:AddOption("New Folder", nil, "icon16/folder_add.png")
+			Menu:AddSpacer()
+			Menu:AddOption("Search", nil, "icon16/magnifier.png")
+		end
+	end
+
+	function AdvDupe2Folder:UserDelete(Browser, Node)
+		
+	end
+
+	IRootFolder(AdvDupe2Folder) -- validation
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 local BROWSER = {}
 AccessorFunc(BROWSER, "m_pSelectedItem", "SelectedItem")
-Derma_Hook(BROWSER, "Paint", "Paint", "Panel")
 
 local origSetTall
 local function SetTall(self, val)
@@ -124,66 +681,27 @@ function BROWSER:Init()
 
 	self.VBar = vgui.Create("DVScrollBar", self:GetParent())
 	self.VBar:Dock(RIGHT)
-	self.Nodes = 0
-	self.ChildrenExpanded = {}
-	self.ChildList = self
-	self.m_bExpanded = true
-	self.Folders = {}
-	self.Files = {}
+
+	-- Implement NODE
+	NODE.InjectIntoBrowser(self)
+	self.SortDirty         = true
+	self.ExpandedNodeArray = {}
+
 	self.LastClick = CurTime()
 end
 
-local function GetNodePath(node)
-	local path = node.Label:GetText()
-	local area = 0
-	local name = ""
-	node = node.ParentNode
-	if (not node.ParentNode) then
-		if (path == "Public") then
-			area = 1
-		elseif (path == "Advanced Duplicator 1") then
-			area = 2
-		end
-		return "", area
-	end
-
-	while (true) do
-
-		name = node.Label:GetText()
-		if (name == "Advanced Duplicator 2") then
-			break
-		elseif (name == "Public") then
-			area = 1
-			break
-		elseif (name == "Advanced Duplicator 1") then
-			area = 2
-			break
-		end
-		path = name .. "/" .. path
-		node = node.ParentNode
-	end
-
-	return path, area
-end
-
-function BROWSER:DoNodeLeftClick(node)
-	if (self.m_pSelectedItem == node and CurTime() - self.LastClick <= 0.25) then -- Check for double click
-		if (node.Derma.ClassName == "advdupe2_browser_folder") then
-			if (node.Expander) then
-				node:SetExpanded() -- It's a folder, expand/collapse it
-			end
-		elseif (node.Derma.ClassName == "advdupe2_browser_file") then
-			if (node.Control.Search) then
-				AdvDupe2.UploadFile(GetNodePath(node.Ref))
-			else
-				AdvDupe2.UploadFile(GetNodePath(node))
-			end
+function BROWSER:DoNodeLeftClick(Node)
+	if self.m_pSelectedItem == Node and CurTime() - self.LastClick <= 0.25 then -- Check for double click
+		if Node:IsFolder() then
+			Node:ToggleExpanded()
 		else
-			AdvDupe2.UploadFile(GetNodePath(node.Ref))
+			local RootImpl = Node.Root.RootImpl
+			RootImpl:UserUpload(self, Node)
 		end
 	else
-		self:SetSelected(node) -- A node was clicked, select it
+		self:SetSelected(Node) -- A node was clicked, select it
 	end
+
 	self.LastClick = CurTime()
 end
 
@@ -267,30 +785,6 @@ function AdvDupe2.GetFilename(path, overwrite)
 		return false
 	end
 	return path .. ".txt"
-end
-
-local function GetFullPath(node)
-	local path, area = GetNodePath(node)
-	if (area == 0) then
-		path = AdvDupe2.DataFolder .. "/" .. path .. "/"
-	elseif (area == 1) then
-
-	else
-		path = "adv_duplicator/" .. path .. "/"
-	end
-	return path
-end
-
-local function GetNodeRoot(node)
-	local Root
-	while (true) do
-		if (not node.ParentNode.ParentNode) then
-			Root = node
-			break
-		end
-		node = node.ParentNode
-	end
-	return Root
 end
 
 local function RenameFileCl(node, name)
@@ -408,306 +902,35 @@ local function Search(node, name)
 	end
 end
 
-function BROWSER:DoNodeRightClick(node)
+function BROWSER:DoNodeRightClick(Node)
 	self:SetSelected(node)
 
-	local parent = self:GetParent():GetParent()
-	parent.FileName:KillFocus()
-	parent.Desc:KillFocus()
-	local Menu = DermaMenu()
-	local root = GetNodeRoot(node).Label:GetText()
-	if (node.Derma.ClassName == "advdupe2_browser_file") then
-		if (node.Control.Search) then
-			Menu:AddOption("Open", function()
-				AdvDupe2.UploadFile(GetNodePath(node.Ref))
-			end)
-			Menu:AddOption("Preview", function()
-				local ReadPath, ReadArea = GetNodePath(node.Ref)
-				if (ReadArea == 0) then
-					ReadPath = AdvDupe2.DataFolder .. "/" .. ReadPath .. ".txt"
-				elseif (ReadArea == 1) then
-					ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
-				else
-					ReadPath = "adv_duplicator/" .. ReadPath .. ".txt"
-				end
-				if (not file.Exists(ReadPath, "DATA")) then
-					AdvDupe2.Notify("File does not exist", NOTIFY_ERROR)
-					return
-				end
+	local BrowserPanel = self:GetParent():GetParent()
+	BrowserPanel.FileName:KillFocus()
+	BrowserPanel.Desc:KillFocus()
 
-				local read = file.Read(ReadPath)
-				local name = string.Explode("/", ReadPath)
-				name = name[#name]
-				name = string.sub(name, 1, #name - 4)
-				local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
-				if (success) then
-					AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true)
-				end
-			end)
-		else
-			Menu:AddOption("Open", function()
-				AdvDupe2.UploadFile(GetNodePath(node))
-			end)
-			Menu:AddOption("Preview", function()
-				local ReadPath, ReadArea = GetNodePath(node)
-				if (ReadArea == 0) then
-					ReadPath = AdvDupe2.DataFolder .. "/" .. ReadPath .. ".txt"
-				elseif (ReadArea == 1) then
-					ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
-				else
-					ReadPath = "adv_duplicator/" .. ReadPath .. ".txt"
-				end
-				if (not file.Exists(ReadPath, "DATA")) then
-					AdvDupe2.Notify("File does not exist", NOTIFY_ERROR)
-					return
-				end
+	local Menu     = DermaMenu()
+	local RootImpl = Node.Root.RootImpl
 
-				local read = file.Read(ReadPath)
-				local name = string.Explode("/", ReadPath)
-				name = name[#name]
-				name = string.sub(name, 1, #name - 4)
-				local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
-				if (success) then
-					AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, true)
-				end
-			end)
-			Menu:AddSpacer()
-			Menu:AddOption("Rename", function()
-				if (parent.Expanding) then return end
-				parent.Submit:SetMaterial("icon16/page_edit.png")
-				parent.Submit:SetTooltip("Rename File")
-				parent.Desc:SetVisible(false)
-				parent.Info:SetVisible(false)
-				parent.FileName.FirstChar = true
-				parent.FileName.PrevText = parent.FileName:GetValue()
-				parent.FileName:SetVisible(true)
-				parent.FileName:SetText(node.Label:GetText())
-				parent.FileName:SelectAllOnFocus(true)
-				parent.FileName:OnMousePressed()
-				parent.FileName:RequestFocus()
-				parent.Expanding = true
-				AdvDupe2.FileBrowser:Slide(true)
-				parent.Submit.DoClick = function()
-					local name = parent.FileName:GetValue()
-					if (name == "") then
-						AdvDupe2.Notify("Name field is blank.", NOTIFY_ERROR)
-						parent.FileName:SelectAllOnFocus(true)
-						parent.FileName:OnGetFocus()
-						parent.FileName:RequestFocus()
-						return
-					end
-					AddHistory(name)
-					RenameFileCl(node, name)
-					AdvDupe2.FileBrowser:Slide(false)
-				end
-				parent.FileName.OnEnter = parent.Submit.DoClick
-			end)
-			Menu:AddOption("Move File", function()
-				parent.Submit:SetMaterial("icon16/page_paste.png")
-				parent.Submit:SetTooltip("Move File")
-				parent.FileName:SetVisible(false)
-				parent.Desc:SetVisible(false)
-				parent.Info:SetText(
-					"Select the folder you want to move \nthe File to.")
-				parent.Info:SizeToContents()
-				parent.Info:SetVisible(true)
-				AdvDupe2.FileBrowser:Slide(true)
-				node.Control.ActionNode = node
-				parent.Submit.DoClick = function()
-					MoveFileClient(node.Control.m_pSelectedItem)
-				end
-			end)
-			Menu:AddOption("Delete", function()
-				parent.Submit:SetMaterial("icon16/bin_empty.png")
-				parent.Submit:SetTooltip("Delete File")
-				parent.FileName:SetVisible(false)
-				parent.Desc:SetVisible(false)
-				if (#node.Label:GetText() > 22) then
-					parent.Info:SetText(
-						'Are you sure that you want to delete \nthe FILE, "' ..
-							node.Label:GetText() .. '" \nfrom your CLIENT?')
-				else
-					parent.Info:SetText(
-						'Are you sure that you want to delete \nthe FILE, "' ..
-							node.Label:GetText() .. '" from your CLIENT?')
-				end
-				parent.Info:SizeToContents()
-				parent.Info:SetVisible(true)
-				AdvDupe2.FileBrowser:Slide(true)
-				parent.Submit.DoClick = function()
-					local path, area = GetNodePath(node)
-					if (area == 1) then
-						path = "-Public-/" .. path
-					end
-					if (area == 2) then
-						path = "adv_duplicator/" .. path .. ".txt"
-					else
-						path = AdvDupe2.DataFolder .. "/" .. path .. ".txt"
-					end
-					node.Control:RemoveNode(node)
-					file.Delete(path)
-					AdvDupe2.FileBrowser:Slide(false)
-				end
-			end)
-		end
-	else
-		if (root ~= "-Advanced Duplicator 1-") then
-			Menu:AddOption("Save", function()
-				if (parent.Expanding) then return end
-				parent.Submit:SetMaterial("icon16/page_save.png")
-				parent.Submit:SetTooltip("Save Duplication")
-				if (parent.FileName:GetValue() == "Folder_Name...") then
-					parent.FileName:SetText("File_Name...")
-				end
-				parent.Desc:SetVisible(true)
-				parent.Info:SetVisible(false)
-				parent.FileName.FirstChar = true
-				parent.FileName.PrevText = parent.FileName:GetValue()
-				parent.FileName:SetVisible(true)
-				parent.FileName:SelectAllOnFocus(true)
-				parent.FileName:OnMousePressed()
-				parent.FileName:RequestFocus()
-				node.Control.ActionNode = node
-				parent.Expanding = true
-				AdvDupe2.FileBrowser:Slide(true)
-				parent.Submit.DoClick = function()
-					local name = parent.FileName:GetValue()
-					if (name == "" or name == "File_Name...") then
-						AdvDupe2.Notify("Name field is blank.", NOTIFY_ERROR)
-						parent.FileName:SelectAllOnFocus(true)
-						parent.FileName:OnGetFocus()
-						parent.FileName:RequestFocus()
-						return
-					end
-					local desc = parent.Desc:GetValue()
-					if (desc == "Description...") then
-						desc = ""
-					end
-					AdvDupe2.SavePath = GetFullPath(node) .. name
-					AddHistory(name)
-					if (game.SinglePlayer()) then
-						RunConsoleCommand("AdvDupe2_SaveFile", name, desc, GetNodePath(node))
-					else
-						RunConsoleCommand("AdvDupe2_SaveFile", name)
-					end
-					AdvDupe2.FileBrowser:Slide(false)
-				end
-				parent.FileName.OnEnter =
-					function()
-						parent.FileName:KillFocus()
-						parent.Desc:SelectAllOnFocus(true)
-						parent.Desc.OnMousePressed()
-						parent.Desc:RequestFocus()
-					end
-				parent.Desc.OnEnter = parent.Submit.DoClick
-			end)
-		end
-		Menu:AddOption("New Folder", function()
-			if (parent.Expanding) then return end
-			parent.Submit:SetMaterial("icon16/folder_add.png")
-			parent.Submit:SetTooltip("Add new folder")
-			if (parent.FileName:GetValue() == "File_Name...") then
-				parent.FileName:SetText("Folder_Name...")
+	function Menu:AddOption(Text, Func, Icon)
+		local Option = DMenu.AddOption(self, Text, Func)
+		if Icon then
+			local IconPanel = Option:Add("DImage")
+			IconPanel:SetImage(Icon)
+			IconPanel:SetKeepAspect(true)
+			IconPanel:SetSize(16, 16)
+			local OldLayout = Option.PerformLayout
+			function Option:PerformLayout(W, H)
+				OldLayout(self, W, H)
+				IconPanel:SetPos(6, (H / 2) - 8)
 			end
-			parent.Desc:SetVisible(false)
-			parent.Info:SetVisible(false)
-			parent.FileName.FirstChar = true
-			parent.FileName.PrevText = parent.FileName:GetValue()
-			parent.FileName:SetVisible(true)
-			parent.FileName:SelectAllOnFocus(true)
-			parent.FileName:OnMousePressed()
-			parent.FileName:RequestFocus()
-			parent.Expanding = true
-			AdvDupe2.FileBrowser:Slide(true)
-			parent.Submit.DoClick = function() AddNewFolder(node) end
-			parent.FileName.OnEnter = parent.Submit.DoClick
-		end)
-		Menu:AddOption("Search", function()
-			parent.Submit:SetMaterial("icon16/find.png")
-			parent.Submit:SetTooltip("Search Files")
-			if (parent.FileName:GetValue() == "Folder_Name...") then
-				parent.FileName:SetText("File_Name...")
-			end
-			parent.Desc:SetVisible(false)
-			parent.Info:SetVisible(false)
-			parent.FileName.FirstChar = true
-			parent.FileName.PrevText = parent.FileName:GetValue()
-			parent.FileName:SetVisible(true)
-			parent.FileName:SelectAllOnFocus(true)
-			parent.FileName:OnMousePressed()
-			parent.FileName:RequestFocus()
-			parent.Expanding = true
-			AdvDupe2.FileBrowser:Slide(true)
-			parent.Submit.DoClick = function()
-				Search(node, string.lower(parent.FileName:GetValue()))
-				AddHistory(parent.FileName:GetValue())
-				parent.FileName:SetVisible(false)
-				parent.Submit:SetMaterial("icon16/arrow_undo.png")
-				parent.Submit:SetTooltip("Return to Browser")
-				parent.Info:SetVisible(true)
-				parent.Info:SetText(#parent.Search.pnlCanvas.Files ..
-										' files found searching for, "' ..
-										parent.FileName:GetValue() .. '"')
-				parent.Info:SizeToContents()
-				parent.Submit.DoClick = function()
-					parent.Search:Remove()
-					parent.Search = nil
-					parent.Browser:SetVisible(true)
-					AdvDupe2.FileBrowser:Slide(false)
-					parent.Cancel:SetVisible(true)
-				end
-				parent.Cancel:SetVisible(false)
-			end
-			parent.FileName.OnEnter = parent.Submit.DoClick
-		end)
-		if (node.Label:GetText()[1] ~= "-") then
-			Menu:AddOption("Delete", function()
-				parent.Submit:SetMaterial("icon16/bin_empty.png")
-				parent.Submit:SetTooltip("Delete Folder")
-				parent.FileName:SetVisible(false)
-				parent.Desc:SetVisible(false)
-				if (#node.Label:GetText() > 22) then
-					parent.Info:SetText(
-						'Are you sure that you want to delete \nthe FOLDER, "' ..
-							node.Label:GetText() .. '" \nfrom your CLIENT?')
-				else
-					parent.Info:SetText(
-						'Are you sure that you want to delete \nthe FOLDER, "' ..
-							node.Label:GetText() .. '" from your CLIENT?')
-				end
-				parent.Info:SizeToContents()
-				parent.Info:SetVisible(true)
-				AdvDupe2.FileBrowser:Slide(true)
-				parent.Submit.DoClick = function()
-					local path, area = GetNodePath(node)
-					if (area == 1) then
-						path = "-Public-/" .. path
-					end
-					if (area == 2) then
-						path = "adv_duplicator/" .. path .. "/"
-					else
-						path = AdvDupe2.DataFolder .. "/" .. path .. "/"
-					end
-					node.Control:RemoveNode(node)
-					DeleteFilesInFolders(path)
-					AdvDupe2.FileBrowser:Slide(false)
-				end
-			end)
-		end
-	end
-	if (not node.Control.Search) then
-		Menu:AddSpacer()
-		Menu:AddOption("Collapse Folder", function()
-			if (node.ParentNode.ParentNode) then
-				node.ParentNode:SetExpanded(false)
-			end
-		end)
-		Menu:AddOption("Collapse Root", function() CollapseParentsComplete(node) end)
-		if (parent.Expanded) then
-			Menu:AddOption("Cancel Action", function() parent.Cancel:DoClick() end)
 		end
 	end
 
+	RootImpl:UserMenu(self, Node, Menu)
+
+	Menu:SetAlpha(0)
+	Menu:AlphaTo(255, 0.1, 0)
 	Menu:Open()
 end
 
@@ -717,89 +940,8 @@ local function CollapseParents(node, val)
 	CollapseParents(node.ParentNode, val)
 end
 
-function BROWSER:RemoveNode(node)
-	local parent = node.ParentNode
-	parent.Nodes = parent.Nodes - 1
-	if (node.IsFolder) then
-		if (node.m_bExpanded) then
-			CollapseParents(parent, node.ChildList:GetTall() + 20)
-			for i = 1, #parent.ChildrenExpanded do
-				if (node == parent.ChildrenExpanded[i]) then
-					table.remove(parent.ChildrenExpanded, i)
-					break
-				end
-			end
-		elseif (parent.m_bExpanded) then
-			CollapseParents(parent, 20)
-		end
-		for i = 1, #parent.Folders do
-			if (node == parent.Folders[i]) then
-				table.remove(parent.Folders, i)
-			end
-		end
-		node.ChildList:Remove()
-		node:Remove()
-	else
-		for i = 1, #parent.Files do
-			if (node == parent.Files[i]) then
-				table.remove(parent.Files, i)
-			end
-		end
-		CollapseParents(parent, 20)
-		node:Remove()
-		if (#parent.Files == 0 and #parent.Folders == 0) then
-			parent.Expander:Remove()
-			parent.Expander = nil
-			parent.m_bExpanded = false
-		end
-	end
-	if (self.VBar.Scroll > self.VBar.CanvasSize) then
-		self.VBar:SetScroll(self.VBar.Scroll)
-	end
-	if (self.m_pSelectedItem) then
-		self.m_pSelectedItem = nil
-	end
-end
-
 function BROWSER:OnMouseWheeled(dlta)
 	return self.VBar:OnMouseWheeled(dlta)
-end
-
-function BROWSER:AddFolder(text)
-	local node = vgui.Create("advdupe2_browser_folder", self)
-	node.Control = self
-
-	node.Offset = 0
-	node.ChildrenExpanded = {}
-	node.Icon:SetPos(18, 1)
-	node.Label:SetPos(44, 0)
-	node.Label:SetText(text)
-	node.Label:SizeToContents()
-	node.ParentNode = self
-	node.IsFolder = true
-	self.Nodes = self.Nodes + 1
-	node.Folders = {}
-	node.Files = {}
-	table.insert(self.Folders, node)
-	self:SetTall(self:GetTall() + 20)
-
-	return node
-end
-
-function BROWSER:AddFile(text)
-	local node = vgui.Create("advdupe2_browser_file", self)
-	node.Control = self
-	node.Offset = 0
-	node.Icon:SetPos(18, 1)
-	node.Label:SetPos(44, 0)
-	node.Label:SetText(text)
-	node.Label:SizeToContents()
-	node.ParentNode = self
-	self.Nodes = self.Nodes + 1
-	table.insert(self.Files, node)
-	self:SetTall(self:GetTall() + 20)
-
-	return node
 end
 
 function BROWSER:Sort(node)
@@ -819,11 +961,13 @@ function BROWSER:Sort(node)
 end
 
 function BROWSER:SetSelected(node)
-	if (IsValid(self.m_pSelectedItem)) then
-		self.m_pSelectedItem:SetSelected(false)
+	if self.m_pSelectedItem then
+		self.m_pSelectedItem.Selected = false
 	end
 	self.m_pSelectedItem = node
-	if (node) then node:SetSelected(true) end
+	if node then
+		node.Selected = true
+	end
 end
 
 local function ExpandParents(node, val)
@@ -877,7 +1021,357 @@ function BROWSER:DeleteNode()
 	self:RemoveNode(self.ActionNode)
 end
 
+local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeArray, Depth)
+	Depth = Depth or 0
+	for _, Child in Parent:GetSortedChildNodes() do
+		Child.Depth = Depth
+		ExpandedNodeArray[#ExpandedNodeArray + 1] = Child
+		if Child.Expanded then
+			DoRecursiveVistesting(Child, ExpandedNodeArray, Depth + 1)
+		end
+	end
+end
+
+-- Just in case this needs to be changed later
+-- can't remember if this should be curtime or not...
+local MaxTimeToDoubleClick   =   0.1
+local NodeTall               =   24
+local NodePadding            =   0
+local TallOfOneNode          =   NodeTall + NodePadding
+local NodeDepthWidth         =   12
+local NodeFont               =   "DermaDefault"
+
+local ICON_FOLDER_EMPTY     = Material("icon16/folder.png", "smooth")
+local ICON_FOLDER_CONTAINS  = Material("icon16/folder_page.png", "smooth")
+local ICON_FILE             = Material("icon16/page.png", "smooth")
+
+-- This function collapses the current node state into a single sequential array
+function BROWSER:SortRecheck()
+	if not self.SortDirty then return end
+
+	table.Empty(self.ExpandedNodeArray)
+	DoRecursiveVistesting(self, self.ExpandedNodeArray)
+
+	-- This is how tall we are
+	local Tall = #self.ExpandedNodeArray * TallOfOneNode
+	self:SetTall(Tall)
+
+	self.SortDirty = false
+end
+
+-- Gets or creates the immediate state table.
+function BROWSER:GetImmediateState()
+	local ImmediateState = self.ImmediateState
+	if not ImmediateState then
+		ImmediateState = {}
+		self.ImmediateState = ImmediateState
+		ImmediateState.Mouse = {}
+
+		-- functions
+
+		function ImmediateState:IsMouseInRect(X, Y, W, H)
+			local MX, MY         = self.MouseX or 0, self.MouseY or 0
+			return (MX >= X and MX <= (X + W)) and (MY >= Y and MY <= (Y + H))
+		end
+	end
+
+	return ImmediateState
+end
+
+local function GetNodeBounds(ScrollOffset, AbsIndex, Width, Depth)
+	return
+			Depth * NodeDepthWidth,
+			(TallOfOneNode * (AbsIndex - 1)) - ScrollOffset,
+			Width - (Depth * NodeDepthWidth),
+			NodeTall
+end
+
+local ExpanderSize              = 16
+local IconSize                  = 16
+local LeftmostToExpanderPadding = 4
+local ExpanderToIconPadding     = 4
+local IconToTextPadding         = 6
+
+local ExpanderXOffset = LeftmostToExpanderPadding
+local IconXOffset     = ExpanderXOffset + ExpanderSize + ExpanderToIconPadding
+local TextXOffset     = IconXOffset + IconSize + IconToTextPadding
+
+local function GetExpanderBounds(X, Y, W, H, Padding, Depth)
+	Padding = Padding or 0
+	local Size = ExpanderSize + Padding
+
+	return (Depth * NodeDepthWidth) + (X + ExpanderXOffset) - (Padding / 2), ((Y + (H / 2)) - (Size / 2)) + 1, Size, Size
+end
+
+local function GetIconBounds(X, Y, W, H, Padding, Depth)
+	local Size = IconSize + (Padding or 0)
+
+	return (Depth * NodeDepthWidth) + X + IconXOffset, (Y + (H / 2)) - (Size / 2), Size, Size
+end
+
+local function GetTextPosition(X, Y, W, H, Depth)
+	return (Depth * NodeDepthWidth) + X + TextXOffset, Y + (H / 2)
+end
+
+-- This function flushes in the immediate-mode state from C-funcs into Lua-land
+-- and performs calculations that may be needed later on in a cached state
+-- The immediate state object is unique to the browser
+function BROWSER:FlushImmediateState()
+	local ImmediateState = self:GetImmediateState()
+
+	local Scroll         = IsValid(self.VBar) and (self.VBar:GetScroll()) or 0
+
+	local MouseX, MouseY = self:CursorPos()
+
+	ImmediateState.Mouse.Cursor = "arrow"
+	ImmediateState.LastScroll   = ImmediateState.Scroll or Scroll
+	ImmediateState.Scroll       = Scroll
+	ImmediateState.DeltaScroll  = Scroll - ImmediateState.LastScroll
+
+	ImmediateState.Width        = self:GetWide()
+	ImmediateState.Height       = self:GetTall()
+
+	for I = MOUSE_LEFT, MOUSE_LAST do
+		local Mouse = ImmediateState.Mouse[I]
+		if not Mouse then
+			Mouse = {}
+			ImmediateState.Mouse[I] = Mouse
+		end
+
+		Mouse.LastDown = Mouse.Down or false
+		Mouse.Down     = input.IsMouseDown(I)
+		Mouse.Clicked  = Mouse.Down and not Mouse.LastDown
+		Mouse.Released = not Mouse.Down and Mouse.LastDown
+
+	end
+
+	ImmediateState.Mouse.Down  = false
+	ImmediateState.Mouse.Double = false
+	ImmediateState.Mouse.Clicked = false
+	ImmediateState.Mouse.Released = false
+	-- Reverse priority. Left should have the highest precedence
+	for I = MOUSE_LAST, MOUSE_LEFT, -1 do
+		local Mouse = ImmediateState.Mouse[I]
+
+		if Mouse.Down     then ImmediateState.Mouse.Down     = true end
+		if Mouse.Double   then ImmediateState.Mouse.Double   = true end
+		if Mouse.Clicked  then ImmediateState.Mouse.Clicked  = I end
+		if Mouse.Released then ImmediateState.Mouse.Released = I end
+	end
+
+	-- Mouse positions
+	ImmediateState.LastMouseX = ImmediateState.MouseX or MouseX
+	ImmediateState.MouseX = MouseX
+	ImmediateState.DeltaX = MouseX - ImmediateState.LastMouseX
+
+	ImmediateState.LastMouseY = ImmediateState.MouseY or MouseY
+	ImmediateState.MouseY = MouseY
+	ImmediateState.DeltaY = MouseY - ImmediateState.LastMouseY
+
+	ImmediateState.ReleasedNode      = nil
+	ImmediateState.PanelHovered = self:IsHovered()
+
+	-- The starting and end indices into self.ExpandedNodeArray
+	ImmediateState.StartIndex        = math.max(math.floor( Scroll                               / TallOfOneNode) + 1, 1)
+	ImmediateState.EndIndex          = math.min(math.floor((Scroll + self:GetParent():GetTall()) / TallOfOneNode) + 1, #self.ExpandedNodeArray)
+
+	-- Vis testing parameters
+	ImmediateState.TotalVisibleNodes = (ImmediateState.EndIndex - ImmediateState.StartIndex)
+	-- We test against this array subspan for mouse events
+	local BreakInputTesting = false
+	for AbsIndex = ImmediateState.StartIndex, ImmediateState.EndIndex do
+		local Node = self.ExpandedNodeArray[AbsIndex]
+
+		if not BreakInputTesting then
+			local X, Y, W, H  = GetNodeBounds(ImmediateState.Scroll, AbsIndex, ImmediateState.Width, Node.Depth)
+			local MouseInRect = ImmediateState:IsMouseInRect(X, Y, W, H) and ImmediateState.PanelHovered
+			if MouseInRect then
+				ImmediateState.Hovered           = Node
+				ImmediateState.IsExpanderHovered = Node:IsFolder() and ImmediateState:IsMouseInRect(GetExpanderBounds(X, Y, W, H, nil, Node.Depth))
+
+				if ImmediateState.Mouse.Clicked then
+					ImmediateState.Depressed           = Node
+					ImmediateState.IsExpanderDepressed = ImmediateState.IsExpanderHovered
+				end
+
+				if ImmediateState.Mouse.Released then
+					ImmediateState.ReleasedNode = ImmediateState.Depressed
+					ImmediateState.IsExpanderReleased = ImmediateState.IsExpanderHovered
+				end
+
+				BreakInputTesting = true
+			else
+				ImmediateState.Hovered           = false
+				ImmediateState.IsExpanderHovered = false
+			end
+		end
+	end
+
+	if ImmediateState.Mouse.Released or not ImmediateState.Mouse.Down then
+		ImmediateState.Depressed     = nil
+		ImmediateState.IsExpanderDepressed = nil
+	end
+
+	if ImmediateState.IsExpanderHovered then
+		ImmediateState.Mouse.Cursor = "hand"
+	end
+end
+
+-- This function considers the current immediate state and triggers events/sets cursor
+function BROWSER:ConsiderCurrentState()
+	local ImmediateState = self.ImmediateState
+
+	-- Clicked for node logic, released for expander logic
+	local Clicked  = ImmediateState.Mouse.Clicked
+	local Released = ImmediateState.Mouse.Released
+
+	if Clicked then
+		local Node               = ImmediateState.Depressed
+		local ExpanderDepressed  = ImmediateState.IsExpanderDepressed
+
+		if Node and not ExpanderDepressed then
+			if Clicked == MOUSE_LEFT then
+				self:DoNodeLeftClick(Node)
+			elseif Clicked == MOUSE_RIGHT then
+				self:DoNodeRightClick(Node)
+			end
+		end
+	end
+
+	if Released then
+		local Node               = ImmediateState.ReleasedNode
+		local ExpanderReleased   = ImmediateState.IsExpanderReleased
+
+		if Node and ExpanderReleased then
+			Node:ToggleExpanded()
+		end
+	end
+
+	self:SetCursor(ImmediateState.Mouse.Cursor)
+end
+
+-- This function paints the current immediate state to the DPanel.
+function BROWSER:PaintCurrentState()
+	local Skin           = self:GetSkin()
+	local SkinTex        = Skin.tex
+
+	local ImmediateState = self.ImmediateState
+	local ScrollOffset   = ImmediateState.Scroll
+	local Width          = ImmediateState.Width
+
+	for AbsIndex = ImmediateState.StartIndex, ImmediateState.EndIndex do
+		local Node = self.ExpandedNodeArray[AbsIndex]
+
+		local IsHovered           = ImmediateState.Hovered   == Node
+		local IsDepressed         = ImmediateState.Depressed == Node
+		local IsExpanderHovered   = IsHovered and ImmediateState.IsExpanderHovered
+		local IsExpanderDepressed = IsDepressed and ImmediateState.IsExpanderDepressed
+
+		local NX, NY, NW, NH      = GetNodeBounds(ScrollOffset, AbsIndex, Width, Node.Depth)
+		local IX, IY, IW, IH      = GetIconBounds(NX, NY, NW, NH, nil, Node.Depth)
+		local EX, EY, EW, EH      = GetExpanderBounds(NX, NY, NW, NH, IsExpanderDepressed and -2 or IsExpanderHovered and 2 or 0, Node.Depth)
+		local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
+
+		-- Paint background
+		if IsDepressed then
+			SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
+		elseif IsHovered then
+			SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
+		else
+			SkinTex.Panels.Normal(NX, NY, NW, NH, color_white)
+		end
+
+		-- Paint expander
+		if Node:IsFolder() and Node:Count() > 0 then
+			if not Node.Expanded then
+				SkinTex.TreePlus(EX, EY, EW, EH)
+			else
+				SkinTex.TreeMinus(EX, EY, EW, EH)
+			end
+		end
+
+		-- Paint icon
+		local Icon
+		if Node:IsFolder() then
+			Icon = Node:Count() > 0 and ICON_FOLDER_CONTAINS or ICON_FOLDER_EMPTY
+		else
+			Icon = ICON_FILE
+		end
+
+		surface.SetMaterial(Icon)
+		surface.DrawTexturedRect(IX, IY, IW, IH)
+
+		-- Paint text
+		draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+	end
+end
+
+function BROWSER:Think()
+	-- Perform a sort recheck ...
+	self:SortRecheck()
+	-- ... then flush the current state ...
+	self:FlushImmediateState()
+	-- ... then consider the current state.
+	self:ConsiderCurrentState()
+	-- FlushImmediateState fetches information from the VGUI panel and tests against that information.
+	-- ConsiderCurrentState, given the work that FlushImmediateState did, will trigger events and set some 
+	-- VGUI panel data (cursor for example).
+end
+
+function BROWSER:Paint(w, h)
+	DPanel.Paint(self, w, h)
+	-- Renders the immediate state to the screen
+	self:PaintCurrentState()
+end
+
+function BROWSER:AddRootFolder(RootFolderType)
+	RootFolderType = IRootFolder(RootFolderType or error("RootFolderType must contain a IRootFolder implementation")) -- This checks if the type implemented the interface
+	local RealNode = self:AddFolder(RootFolderType:GetFolderName())
+
+	RealNode.Root     = RealNode
+	RealNode.RootImpl = RootFolderType
+
+	RootFolderType:Init(self, RealNode)
+
+	return RealNode
+end
+
 derma.DefineControl("advdupe2_browser_tree", "AD2 File Browser", BROWSER, "Panel")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 local FOLDER = {}
 
@@ -1049,15 +1543,42 @@ function FOLDER:SetSelected(bool)
 	end
 end
 
-function FOLDER:OnMousePressed(code)
-	if (code == 107) then
-		self.Control:DoNodeLeftClick(self)
-	elseif (code == 108) then
-		self.Control:DoNodeRightClick(self)
-	end
-end
+derma.DefineControl("advdupe2_browser_folder", "AD2 Browser Folder node", {}, "Panel")
 
-derma.DefineControl("advdupe2_browser_folder", "AD2 Browser Folder node", FOLDER, "Panel")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 local FILE = {}
 
@@ -1102,6 +1623,39 @@ function FILE:OnMousePressed(code)
 end
 
 derma.DefineControl("advdupe2_browser_file", "AD2 Browser File node", FILE, "Panel")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 local PANEL = {}
 AccessorFunc(PANEL, "m_bBackground", "PaintBackground", FORCE_BOOL)
@@ -1159,7 +1713,6 @@ local function PanelSetSize(self, x, y)
 end
 
 local function UpdateClientFiles()
-
 	local pnlCanvas = AdvDupe2.FileBrowser.Browser.pnlCanvas
 
 	for i = 1, 2 do
@@ -1168,27 +1721,15 @@ local function UpdateClientFiles()
 		end
 	end
 
-	local advdupe2 = pnlCanvas:AddFolder("Advanced Duplicator 2")
-	local advdupe1 = pnlCanvas:AddFolder("Advanced Duplicator 1")
+	pnlCanvas.Expanded = true
 
-	advdupe1:LoadDataFolder("adv_duplicator/")
-	advdupe2:LoadDataFolder("advdupe2/")
+	pnlCanvas:AddRootFolder(AdvDupe1Folder)
+	pnlCanvas:AddRootFolder(AdvDupe2Folder)
 
-	if (pnlCanvas.Folders[2]) then
-		if (#pnlCanvas.Folders[2].Folders == 0 and #pnlCanvas.Folders[2].Files == 0) then
-			pnlCanvas:RemoveNode(pnlCanvas.Folders[2])
-		end
-
-		pnlCanvas.Folders[1]:SetParent(nil)
-		pnlCanvas.Folders[1]:SetParent(pnlCanvas.ChildList)
-		pnlCanvas.Folders[1].ChildList:SetParent(nil)
-		pnlCanvas.Folders[1].ChildList:SetParent(pnlCanvas.ChildList)
-	end
-
+	hook.Run("AdvDupe2_PostMenuFolders", pnlCanvas)
 end
 
 function PANEL:Init()
-
 	AdvDupe2.FileBrowser = self
 	self.Expanded = false
 	self.Expanding = false
