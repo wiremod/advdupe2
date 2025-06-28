@@ -16,9 +16,7 @@ include( "advdupe2/cl_ghost.lua" )
 function AdvDupe2.Notify(msg,typ,dur)
 	surface.PlaySound(typ == 1 and "buttons/button10.wav" or "ambient/water/drip1.wav")
 	GAMEMODE:AddNotify(msg, typ or NOTIFY_GENERIC, dur or 5)
-	//if not game.SinglePlayer() then
-		print("[AdvDupe2Notify]\t"..msg)
-	//end
+	print("[AdvDupe2Notify]\t" .. msg)
 end
 
 net.Receive("AdvDupe2Notify", function()

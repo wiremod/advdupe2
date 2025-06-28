@@ -1,14 +1,14 @@
 AdvDupe2 = AdvDupe2 or {}
 
-function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
+function AdvDupe2.Notify(ply, msg, typ, showsvr, dur)
 	net.Start("AdvDupe2Notify")
 		net.WriteString(msg)
 		net.WriteUInt(typ or 0, 8)
 		net.WriteFloat(dur or 5)
 	net.Send(ply)
 
-	if(showsvr==true)then
-		print("[AdvDupe2Notify]\t"..ply:Nick()..": "..msg)
+	if showsvr == true then
+		print("[AdvDupe2Notify]\t" .. ply:Nick() .. ": " .. msg)
 	end
 end
 
