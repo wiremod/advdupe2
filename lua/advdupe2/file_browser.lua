@@ -737,11 +737,11 @@ function BROWSER:Init()
 	self.SortDirty         = true
 	self.ExpandedNodeArray = {}
 
-	self.LastClick = CurTime()
+	self.LastClick = UserInterfaceTimeFunc()
 end
 
 function BROWSER:DoNodeLeftClick(Node)
-	if self.m_pSelectedItem == Node and CurTime() - self.LastClick <= 0.25 then -- Check for double click
+	if self.m_pSelectedItem == Node and UserInterfaceTimeFunc() - self.LastClick <= MaxTimeToDoubleClick then -- Check for double click
 		if Node:IsFolder() then
 			Node:ToggleExpanded()
 		else
@@ -824,6 +824,7 @@ local function CollapseParentsComplete(node)
 	CollapseParentsComplete(node.ParentNode)
 end
 
+	self.LastClick = UserInterfaceTimeFunc()
 end
 
 local function RenameFileCl(node, name)
