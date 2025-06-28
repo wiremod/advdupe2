@@ -17,6 +17,56 @@ local ADVDUPE2_NODETYPE_FILE   = AdvDupe2.NODETYPE_FILE
 
 local History = {}
 local Narrow = {}
+local Narrow  = {}
+
+-- Just in case this needs to be changed later
+
+local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth, NodeFont
+
+local ICON_FOLDER_EMPTY
+local ICON_FOLDER_CONTAINS
+local ICON_FILE
+
+local FlushConvars
+local UserInterfaceTimeFunc  =   RealTime
+
+-- Convars and flushing convars into local registers.
+-- FlushConvars gets called in BROWSER:Think() before anything else
+do
+	local MaxTimeToDoubleClick_cv   =   CreateClientConVar("advdupe2_menu_maxtimetodoubleclick", "0.25", true, false,
+														"Max time delta between clicks to count as a double click, in seconds.", 0, 1000000)
+	local NodeTall_cv               =   CreateClientConVar("advdupe2_menu_nodetall", "24", true, false,
+														"How tall a single file/directory node is in the file browser, in pixels.", 0, 1000000)
+	local NodePadding_cv            =   CreateClientConVar("advdupe2_menu_nodepadding", "0", true, false,
+														"The height padding inbetween two nodes, in pixels.", 0, 1000000)
+
+	-- The total height of one node, including padding. Use this everywhere
+	local TallOfOneNode_cv          =   function() return NodeTall + NodePadding end
+	-- The width
+	local NodeDepthWidth_cv         =   CreateClientConVar("advdupe2_menu_nodedepthwidth", "12", true, false,
+														"The width of a single node layet, in pixels. For example a file in Advanced Duplicator 2/Folder has a depth of 2, so the pixel width, given the default value, will be (12 * 2) == 24.", 0, 1000000)
+	local NodeFont_cv               =   CreateClientConVar("advdupe2_menu_nodefont", "DermaDefault", true, false,
+														"The surface.CreateFont-registered font the file browser uses.")
+
+	local NodeIconFolderEmpty_cv    =   CreateClientConVar("advdupe2_menu_nodeicon_folderempty", "icon16/folder.png", true, false,
+														"The materials/ localized path for an empty folder.")
+	local NodeIconFolderContains_cv =   CreateClientConVar("advdupe2_menu_nodeicon_folder", "icon16/folder_page.png", true, false,
+														"The materials/ localized path for a folder with contents.")
+	local NodeIconFile_cv           =   CreateClientConVar("advdupe2_menu_nodeicon_file", "icon16/page.png", true, false,
+														"The materials/ localized path for a file.")
+	ICON_FOLDER_EMPTY     = Material(NodeIconFolderEmpty_cv:GetString(), "smooth")
+	ICON_FOLDER_CONTAINS  = Material(NodeIconFolderContains_cv:GetString(), "smooth")
+	ICON_FILE             = Material(NodeIconFile_cv:GetString(), "smooth")
+
+	function FlushConvars()
+		MaxTimeToDoubleClick = MaxTimeToDoubleClick_cv:GetFloat()
+		NodeTall             = NodeTall_cv:GetFloat()
+		NodePadding          = NodePadding_cv:GetFloat()
+		TallOfOneNode        = TallOfOneNode_cv()
+		NodeDepthWidth       = NodeDepthWidth_cv:GetFloat()
+		NodeFont			 = NodeFont_cv:GetString()
+	end
+end
 
 local count = 0
 
@@ -1020,19 +1070,6 @@ local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeA
 		end
 	end
 end
-
--- Just in case this needs to be changed later
--- can't remember if this should be curtime or not...
-local MaxTimeToDoubleClick   =   0.1
-local NodeTall               =   24
-local NodePadding            =   0
-local TallOfOneNode          =   NodeTall + NodePadding
-local NodeDepthWidth         =   12
-local NodeFont               =   "DermaDefault"
-
-local ICON_FOLDER_EMPTY     = Material("icon16/folder.png", "smooth")
-local ICON_FOLDER_CONTAINS  = Material("icon16/folder_page.png", "smooth")
-local ICON_FILE             = Material("icon16/page.png", "smooth")
 
 -- This function collapses the current node state into a single sequential array
 function BROWSER:SortRecheck()
