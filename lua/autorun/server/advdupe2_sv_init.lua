@@ -1,9 +1,4 @@
-AdvDupe2 = {
-	Version = "1.1.0",
-	Revision = 51
-}
-
-AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
+AdvDupe2 = AdvDupe2 or {}
 
 function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 	net.Start("AdvDupe2Notify")

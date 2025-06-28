@@ -1,13 +1,10 @@
-AdvDupe2 = {
-	Version = "1.1.0",
-	Revision = 51,
-	InfoText = {},
-	DataFolder = "advdupe2",
-	FileRenameTryLimit = 256,
-	ProgressBar = {}
-}
+AdvDupe2 = AdvDupe2 or {}
 
-if(!file.Exists(AdvDupe2.DataFolder, "DATA"))then
+AdvDupe2.InfoText = {}
+AdvDupe2.FileRenameTryLimit = 256
+AdvDupe2.ProgressBar = {}
+
+if not file.Exists(AdvDupe2.DataFolder, "DATA") then
 	file.CreateDir(AdvDupe2.DataFolder)
 end
 
