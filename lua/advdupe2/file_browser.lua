@@ -21,6 +21,9 @@ local Narrow  = {}
 -- Just in case this needs to be changed later
 
 local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth, NodeFont
+local ExpanderSize,  IconSize, LeftmostToExpanderPadding, ExpanderToIconPadding, IconToTextPadding
+
+local ExpanderXOffset, IconXOffset, TextXOffset
 
 local ICON_FOLDER_EMPTY
 local ICON_FOLDER_CONTAINS
@@ -47,12 +50,36 @@ do
 	local NodeFont_cv               =   CreateClientConVar("advdupe2_menu_nodefont", "DermaDefault", true, false,
 														"The surface.CreateFont-registered font the file browser uses.")
 
+
+
 	local NodeIconFolderEmpty_cv    =   CreateClientConVar("advdupe2_menu_nodeicon_folderempty", "icon16/folder.png", true, false,
 														"The materials/ localized path for an empty folder.")
 	local NodeIconFolderContains_cv =   CreateClientConVar("advdupe2_menu_nodeicon_folder", "icon16/folder_page.png", true, false,
 														"The materials/ localized path for a folder with contents.")
 	local NodeIconFile_cv           =   CreateClientConVar("advdupe2_menu_nodeicon_file", "icon16/page.png", true, false,
 														"The materials/ localized path for a file.")
+
+	local function CreateNodeTextRepresentation(Label, Offset)
+		return table.concat{
+			Label, "\n\n",
+			"   [+]  [i]  Advanced Duplicator 2", "\n",
+			string.rep(" ", Offset), "^\n",
+			string.rep(" ", Offset), "^--- You are here"
+		}
+	end
+
+	local ExpanderSize_cv              = CreateClientConVar("advdupe2_menu_nodeexpander_size", "16", true, false,
+															CreateNodeTextRepresentation("The size, in pixels, for a node expander button.", 4), 0, 1000000)
+	local IconSize_cv                  = CreateClientConVar("advdupe2_menu_nodeicon_size", "16", true, false,
+															CreateNodeTextRepresentation("The size, in pixels, for a folder or file icon.", 9), 0, 1000000)
+	local LeftmostToExpanderPadding_cv = CreateClientConVar("advdupe2_menu_nodepadding_toexpander", "4", true, false,
+										                    CreateNodeTextRepresentation("Distance, in pixels, between the leftmost side of the node and where the node expander is placed.", 1), 0, 1000000)
+	local ExpanderToIconPadding_cv     = CreateClientConVar("advdupe2_menu_nodepadding_expandertoicon", "4", true, false,
+															CreateNodeTextRepresentation("Distance, in pixels, between the node expander and the node icon.", 7), 0, 1000000)
+	local IconToTextPadding_cv         = CreateClientConVar("advdupe2_menu_nodepadding_icontotext", "6", true, false,
+															CreateNodeTextRepresentation("Distance, in pixels, between the node icon and the node text.", 12), 0, 1000000)
+
+
 	ICON_FOLDER_EMPTY     = Material(NodeIconFolderEmpty_cv:GetString(), "smooth")
 	ICON_FOLDER_CONTAINS  = Material(NodeIconFolderContains_cv:GetString(), "smooth")
 	ICON_FILE             = Material(NodeIconFile_cv:GetString(), "smooth")
@@ -64,7 +91,42 @@ do
 		TallOfOneNode        = TallOfOneNode_cv()
 		NodeDepthWidth       = NodeDepthWidth_cv:GetFloat()
 		NodeFont			 = NodeFont_cv:GetString()
+
+		ExpanderSize              = ExpanderSize_cv:GetFloat()
+		IconSize                  = IconSize_cv:GetFloat()
+		LeftmostToExpanderPadding = LeftmostToExpanderPadding_cv:GetFloat()
+		ExpanderToIconPadding     = ExpanderToIconPadding_cv:GetFloat()
+		IconToTextPadding         = IconToTextPadding_cv:GetFloat()
+
+		ExpanderXOffset = LeftmostToExpanderPadding
+		IconXOffset     = ExpanderXOffset + ExpanderSize + ExpanderToIconPadding
+		TextXOffset     = IconXOffset + IconSize + IconToTextPadding
 	end
+end
+
+local function GetNodeBounds(ScrollOffset, AbsIndex, Width, Depth)
+	return
+			Depth * NodeDepthWidth,
+			(TallOfOneNode * (AbsIndex - 1)) - ScrollOffset,
+			Width - (Depth * NodeDepthWidth),
+			NodeTall
+end
+
+local function GetExpanderBounds(X, Y, W, H, Padding, Depth)
+	Padding = Padding or 0
+	local Size = ExpanderSize + Padding
+
+	return (Depth * NodeDepthWidth) + (X + ExpanderXOffset) - (Padding / 2), ((Y + (H / 2)) - (Size / 2)) + 1, Size, Size
+end
+
+local function GetIconBounds(X, Y, W, H, Padding, Depth)
+	local Size = IconSize + (Padding or 0)
+
+	return (Depth * NodeDepthWidth) + X + IconXOffset, (Y + (H / 2)) - (Size / 2), Size, Size
+end
+
+local function GetTextPosition(X, Y, W, H, Depth)
+	return (Depth * NodeDepthWidth) + X + TextXOffset, Y + (H / 2)
 end
 
 local count = 0
@@ -856,41 +918,6 @@ function BROWSER:GetImmediateState()
 	end
 
 	return ImmediateState
-end
-
-local function GetNodeBounds(ScrollOffset, AbsIndex, Width, Depth)
-	return
-			Depth * NodeDepthWidth,
-			(TallOfOneNode * (AbsIndex - 1)) - ScrollOffset,
-			Width - (Depth * NodeDepthWidth),
-			NodeTall
-end
-
-local ExpanderSize              = 16
-local IconSize                  = 16
-local LeftmostToExpanderPadding = 4
-local ExpanderToIconPadding     = 4
-local IconToTextPadding         = 6
-
-local ExpanderXOffset = LeftmostToExpanderPadding
-local IconXOffset     = ExpanderXOffset + ExpanderSize + ExpanderToIconPadding
-local TextXOffset     = IconXOffset + IconSize + IconToTextPadding
-
-local function GetExpanderBounds(X, Y, W, H, Padding, Depth)
-	Padding = Padding or 0
-	local Size = ExpanderSize + Padding
-
-	return (Depth * NodeDepthWidth) + (X + ExpanderXOffset) - (Padding / 2), ((Y + (H / 2)) - (Size / 2)) + 1, Size, Size
-end
-
-local function GetIconBounds(X, Y, W, H, Padding, Depth)
-	local Size = IconSize + (Padding or 0)
-
-	return (Depth * NodeDepthWidth) + X + IconXOffset, (Y + (H / 2)) - (Size / 2), Size, Size
-end
-
-local function GetTextPosition(X, Y, W, H, Depth)
-	return (Depth * NodeDepthWidth) + X + TextXOffset, Y + (H / 2)
 end
 
 -- This function flushes in the immediate-mode state from C-funcs into Lua-land
