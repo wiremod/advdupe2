@@ -903,7 +903,7 @@ local function Search(node, name)
 end
 
 function BROWSER:DoNodeRightClick(Node)
-	self:SetSelected(node)
+	self:SetSelected(Node)
 
 	local BrowserPanel = self:GetParent():GetParent()
 	BrowserPanel.FileName:KillFocus()
