@@ -10,6 +10,7 @@ end
 
 include( "advdupe2/file_browser.lua" )
 include( "advdupe2/sh_codec.lua" )
+include( "advdupe2/sh_file.lua" )
 include( "advdupe2/cl_file.lua" )
 include( "advdupe2/cl_ghost.lua" )
 
