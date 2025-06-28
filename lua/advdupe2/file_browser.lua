@@ -12,8 +12,12 @@
 local ADVDUPE2_AREA_ADVDUPE2   = AdvDupe2.AREA_ADVDUPE2
 local ADVDUPE2_AREA_PUBLIC     = AdvDupe2.AREA_PUBLIC
 local ADVDUPE2_AREA_ADVDUPE1   = AdvDupe2.AREA_ADVDUPE1
-local ADVDUPE2_NODETYPE_FOLDER = AdvDupe2.NODETYPE_FOLDER
-local ADVDUPE2_NODETYPE_FILE   = AdvDupe2.NODETYPE_FILE
+local NODETYPE_FOLDER          = AdvDupe2.NODETYPE_FOLDER
+local NODETYPE_FILE            = AdvDupe2.NODETYPE_FILE
+
+-- This lets us rip this stuff out if we need to.
+local FileBrowserPrefix          = "AdvDupe2"
+local LowercaseFileBrowserPrefix = string.lower(FileBrowserPrefix)
 
 local History = {}
 local Narrow  = {}
@@ -35,48 +39,48 @@ local UserInterfaceTimeFunc  =   RealTime
 -- Convars and flushing convars into local registers.
 -- FlushConvars gets called in BROWSER:Think() before anything else
 do
-	local MaxTimeToDoubleClick_cv   =   CreateClientConVar("advdupe2_menu_maxtimetodoubleclick", "0.25", true, false,
+	local MaxTimeToDoubleClick_cv   =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_maxtimetodoubleclick", "0.25", true, false,
 														"Max time delta between clicks to count as a double click, in seconds.", 0, 1000000)
-	local NodeTall_cv               =   CreateClientConVar("advdupe2_menu_nodetall", "24", true, false,
+	local NodeTall_cv               =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodetall", "24", true, false,
 														"How tall a single file/directory node is in the file browser, in pixels.", 0, 1000000)
-	local NodePadding_cv            =   CreateClientConVar("advdupe2_menu_nodepadding", "0", true, false,
+	local NodePadding_cv            =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodepadding", "0", true, false,
 														"The height padding inbetween two nodes, in pixels.", 0, 1000000)
 
 	-- The total height of one node, including padding. Use this everywhere
 	local TallOfOneNode_cv          =   function() return NodeTall + NodePadding end
 	-- The width
-	local NodeDepthWidth_cv         =   CreateClientConVar("advdupe2_menu_nodedepthwidth", "12", true, false,
-														"The width of a single node layet, in pixels. For example a file in Advanced Duplicator 2/Folder has a depth of 2, so the pixel width, given the default value, will be (12 * 2) == 24.", 0, 1000000)
-	local NodeFont_cv               =   CreateClientConVar("advdupe2_menu_nodefont", "DermaDefault", true, false,
+	local NodeDepthWidth_cv         =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodedepthwidth", "12", true, false,
+														"The width of a single node layet, in pixels. For example a file in folder1/folder2 has a depth of 2, so the pixel width, given the default value, will be (12 * 2) == 24.", 0, 1000000)
+	local NodeFont_cv               =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodefont", "DermaDefault", true, false,
 														"The surface.CreateFont-registered font the file browser uses.")
 
 
 
-	local NodeIconFolderEmpty_cv    =   CreateClientConVar("advdupe2_menu_nodeicon_folderempty", "icon16/folder.png", true, false,
+	local NodeIconFolderEmpty_cv    =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodeicon_folderempty", "icon16/folder.png", true, false,
 														"The materials/ localized path for an empty folder.")
-	local NodeIconFolderContains_cv =   CreateClientConVar("advdupe2_menu_nodeicon_folder", "icon16/folder_page.png", true, false,
+	local NodeIconFolderContains_cv =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodeicon_folder", "icon16/folder_page.png", true, false,
 														"The materials/ localized path for a folder with contents.")
-	local NodeIconFile_cv           =   CreateClientConVar("advdupe2_menu_nodeicon_file", "icon16/page.png", true, false,
+	local NodeIconFile_cv           =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodeicon_file", "icon16/page.png", true, false,
 														"The materials/ localized path for a file.")
 
 	local function CreateNodeTextRepresentation(Label, Offset)
 		return table.concat{
 			Label, "\n\n",
-			"   [+]  [i]  Advanced Duplicator 2", "\n",
+			"   [+]  [i]  New folder/file", "\n",
 			string.rep(" ", Offset), "^\n",
 			string.rep(" ", Offset), "^--- You are here"
 		}
 	end
 
-	local ExpanderSize_cv              = CreateClientConVar("advdupe2_menu_nodeexpander_size", "16", true, false,
+	local ExpanderSize_cv              = CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodeexpander_size", "16", true, false,
 															CreateNodeTextRepresentation("The size, in pixels, for a node expander button.", 4), 0, 1000000)
-	local IconSize_cv                  = CreateClientConVar("advdupe2_menu_nodeicon_size", "16", true, false,
+	local IconSize_cv                  = CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodeicon_size", "16", true, false,
 															CreateNodeTextRepresentation("The size, in pixels, for a folder or file icon.", 9), 0, 1000000)
-	local LeftmostToExpanderPadding_cv = CreateClientConVar("advdupe2_menu_nodepadding_toexpander", "4", true, false,
+	local LeftmostToExpanderPadding_cv = CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodepadding_toexpander", "4", true, false,
 										                    CreateNodeTextRepresentation("Distance, in pixels, between the leftmost side of the node and where the node expander is placed.", 1), 0, 1000000)
-	local ExpanderToIconPadding_cv     = CreateClientConVar("advdupe2_menu_nodepadding_expandertoicon", "4", true, false,
+	local ExpanderToIconPadding_cv     = CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodepadding_expandertoicon", "4", true, false,
 															CreateNodeTextRepresentation("Distance, in pixels, between the node expander and the node icon.", 7), 0, 1000000)
-	local IconToTextPadding_cv         = CreateClientConVar("advdupe2_menu_nodepadding_icontotext", "6", true, false,
+	local IconToTextPadding_cv         = CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodepadding_icontotext", "6", true, false,
 															CreateNodeTextRepresentation("Distance, in pixels, between the node icon and the node text.", 12), 0, 1000000)
 
 
@@ -194,40 +198,6 @@ local function tableSortNodes(tbl)
     for k, v in ipairs(tbl) do tbl[k] = v[2] end
 end
 
-local BROWSERPNL = {}
-AccessorFunc(BROWSERPNL, "m_bBackground", "PaintBackground", FORCE_BOOL)
-AccessorFunc(BROWSERPNL, "m_bgColor", "BackgroundColor")
-Derma_Hook(BROWSERPNL, "Paint", "Paint", "Panel")
-Derma_Hook(BROWSERPNL, "PerformLayout", "Layout", "Panel")
-
-local setbrowserpnlsize
-local function SetBrowserPnlSize(self, x, y)
-	setbrowserpnlsize(self, x, y)
-	self.pnlCanvas:SetWide(x)
-	self.pnlCanvas.VBar:SetUp(y, self.pnlCanvas:GetTall())
-end
-
-function BROWSERPNL:Init()
-	setbrowserpnlsize = self.SetSize
-	self.SetSize = SetBrowserPnlSize
-	self.pnlCanvas = vgui.Create("advdupe2_browser_tree", self)
-
-	self:SetPaintBackground(true)
-	self:SetPaintBackgroundEnabled(false)
-	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(self:GetSkin().text_bright)
-end
-
-function BROWSERPNL:OnVScroll(iOffset)
-	-- self.pnlCanvas:SetPos(0, iOffset)
-end
-
-derma.DefineControl("advdupe2_browser_panel", "AD2 File Browser", BROWSERPNL, "Panel")
-
-
-
-
-
 
 
 
@@ -304,11 +274,11 @@ do
 	end
 
 	function NODE:IsRoot()   return (self.Root or error("No root?")) == self end
-	function NODE:IsFolder() return self.Type == ADVDUPE2_NODETYPE_FOLDER    end
-	function NODE:IsFile()   return self.Type == ADVDUPE2_NODETYPE_FILE      end
+	function NODE:IsFolder() return self.Type == NODETYPE_FOLDER    end
+	function NODE:IsFile()   return self.Type == NODETYPE_FILE      end
 
 	function NODE:AddFolder(Text)
-		local Node = NODE(ADVDUPE2_NODETYPE_FOLDER, self.Browser)
+		local Node = NODE(NODETYPE_FOLDER, self.Browser)
 		Node.Text = Text
 		Node.ParentNode = self
 		Node.Root = self.Root
@@ -319,7 +289,7 @@ do
 	end
 
 	function NODE:AddFile(Text)
-		local Node = NODE(ADVDUPE2_NODETYPE_FILE, self.Browser)
+		local Node = NODE(NODETYPE_FILE, self.Browser)
 		Node.Text = Text
 		Node.ParentNode = self
 		Node.Root = self.Root
@@ -571,12 +541,12 @@ do
 		return ipairs(self.Sorted)
 	end
 
-	function NODE.InjectIntoBrowser(Browser)
+	function NODE.InjectIntoBrowser(TreeView, Browser)
 		for FuncName, Func in pairs(NODE) do
-			Browser[FuncName] = Func
+			TreeView[FuncName] = Func
 		end
 
-		NODE.Init(Browser, ADVDUPE2_NODETYPE_FOLDER, Browser)
+		NODE.Init(TreeView, NODETYPE_FOLDER, Browser)
 	end
 end
 
@@ -624,7 +594,11 @@ do
 	function USERPROMPT:Init(Browser)
 		self.Browser  = Browser
 		self.Blocking = false
+
+		self.Panel = Browser:Add("DPanel")
 	end
+
+	function USERPROMPT:GetPanel() return self.Panel end
 
 	function USERPROMPT_MT:__call(Browser)
 		if not IsValid(Browser) then return error ("Cannot create a headless node (we need a browser)") end
@@ -633,6 +607,32 @@ do
 		Node:Init(Browser)
 
 		return Node
+	end
+
+	function USERPROMPT:GetBlocking() return self.Blocking or false end
+	function USERPROMPT:SetBlocking(Blocking) self.Blocking = Blocking and true or false end
+
+	function USERPROMPT:Destroy()
+		if IsValid(self.Panel) then
+			self.Panel:Remove()
+		end
+	end
+
+	function USERPROMPT:SetDock(Dock)
+		self.Panel:Dock(Dock)
+		self.Panel:SetSize(self.Browser:GetTall() / 6)
+	end
+
+	function USERPROMPT:ThinkAnimations()
+
+	end
+
+	-- Call this to close and pop later.
+	function USERPROMPT:Close()
+		self.Blocking = false
+		timer.Simple(0.5, function()
+			self.Browser:PopUserPromptByValue(self)
+		end)
 	end
 end
 
@@ -774,8 +774,8 @@ end
 
 -- This is the base browser panel. Most VGUI interactions happen here
 
-local BROWSER = {}
-AccessorFunc(BROWSER, "m_pSelectedItem", "SelectedItem")
+local BROWSERTREE = {}
+AccessorFunc(BROWSERTREE, "m_pSelectedItem", "SelectedItem")
 
 local origSetTall
 local function SetTall(self, val)
@@ -783,29 +783,29 @@ local function SetTall(self, val)
 	self.VBar:SetUp(self:GetParent():GetTall(), self:GetTall())
 end
 
-function BROWSER:Init()
+function BROWSERTREE:Init()
 	self:SetTall(0)
 	origSetTall = self.SetTall
 	self.SetTall = SetTall
 
-	self.VBar = vgui.Create("DVScrollBar", self:GetParent())
+	self.VBar = self:GetParent():Add "DVScrollBar"
 	self.VBar:Dock(RIGHT)
 
 	-- Implement NODE
-	NODE.InjectIntoBrowser(self)
+	NODE.InjectIntoBrowser(self, self:GetParent())
 	self.SortDirty         = true
 	self.ExpandedNodeArray = {}
 
 	self.LastClick = UserInterfaceTimeFunc()
 end
 
-function BROWSER:DoNodeLeftClick(Node)
+function BROWSERTREE:DoNodeLeftClick(Node)
 	if self.m_pSelectedItem == Node and UserInterfaceTimeFunc() - self.LastClick <= MaxTimeToDoubleClick then -- Check for double click
 		if Node:IsFolder() then
 			Node:ToggleExpanded()
 		else
 			local RootImpl = Node.Root.RootImpl
-			RootImpl:UserUpload(self, Node)
+			RootImpl:UserUpload(self.Browser, Node)
 		end
 	else
 		self:SetSelected(Node) -- A node was clicked, select it
@@ -814,7 +814,7 @@ function BROWSER:DoNodeLeftClick(Node)
 	self.LastClick = UserInterfaceTimeFunc()
 end
 
-function BROWSER:DoNodeRightClick(Node)
+function BROWSERTREE:DoNodeRightClick(Node)
 	self:SetSelected(Node)
 
 	local BrowserPanel = self:GetParent():GetParent()
@@ -839,34 +839,18 @@ function BROWSER:DoNodeRightClick(Node)
 		end
 	end
 
-	RootImpl:UserMenu(self, Node, Menu)
+	RootImpl:UserMenu(self.Browser, Node, Menu)
 
 	Menu:SetAlpha(0)
 	Menu:AlphaTo(255, 0.1, 0)
 	Menu:Open()
 end
 
-function BROWSER:OnMouseWheeled(dlta)
+function BROWSERTREE:OnMouseWheeled(dlta)
 	return self.VBar:OnMouseWheeled(dlta)
 end
 
-function BROWSER:Sort(node)
-	tableSortNodes(node.Folders)
-	tableSortNodes(node.Files)
-
-	for i = 1, #node.Folders do
-		node.Folders[i]:SetParent(nil)
-		node.Folders[i]:SetParent(node.ChildList)
-		node.Folders[i].ChildList:SetParent(nil)
-		node.Folders[i].ChildList:SetParent(node.ChildList)
-	end
-	for i = 1, #node.Files do
-		node.Files[i]:SetParent(nil)
-		node.Files[i]:SetParent(node.ChildList)
-	end
-end
-
-function BROWSER:SetSelected(node)
+function BROWSERTREE:SetSelected(node)
 	if self.m_pSelectedItem then
 		self.m_pSelectedItem.Selected = false
 	end
@@ -888,7 +872,7 @@ local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeA
 end
 
 -- This function collapses the current node state into a single sequential array
-function BROWSER:SortRecheck()
+function BROWSERTREE:SortRecheck()
 	if not self.SortDirty then return end
 
 	table.Empty(self.ExpandedNodeArray)
@@ -902,7 +886,7 @@ function BROWSER:SortRecheck()
 end
 
 -- Gets or creates the immediate state table.
-function BROWSER:GetImmediateState()
+function BROWSERTREE:GetImmediateState()
 	local ImmediateState = self.ImmediateState
 	if not ImmediateState then
 		ImmediateState = {}
@@ -923,9 +907,7 @@ end
 -- This function flushes in the immediate-mode state from C-funcs into Lua-land
 -- and performs calculations that may be needed later on in a cached state
 -- The immediate state object is unique to the browser
-function BROWSER:FlushImmediateState()
-	self:SetMouseInputEnabled(self:ThinkAboutUserPrompts())
-
+function BROWSERTREE:FlushImmediateState()
 	local ImmediateState = self:GetImmediateState()
 
 	local Scroll         = IsValid(self.VBar) and (self.VBar:GetScroll()) or 0
@@ -1033,88 +1015,8 @@ function BROWSER:FlushImmediateState()
 	end
 end
 
-function BROWSER:GetUserPromptStack()
-	local UserPrompts = self.UserPrompts
-
-	if not UserPrompts then
-		UserPrompts = {}
-		self.UserPrompts = UserPrompts
-	end
-
-	return UserPrompts
-end
-
--- Returns the index you should use for the stack.
-function BROWSER:IncrementUserPromptStackPtr()
-	local StackPtr = self.UserPromptStackPtr
-	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
-
-	StackPtr = StackPtr + 1
-	self.UserPromptStackPtr = StackPtr
-
-	return StackPtr
-end
-
--- Returns the index to remove from the stack.
-function BROWSER:DecrementUserPromptStackPtr()
-	local StackPtr = self.UserPromptStackPtr
-	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
-
-	StackPtr = StackPtr - 1
-	if StackPtr < 0 then ErrorNoHaltWithStack("AdvDupe2: User prompt stack underflow???") StackPtr = 0 end
-	self.UserPromptStackPtr = StackPtr
-
-	return StackPtr + 1 -- +1 because we want to remove what was previously at that stack pointer
-end
-
-function BROWSER:GetUserPromptStackLength()
-	return self.UserPromptStackPtr or 0
-end
-
-function BROWSER:PushUserPrompt()
-	local UserPrompts  = self:GetUserPromptStack()
-	local StackPointer = self:IncrementUserPromptStackPtr()
-	local Prompt = USERPROMPT()
-	UserPrompts[StackPointer] = Prompt
-	return Prompt
-end
-
-function BROWSER:PopUserPrompt()
-	local UserPrompts  = self:GetUserPromptStack()
-	local StackPointer = self:DecrementUserPromptStackPtr()
-	local Prompt       = UserPrompts[StackPointer]
-	UserPrompts[StackPointer] = nil
-	return Prompt
-end
-
--- Sets input enabled on user prompt stack and determines if user input should be enabled/disabled on the main browser
--- Returns true if input is enabled
-function BROWSER:ThinkAboutUserPrompts()
-	local UserPrompts  = self:GetUserPromptStack()
-	local Blocking     = false
-
-	local LastBlocking = false
-
-	for _, Prompt in ipairs(UserPrompts) do
-		Prompt:SetMouseInputEnabled(true)
-		if LastBlocking then
-			LastBlocking:SetMouseInputEnabled(false)
-		end
-
-		Blocking = Blocking or Prompt.Blocking
-
-		if Prompt.Blocking then
-			LastBlocking = Prompt
-		else
-			LastBlocking = false
-		end
-	end
-
-	return not Blocking
-end
-
 -- This function considers the current immediate state and triggers events/sets cursor
-function BROWSER:ConsiderCurrentState()
+function BROWSERTREE:ConsiderCurrentState()
 	local ImmediateState = self.ImmediateState
 
 	-- Clicked for node logic, released for expander logic
@@ -1147,7 +1049,7 @@ function BROWSER:ConsiderCurrentState()
 end
 
 -- This function paints the current immediate state to the DPanel.
-function BROWSER:PaintCurrentState(PanelWidth, PanelHeight)
+function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 	local Skin           = self:GetSkin()
 	local SkinTex        = Skin.tex
 
@@ -1201,15 +1103,17 @@ function BROWSER:PaintCurrentState(PanelWidth, PanelHeight)
 		draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 	end
 
-	ImmediateState.BlockingAlpha = math.Clamp((ImmediateState.BlockingAlpha or 0) + (ImmediateState.DeltaTime * 2 * (ImmediateState.CanInput and -1 or 1)), 0, 1)
+	ImmediateState.BlockingAlpha = math.Clamp((ImmediateState.BlockingAlpha or 0) + (ImmediateState.DeltaTime * 4 * (ImmediateState.CanInput and -1 or 1)), 0, 1)
 	if ImmediateState.BlockingAlpha > 0 then
-		local Alpha = math.ease.InOutQuad(ImmediateState.BlockingAlpha) * 255
+		local Alpha = math.ease.InOutQuad(ImmediateState.BlockingAlpha) * 125
+		local OldClipping = DisableClipping(true)
 		surface.SetDrawColor(0, 0, 0, Alpha)
-		surface.DrawRect(0, 0, PanelWidth, PanelHeight)
+		surface.DrawRect(0, 0, self.Browser:GetSize())
+		DisableClipping(OldClipping)
 	end
 end
 
-function BROWSER:Think()
+function BROWSERTREE:Think()
 	FlushConvars()
 	-- Perform a sort recheck ...
 	self:SortRecheck()
@@ -1222,15 +1126,71 @@ function BROWSER:Think()
 	-- VGUI panel data (cursor for example).
 end
 
-function BROWSER:Paint(w, h)
+function BROWSERTREE:Paint(w, h)
 	DPanel.Paint(self, w, h)
 	-- Renders the immediate state to the screen
 	self:PaintCurrentState(w, h)
 end
 
+derma.DefineControl(LowercaseFileBrowserPrefix .. "_browser_tree", FileBrowserPrefix .. " File Browser", BROWSERTREE, "Panel")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local BROWSER = {}
+AccessorFunc(BROWSER, "m_bBackground", "PaintBackground", FORCE_BOOL)
+AccessorFunc(BROWSER, "m_bgColor", "BackgroundColor")
+Derma_Hook(BROWSER, "Paint", "Paint", "Panel")
+Derma_Hook(BROWSER, "PerformLayout", "Layout", "Panel")
+
+local setbrowserpnlsize
+local function SetBrowserPnlSize(self, x, y)
+	setbrowserpnlsize(self, x, y)
+	self.TreeView:SetWide(x)
+	self.TreeView.VBar:SetUp(y, self.TreeView:GetTall())
+end
+
+function BROWSER:Init()
+	setbrowserpnlsize = self.SetSize
+	self.SetSize = SetBrowserPnlSize
+	self.TreeView = vgui.Create(LowercaseFileBrowserPrefix .. "_browser_tree", self)
+
+	self:SetPaintBackground(true)
+	self:SetPaintBackgroundEnabled(false)
+	self:SetPaintBorderEnabled(false)
+	self:SetBackgroundColor(self:GetSkin().text_bright)
+end
+
+-- Public facing API
 function BROWSER:AddRootFolder(RootFolderType)
 	RootFolderType = IRootFolder(RootFolderType or error("RootFolderType must contain a IRootFolder implementation")) -- This checks if the type implemented the interface
-	local RealNode = self:AddFolder(RootFolderType:GetFolderName())
+	local RealNode = self.TreeView:AddFolder(RootFolderType:GetFolderName())
 
 	RealNode.Root     = RealNode
 	RealNode.RootImpl = RootFolderType
@@ -1240,299 +1200,110 @@ function BROWSER:AddRootFolder(RootFolderType)
 	return RealNode
 end
 
-derma.DefineControl("advdupe2_browser_tree", "AD2 File Browser", BROWSER, "Panel")
+function BROWSER:StartSave(Node)
+	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local FOLDER = {}
-
-AccessorFunc(FOLDER, "m_bBackground", "PaintBackground", FORCE_BOOL)
-AccessorFunc(FOLDER, "m_bgColor", "BackgroundColor")
-
-Derma_Hook(FOLDER, "Paint", "Paint", "Panel")
-
-function FOLDER:Init()
-	self:SetMouseInputEnabled(true)
-
-	self:SetTall(20)
-	self:SetPaintBackground(true)
-	self:SetPaintBackgroundEnabled(false)
-	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(Color(0, 0, 0, 0))
-
-	self.Icon = vgui.Create("DImage", self)
-	self.Icon:SetImage("icon16/folder.png")
-
-	self.Icon:SizeToContents()
-
-	self.Label = vgui.Create("DLabel", self)
-	self.Label:SetDark(true)
-
-	self.m_bExpanded = false
-	self.Nodes = 0
-	self.ChildrenExpanded = {}
-
-	self:Dock(TOP)
-
-	self.ChildList = vgui.Create("Panel", self:GetParent())
-	self.ChildList:Dock(TOP)
-	self.ChildList:SetTall(0)
+	local Prompt = self:PushUserPrompt()
+	Prompt:SetBlocking(true)
+	Prompt:SetDock(BOTTOM)
 end
 
-local function ExpandNode(self)
-	self:GetParent():SetExpanded()
-end
+function BROWSER:GetUserPromptStack()
+	local UserPrompts = self.UserPrompts
 
-function FOLDER:AddFolder(text)
-	if (self.Nodes == 0) then
-		self.Expander = vgui.Create("DExpandButton", self)
-		self.Expander.DoClick = ExpandNode
-		self.Expander:SetPos(self.Offset, 2)
+	if not UserPrompts then
+		UserPrompts = {}
+		self.UserPrompts = UserPrompts
 	end
 
-	local node = vgui.Create("advdupe2_browser_folder", self.ChildList)
-	node.Control = self.Control
-
-	node.Offset = self.Offset + 20
-
-	node.Icon:SetPos(18 + node.Offset, 1)
-	node.Label:SetPos(44 + node.Offset, 0)
-	node.Label:SetText(text)
-	node.Label:SizeToContents()
-	node.Label:SetDark(true)
-	node.ParentNode = self
-	node.IsFolder = true
-	node.Folders = {}
-	node.Files = {}
-
-	self.Nodes = self.Nodes + 1
-	self.Folders[#self.Folders + 1] = node
-
-	if (self.m_bExpanded) then
-		self.Control:Extend(self)
-	end
-
-	return node
+	return UserPrompts
 end
 
-function FOLDER:Clear()
-	for _, node in ipairs(self.Folders) do
-		node:Remove() end
-	for _, node in ipairs(self.Files) do
-		node:Remove() end
-	self.Nodes = 0
+-- Returns the index you should use for the stack.
+function BROWSER:IncrementUserPromptStackPtr()
+	local StackPtr = self.UserPromptStackPtr
+	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
+
+	StackPtr = StackPtr + 1
+	self.UserPromptStackPtr = StackPtr
+
+	return StackPtr
 end
 
-function FOLDER:AddFile(text)
-	if (self.Nodes == 0) then
-		self.Expander = vgui.Create("DExpandButton", self)
-		self.Expander.DoClick = ExpandNode
-		self.Expander:SetPos(self.Offset, 2)
-	end
+-- Returns the index to remove from the stack.
+function BROWSER:DecrementUserPromptStackPtr()
+	local StackPtr = self.UserPromptStackPtr
+	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
 
-	local node = vgui.Create("advdupe2_browser_file", self.ChildList)
-	node.Control = self.Control
-	node.Offset = self.Offset + 20
-	node.Icon:SetPos(18 + node.Offset, 1)
-	node.Label:SetPos(44 + node.Offset, 0)
-	node.Label:SetText(text)
-	node.Label:SizeToContents()
-	node.Label:SetDark(true)
-	node.ParentNode = self
+	StackPtr = StackPtr - 1
+	if StackPtr < 0 then ErrorNoHaltWithStack("AdvDupe2: User prompt stack underflow???") StackPtr = 0 end
+	self.UserPromptStackPtr = StackPtr
 
-	self.Nodes = self.Nodes + 1
-	table.insert(self.Files, node)
-
-	if (self.m_bExpanded) then
-		self.Control:Extend(self)
-	end
-
-	return node
+	return StackPtr + 1 -- +1 because we want to remove what was previously at that stack pointer
 end
 
-
-function FOLDER:LoadDataFolder(folderPath)
-	self:Clear()
-	self.LoadingPath = folderPath
-	self.LoadingFiles, self.LoadingDirectories = file.Find(folderPath .. "*", "DATA", "nameasc")
-	if self.LoadingFiles == nil then self.LoadingFiles = {} end
-	if self.LoadingDirectories == nil then self.LoadingDirectories = {} end
-	self.FileI, self.DirI = 1, 1
-	self.LoadingFirst = true
+function BROWSER:GetUserPromptStackLength()
+	return self.UserPromptStackPtr or 0
 end
 
-function FOLDER:Think()
-	if self.LoadingPath then
-		local path, files, dirs, fileI, dirI = self.LoadingPath, self.LoadingFiles, self.LoadingDirectories, self.FileI, self.DirI
-		if dirI > #dirs then
-			if fileI > #files then
-				self.LoadingPath = nil
-				return
-			else
-				local fileName = files[fileI]
-				local fileNode = self:AddFile(string.StripExtension(fileName))
-				fileI = fileI + 1
-			end
+function BROWSER:PushUserPrompt()
+	local UserPrompts  = self:GetUserPromptStack()
+	local StackPointer = self:IncrementUserPromptStackPtr()
+	local Prompt = USERPROMPT(self)
+	UserPrompts[StackPointer] = Prompt
+	return Prompt
+end
+
+function BROWSER:PopUserPrompt()
+	local UserPrompts  = self:GetUserPromptStack()
+	local StackPointer = self:DecrementUserPromptStackPtr()
+	local Prompt       = UserPrompts[StackPointer]
+	UserPrompts[StackPointer] = nil
+	return Prompt
+end
+
+function BROWSER:PopUserPromptByValue(UserPrompt)
+	table.RemoveByValue(self:GetUserPromptStack(), UserPrompt)
+end
+
+function BROWSER:ClearAllUserPrompts()
+	table.Empty(self:GetUserPromptStack())
+	self.UserPromptStackPtr = 0
+end
+-- Sets input enabled on user prompt stack and determines if user input should be enabled/disabled on the main browser
+-- Returns true if input is enabled
+
+function BROWSER:ThinkAboutUserPrompts()
+	local UserPrompts  = self:GetUserPromptStack()
+	local Blocking     = false
+
+	local LastBlockingPanel = false
+
+	for K, Prompt in ipairs(UserPrompts) do
+		local Panel = Prompt:GetPanel()
+		Panel:SetMouseInputEnabled(true)
+
+		if LastBlockingPanel then
+			LastBlockingPanel:SetMouseInputEnabled(false)
+		end
+
+		Blocking = Blocking or Prompt.Blocking
+
+		if Prompt.Blocking then
+			LastBlockingPanel = Panel
 		else
-			local dirName = dirs[dirI]
-			local dirNode = self:AddFolder(dirName)
-			dirNode:LoadDataFolder(path .. dirName .. "/")
-			dirI = dirI + 1
-		end
-
-		self.FileI = fileI
-		self.DirI = dirI
-
-		if self.LoadingFirst then
-			if self.LoadingPath == "advdupe2/" then self:SetExpanded(true) end
-			self.LoadingFirst = false
+			LastBlockingPanel = false
 		end
 	end
+
+	return not Blocking
 end
 
-
-function FOLDER:SetExpanded(bool)
-	if (not self.Expander) then return end
-	if (bool == nil) then
-		self.m_bExpanded = not self.m_bExpanded
-	else
-		self.m_bExpanded = bool
-	end
-	self.Expander:SetExpanded(self.m_bExpanded)
-	if (self.m_bExpanded) then
-		self.Control:Expand(self)
-	else
-		self.Control:Collapse(self)
-	end
+function BROWSER:Think()
+	self.TreeView:SetMouseInputEnabled(self:ThinkAboutUserPrompts())
 end
 
-function FOLDER:SetSelected(bool)
-	if (bool) then
-		self:SetBackgroundColor(self:GetSkin().bg_color_bright)
-	else
-		self:SetBackgroundColor(Color(0, 0, 0, 0))
-	end
-end
-
-derma.DefineControl("advdupe2_browser_folder", "AD2 Browser Folder node", {}, "Panel")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local FILE = {}
-
-AccessorFunc(FILE, "m_bBackground", "PaintBackground", FORCE_BOOL)
-AccessorFunc(FILE, "m_bgColor", "BackgroundColor")
-Derma_Hook(FILE, "Paint", "Paint", "Panel")
-
-function FILE:Init()
-	self:SetMouseInputEnabled(true)
-
-	self:SetTall(20)
-	self:SetPaintBackground(true)
-	self:SetPaintBackgroundEnabled(false)
-	self:SetPaintBorderEnabled(false)
-	self:SetBackgroundColor(Color(0, 0, 0, 0))
-
-	self.Icon = vgui.Create("DImage", self)
-	self.Icon:SetImage("icon16/page.png")
-
-	self.Icon:SizeToContents()
-
-	self.Label = vgui.Create("DLabel", self)
-	self.Label:SetDark(true)
-
-	self:Dock(TOP)
-end
-
-function FILE:SetSelected(bool)
-	if (bool) then
-		self:SetBackgroundColor(self:GetSkin().bg_color_bright)
-	else
-		self:SetBackgroundColor(Color(0, 0, 0, 0))
-	end
-end
-
-function FILE:OnMousePressed(code)
-	if (code == 107) then
-		self.Control:DoNodeLeftClick(self)
-	elseif (code == 108) then
-		self.Control:DoNodeRightClick(self)
-	end
-end
-
-derma.DefineControl("advdupe2_browser_file", "AD2 Browser File node", FILE, "Panel")
-
-
-
-
-
-
+derma.DefineControl(FileBrowserPrefix .. "_browser_panel", "AD2 File Browser", BROWSER, "Panel")
 
 
 
@@ -1616,21 +1387,14 @@ local function PanelSetSize(self, x, y)
 
 end
 
-local function UpdateClientFiles()
-	local pnlCanvas = AdvDupe2.FileBrowser.Browser.pnlCanvas
+local function UpdateClientFiles(Browser)
+	Browser.TreeView:Clear()
+	Browser.TreeView:Expand()
 
-	for i = 1, 2 do
-		if (pnlCanvas.Folders[1]) then
-			pnlCanvas:RemoveNode(pnlCanvas.Folders[1])
-		end
-	end
+	Browser:AddRootFolder(AdvDupe1Folder)
+	Browser:AddRootFolder(AdvDupe2Folder)
 
-	pnlCanvas.Expanded = true
-
-	pnlCanvas:AddRootFolder(AdvDupe1Folder)
-	pnlCanvas:AddRootFolder(AdvDupe2Folder)
-
-	hook.Run("AdvDupe2_PostMenuFolders", pnlCanvas)
+	hook.Run(FileBrowserPrefix .. "_PostMenuFolders", Browser)
 end
 
 function PANEL:Init()
@@ -1646,15 +1410,15 @@ function PANEL:Init()
 	self:SetPaintBackgroundEnabled(false)
 	self:SetBackgroundColor(self:GetSkin().bg_color_bright)
 
-	self.Browser = vgui.Create("advdupe2_browser_panel", self)
-	UpdateClientFiles()
-	self.Refresh = vgui.Create("DImageButton", self)
+	self.Browser = self:Add(LowercaseFileBrowserPrefix .. "_browser_panel")
+	UpdateClientFiles(self.Browser)
+	self.Refresh = self:Add "DImageButton"
 	self.Refresh:SetMaterial("icon16/arrow_refresh.png")
 	self.Refresh:SizeToContents()
 	self.Refresh:SetTooltip("Refresh Files")
-	self.Refresh.DoClick = function(button) UpdateClientFiles() end
+	self.Refresh.DoClick = function(button) UpdateClientFiles(self.Browser) end
 
-	self.Help = vgui.Create("DImageButton", self)
+	self.Help = self:Add "DImageButton"
 	self.Help:SetMaterial("icon16/help.png")
 	self.Help:SizeToContents()
 	self.Help:SetTooltip("Help Section")
@@ -1673,7 +1437,7 @@ function PANEL:Init()
 		Menu:Open()
 	end
 
-	self.Submit = vgui.Create("DImageButton", self)
+	self.Submit = self:Add "DImageButton"
 	self.Submit:SetMaterial("icon16/page_save.png")
 	self.Submit:SizeToContents()
 	self.Submit:SetTooltip("Confirm Action")
@@ -1682,7 +1446,7 @@ function PANEL:Init()
 		AdvDupe2.FileBrowser:Slide(false)
 	end
 
-	self.Cancel = vgui.Create("DImageButton", self)
+	self.Cancel = self:Add "DImageButton"
 	self.Cancel:SetMaterial("icon16/cross.png")
 	self.Cancel:SizeToContents()
 	self.Cancel:SetTooltip("Cancel Action")
@@ -1691,7 +1455,7 @@ function PANEL:Init()
 		AdvDupe2.FileBrowser:Slide(false)
 	end
 
-	self.FileName = vgui.Create("DTextEntry", self)
+	self.FileName = self:Add "DTextEntry"
 	self.FileName:SetAllowNonAsciiCharacters(true)
 	self.FileName:SetText("File_Name...")
 	self.FileName.Last = 0
@@ -1816,7 +1580,7 @@ function PANEL:Init()
 		end
 	end
 
-	self.Desc = vgui.Create("DTextEntry", self)
+	self.Desc = self:Add "DTextEntry"
 	self.Desc.OnEnter = self.Submit.DoClick
 	self.Desc:SetText("Description...")
 	self.Desc.OnMousePressed = function()
@@ -1826,7 +1590,7 @@ function PANEL:Init()
 		end
 	end
 
-	self.Info = vgui.Create("DLabel", self)
+	self.Info = self:Add "DLabel"
 	self.Info:SetVisible(false)
 
 end
@@ -1869,24 +1633,4 @@ function PANEL:GetNodePath(node)
 	return GetNodePath(node)
 end
 
-if (game.SinglePlayer()) then
-	net.Receive("AdvDupe2_AddFile", function()
-		local asvNode = AdvDupe2.FileBrowser.AutoSaveNode
-		local actNode = AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode
-		if (net.ReadBool()) then
-			if (IsValid(asvNode)) then
-				local name = net.ReadString()
-				for iD = 1, #asvNode.Files do
-					if (name == asvNode.Files[i]) then return end
-				end
-				asvNode:AddFile(name)
-				asvNode.Control:Sort(asvNode)
-			end
-		else
-			actNode:AddFile(net.ReadString())
-			actNode.Control:Sort(actNode)
-		end
-	end)
-end
-
-vgui.Register("advdupe2_browser", PANEL, "Panel")
+vgui.Register(LowercaseFileBrowserPrefix .. "_browser", PANEL, "Panel")

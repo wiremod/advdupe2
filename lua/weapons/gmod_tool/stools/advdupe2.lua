@@ -1074,7 +1074,7 @@ if(CLIENT) then
 		refresh.DoClick = function() CPanel:Clear() BuildCPanel(CPanel) end
 		CPanel:AddItem(refresh)
 
-		local FileBrowser = vgui.Create("advdupe2_browser")
+		local FileBrowser = vgui.Create("advdupe2_browser", CPanel)
 		CPanel:AddItem(FileBrowser)
 		FileBrowser:SetSize(CPanel:GetWide(), 405)
 		AdvDupe2.FileBrowser = FileBrowser
