@@ -784,12 +784,6 @@ function BROWSER:DoNodeRightClick(Node)
 	Menu:Open()
 end
 
-local function CollapseParents(node, val)
-	if (not node) then return end
-	node.ChildList:SetTall(node.ChildList:GetTall() - val)
-	CollapseParents(node.ParentNode, val)
-end
-
 function BROWSER:OnMouseWheeled(dlta)
 	return self.VBar:OnMouseWheeled(dlta)
 end
@@ -818,57 +812,6 @@ function BROWSER:SetSelected(node)
 	if node then
 		node.Selected = true
 	end
-end
-
-local function ExpandParents(node, val)
-	if (not node) then return end
-	node.ChildList:SetTall(node.ChildList:GetTall() + val)
-	ExpandParents(node.ParentNode, val)
-end
-
-function BROWSER:Expand(node)
-	node.ChildList:SetTall(node.Nodes * 20)
-	table.insert(node.ParentNode.ChildrenExpanded, node)
-	ExpandParents(node.ParentNode, node.Nodes * 20)
-end
-
-local function ExtendParents(node)
-	if (not node) then return end
-	node.ChildList:SetTall(node.ChildList:GetTall() + 20)
-	ExtendParents(node.ParentNode)
-end
-
-function BROWSER:Extend(node)
-	node.ChildList:SetTall(node.ChildList:GetTall() + 20)
-	ExtendParents(node.ParentNode)
-end
-
-function BROWSER:Collapse(node)
-	CollapseParents(node.ParentNode, node.ChildList:GetTall())
-
-	for i = 1, #node.ParentNode.ChildrenExpanded do
-		if (node.ParentNode.ChildrenExpanded[i] == node) then
-			table.remove(node.ParentNode.ChildrenExpanded, i)
-			break
-		end
-	end
-	CollapseChildren(node)
-end
-
-function BROWSER:RenameNode(name)
-	self.ActionNode.Label:SetText(name)
-	self.ActionNode.Label:SizeToContents()
-	self:Sort(self.ActionNode.ParentNode)
-end
-
-function BROWSER:MoveNode(name)
-	self:RemoveNode(self.ActionNode)
-	self.ActionNode2:AddFile(name)
-	self:Sort(self.ActionNode2)
-end
-
-function BROWSER:DeleteNode()
-	self:RemoveNode(self.ActionNode)
 end
 
 local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeArray, Depth)
