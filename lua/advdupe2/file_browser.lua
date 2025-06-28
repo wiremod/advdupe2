@@ -16,7 +16,6 @@ local ADVDUPE2_NODETYPE_FOLDER = AdvDupe2.NODETYPE_FOLDER
 local ADVDUPE2_NODETYPE_FILE   = AdvDupe2.NODETYPE_FILE
 
 local History = {}
-local Narrow = {}
 local Narrow  = {}
 
 -- Just in case this needs to be changed later
@@ -219,350 +218,361 @@ derma.DefineControl("advdupe2_browser_panel", "AD2 File Browser", BROWSERPNL, "P
 
 local NODE_MT = {}
 local NODE    = setmetatable({}, NODE_MT)
+do
+	function NODE:Init(Type, Browser)
+		self.Type      = Type
+		self.Browser   = Browser
+		self.Files     = {}
+		self.Folders   = {}
+		self.Sorted    = {}
+		self.Expanded  = false
+		self.Selected  = false
 
-function NODE:Init(Type, Browser)
-	self.Type      = Type
-	self.Browser   = Browser
-	self.Files     = {}
-	self.Folders   = {}
-	self.Sorted    = {}
-	self.Expanded  = false
-	self.Selected  = false
-
-	self:MarkSortDirty()
-end
-
-function NODE_MT:__call(Type, Browser)
-	if Type == nil then return error("Cannot create typeless node") end
-	if not IsValid(Browser) then return error ("Cannot create a headless node (we need a browser)") end
-
-	local Node   = setmetatable({}, {__index = NODE})
-	Node:Init(Type, Browser)
-
-	return Node
-end
-
-function NODE:IsRoot()   return (self.Root or error("No root?")) == self end
-function NODE:IsFolder() return self.Type == ADVDUPE2_NODETYPE_FOLDER    end
-function NODE:IsFile()   return self.Type == ADVDUPE2_NODETYPE_FILE      end
-
-function NODE:AddFolder(Text)
-	local Node = NODE(ADVDUPE2_NODETYPE_FOLDER, self.Browser)
-	Node.Text = Text
-	Node.ParentNode = self
-	Node.Root = self.Root
-	if self.Expanded then self:MarkSortDirty() end
-	self.Folders[#self.Folders + 1] = Node
-
-	return Node
-end
-
-function NODE:AddFile(Text)
-	local Node = NODE(ADVDUPE2_NODETYPE_FILE, self.Browser)
-	Node.Text = Text
-	Node.ParentNode = self
-	Node.Root = self.Root
-	if self.Expanded then self:MarkSortDirty() end
-	self.Files[#self.Files + 1] = Node
-
-	return Node
-end
-
-function NODE:Count() return #self.Files + #self.Folders end
-
-function NODE:MarkSortDirty()
-	self.SortDirty         = true
-	self.Browser.SortDirty = true
-end
-
-function NODE:Clear()
-	table.Empty(self.Files)
-	table.Empty(self.Folders)
-	table.Empty(self.Sorted)
-	self:MarkSortDirty()
-end
-
-function NODE:RemoveNode(Node)
-	if Node:IsFolder() then
-		table.RemoveByValue(self.Folders, Node)
-	else
-		table.RemoveByValue(self.Files, Node)
-	end
-
-	self:MarkSortDirty()
-end
-
-function NODE:Remove()
-	local ParentNode = self.ParentNode
-
-	if ParentNode then
-		ParentNode:RemoveNode(self)
-	else
 		self:MarkSortDirty()
 	end
-end
 
-function NODE:SetExpanded(Expanded)
-	if Expanded == self.Expanded then return end
+	function NODE_MT:__call(Type, Browser)
+		if Type == nil then return error("Cannot create typeless node") end
+		if not IsValid(Browser) then return error ("Cannot create a headless node (we need a browser)") end
 
-	self.Expanded = Expanded
-	self:MarkSortDirty()
-end
+		local Node   = setmetatable({}, {__index = NODE})
+		Node:Init(Type, Browser)
 
-function NODE:Expand()         self:SetExpanded(true)              end
-function NODE:Collapse()       self:SetExpanded(false)             end
-function NODE:ToggleExpanded() self:SetExpanded(not self.Expanded) end
-
-local function SetupDataFile(Node, Path, Name)
-	Node.Text = Name
-	Node.Path = Path
-end
-
-local function SetupDataSubfolder(Node, Path, Name)
-	Node.Text = Name
-	Node.Path = Path
-end
-
--- Expects a directory path ending in a forward slash.
-local LoadDataFolderInternal
-function LoadDataFolderInternal(Node, Path)
-	local Files, Directories = file.Find(Path .. "*", "DATA", "nameasc")
-	if not Files or not Directories then return end
-
-	for _, File in ipairs(Files) do
-		local FilePath = Path .. File
-		local FileNode = Node:AddFile(FilePath)
-		SetupDataFile(FileNode, FilePath, File)
+		return Node
 	end
 
-	for _, Directory in ipairs(Directories) do
-		local DirectoryPath = Path .. Directory
-		local DirectoryNode = Node:AddFolder(DirectoryPath)
-		SetupDataSubfolder(DirectoryNode, DirectoryPath, Directory)
-		DirectoryNode.FirstObserved = function(DirNode) -- note FirstObserved will be destroyed after first call
-			LoadDataFolderInternal(DirNode, DirectoryPath .. "/")
+	function NODE:IsRoot()   return (self.Root or error("No root?")) == self end
+	function NODE:IsFolder() return self.Type == ADVDUPE2_NODETYPE_FOLDER    end
+	function NODE:IsFile()   return self.Type == ADVDUPE2_NODETYPE_FILE      end
+
+	function NODE:AddFolder(Text)
+		local Node = NODE(ADVDUPE2_NODETYPE_FOLDER, self.Browser)
+		Node.Text = Text
+		Node.ParentNode = self
+		Node.Root = self.Root
+		if self.Expanded then self:MarkSortDirty() end
+		self.Folders[#self.Folders + 1] = Node
+
+		return Node
+	end
+
+	function NODE:AddFile(Text)
+		local Node = NODE(ADVDUPE2_NODETYPE_FILE, self.Browser)
+		Node.Text = Text
+		Node.ParentNode = self
+		Node.Root = self.Root
+		if self.Expanded then self:MarkSortDirty() end
+		self.Files[#self.Files + 1] = Node
+
+		return Node
+	end
+
+	function NODE:Count() return #self.Files + #self.Folders end
+
+	function NODE:MarkSortDirty()
+		self.SortDirty         = true
+		self.Browser.SortDirty = true
+	end
+
+	function NODE:Clear()
+		table.Empty(self.Files)
+		table.Empty(self.Folders)
+		table.Empty(self.Sorted)
+		self:MarkSortDirty()
+	end
+
+	function NODE:RemoveNode(Node)
+		if Node:IsFolder() then
+			table.RemoveByValue(self.Folders, Node)
+		else
+			table.RemoveByValue(self.Files, Node)
+		end
+
+		self:MarkSortDirty()
+	end
+
+	function NODE:Remove()
+		local ParentNode = self.ParentNode
+
+		if ParentNode then
+			ParentNode:RemoveNode(self)
+		else
+			self:MarkSortDirty()
 		end
 	end
-end
 
+	function NODE:SetExpanded(Expanded)
+		if Expanded == self.Expanded then return end
 
-function NODE:LoadDataFolder(Path)
-	self:Clear()
-	LoadDataFolderInternal(self, Path)
-end
+		self.Expanded = Expanded
+		self:MarkSortDirty()
+	end
 
--- Defines GetNumericalFilename
--- May need optimization and refactoring later - especially for non-ASCII strings...
--- This handles things very similarly to how Windows does in terms of sorting, but also adds sorting by month
--- May also be a good idea in the future to add a setting for the above functionality.
-local GetNumericalFilename
-do
-	local isDigit = {
-		['0'] = 0,
-		['1'] = 1,
-		['2'] = 2,
-		['3'] = 3,
-		['4'] = 4,
-		['5'] = 5,
-		['6'] = 6,
-		['7'] = 7,
-		['8'] = 8,
-		['9'] = 9
-	}
+	function NODE:Expand()         self:SetExpanded(true)              end
+	function NODE:Collapse()       self:SetExpanded(false)             end
+	function NODE:ToggleExpanded() self:SetExpanded(not self.Expanded) end
 
-	-- faster than string.byte calls
-	local char2byte = {}
-	for i = 1, 255 do char2byte[string.char(i)] = string.byte(string.lower(string.char(i))) end
-	char2byte['_'] = 2000
+	local function SetupDataFile(Node, Path, Name)
+		Node.Text = Name
+		Node.Path = Path
+	end
 
-	local buildMonth = {}
-	for k, v in ipairs{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"} do
-		local tbl = buildMonth
-		for i = 1, #v do
-			local c = v[i]
-			if i == #v then
-				tbl[c] = k
-			else
-				if not tbl[c] then
-					tbl[c] = {}
-				end
+	local function SetupDataSubfolder(Node, Path, Name)
+		Node.Text = Name
+		Node.Path = Path
+	end
 
-				tbl = tbl[c]
+	-- Expects a directory path ending in a forward slash.
+	local LoadDataFolderInternal
+	function LoadDataFolderInternal(Node, Path)
+		local Files, Directories = file.Find(Path .. "*", "DATA", "nameasc")
+		if not Files or not Directories then return end
+
+		for _, File in ipairs(Files) do
+			local FilePath = Path .. File
+			local FileNode = Node:AddFile(FilePath)
+			SetupDataFile(FileNode, FilePath, File)
+		end
+
+		for _, Directory in ipairs(Directories) do
+			local DirectoryPath = Path .. Directory
+			local DirectoryNode = Node:AddFolder(DirectoryPath)
+			SetupDataSubfolder(DirectoryNode, DirectoryPath, Directory)
+			DirectoryNode.FirstObserved = function(DirNode) -- note FirstObserved will be destroyed after first call
+				LoadDataFolderInternal(DirNode, DirectoryPath .. "/")
 			end
 		end
 	end
 
-	local numericalStore = {}
-	function GetNumericalFilename(name)
-		if numericalStore[name] then return numericalStore[name] end
 
-		local ret = {}
-		local digit = nil
-		local monthTester = buildMonth
-		local monthStoreJustInCase = {}
+	function NODE:LoadDataFolder(Path)
+		self:Clear()
+		LoadDataFolderInternal(self, Path)
+	end
 
-		for i = 1, #name do
-			local c = name[i]
-			local cIsDigit = isDigit[c]
-			if cIsDigit then
-				if digit == nil then
-					digit = 0
+	-- Defines GetNumericalFilename
+	-- May need optimization and refactoring later - especially for non-ASCII strings...
+	-- This handles things very similarly to how Windows does in terms of sorting, but also adds sorting by month
+	-- May also be a good idea in the future to add a setting for the above functionality.
+	local GetNumericalFilename
+	do
+		local isDigit = {
+			['0'] = 0,
+			['1'] = 1,
+			['2'] = 2,
+			['3'] = 3,
+			['4'] = 4,
+			['5'] = 5,
+			['6'] = 6,
+			['7'] = 7,
+			['8'] = 8,
+			['9'] = 9
+		}
+
+		-- faster than string.byte calls
+		local char2byte = {}
+		for i = 1, 255 do char2byte[string.char(i)] = string.byte(string.lower(string.char(i))) end
+		char2byte['_'] = 2000
+
+		local buildMonth = {}
+		for k, v in ipairs{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"} do
+			local tbl = buildMonth
+			for i = 1, #v do
+				local c = v[i]
+				if i == #v then
+					tbl[c] = k
+				else
+					if not tbl[c] then
+						tbl[c] = {}
+					end
+
+					tbl = tbl[c]
 				end
-				digit = (digit * 10) + cIsDigit
-			else
-				if monthTester[c] then
-					monthTester = monthTester[c]
-					monthStoreJustInCase[#monthStoreJustInCase + 1] = char2byte[c]
-					if type(monthTester) == "number" then
-						local nextC = name[i + 1]
-						local nextIfine = nextC == ' ' or nextC == '_' or nextC == '-'
-						if i == #name or nextIfine then
-							ret[#ret + 1] = monthTester
-							monthStoreJustInCase = {}
-							monthTester = buildMonth
-							if nextIfine then
-								i = i + 1
+			end
+		end
+
+		local numericalStore = {}
+		function GetNumericalFilename(name)
+			if numericalStore[name] then return numericalStore[name] end
+
+			local ret = {}
+			local digit = nil
+			local monthTester = buildMonth
+			local monthStoreJustInCase = {}
+
+			for i = 1, #name do
+				local c = name[i]
+				local cIsDigit = isDigit[c]
+				if cIsDigit then
+					if digit == nil then
+						digit = 0
+					end
+					digit = (digit * 10) + cIsDigit
+				else
+					if monthTester[c] then
+						monthTester = monthTester[c]
+						monthStoreJustInCase[#monthStoreJustInCase + 1] = char2byte[c]
+						if type(monthTester) == "number" then
+							local nextC = name[i + 1]
+							local nextIfine = nextC == ' ' or nextC == '_' or nextC == '-'
+							if i == #name or nextIfine then
+								ret[#ret + 1] = monthTester
+								monthStoreJustInCase = {}
+								monthTester = buildMonth
+								if nextIfine then
+									i = i + 1
+								end
+							else
+								for i = 1, #monthStoreJustInCase do
+									ret[#ret + 1] = monthStoreJustInCase[i]
+								end
+								monthStoreJustInCase = {}
+								monthTester = buildMonth
 							end
-						else
+						end
+					elseif digit ~= nil then
+						ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+						digit = nil
+					else
+						if monthTester ~= buildMonth then
 							for i = 1, #monthStoreJustInCase do
 								ret[#ret + 1] = monthStoreJustInCase[i]
 							end
 							monthStoreJustInCase = {}
 							monthTester = buildMonth
 						end
+						ret[#ret + 1] = char2byte[c]
 					end
-				elseif digit ~= nil then
-					ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
-					digit = nil
-				else
-					if monthTester ~= buildMonth then
-						for i = 1, #monthStoreJustInCase do
-							ret[#ret + 1] = monthStoreJustInCase[i]
-						end
-						monthStoreJustInCase = {}
-						monthTester = buildMonth
-					end
-					ret[#ret + 1] = char2byte[c]
 				end
 			end
-		end
 
-		if digit ~= nil then
-			ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+			if digit ~= nil then
+				ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+			end
+			if monthTester ~= buildMonth then
+				for i = 1, #monthStoreJustInCase do
+					ret[#ret + 1] = monthStoreJustInCase[i]
+				end
+			end
+
+			numericalStore[name] = ret -- store so this doesnt have to be calculated multiple times for no reason
+			return ret
 		end
-		if monthTester ~= buildMonth then
-			for i = 1, #monthStoreJustInCase do
-				ret[#ret + 1] = monthStoreJustInCase[i]
+	end
+
+	function NODE.SortFunction(A, B)
+		local IsFileA, IsFileB = A:IsFile(), B:IsFile()
+
+		if not IsFileA and IsFileB then return true end
+		if IsFileA and not IsFileB then return false end
+
+		local NameA, NameB = GetNumericalFilename(string.StripExtension(A.Text)), GetNumericalFilename(string.StripExtension(B.Text))
+
+		for I = 1, math.max(#NameA, #NameB) do
+			local AC, BC = NameA[I], NameB[I]
+
+			if AC == nil then return true end
+			if BC == nil then return false end
+
+			if AC ~= BC then
+				return AC < BC
+			end
+		end
+	end
+
+	function NODE:PerformResort()
+		if not self.SortDirty then return end
+
+		local Sorted   = self.Sorted
+		local Files    = self.Files
+		local Folders  = self.Folders
+		table.Empty(Sorted)
+
+		for I = 1, #Files   do Sorted[#Sorted + 1] = Files[I]   end
+		for I = 1, #Folders do Sorted[#Sorted + 1] = Folders[I] end
+
+		-- For each node, check FirstObserved and call if it exists
+		for _, Node in ipairs(Sorted) do
+			if Node.FirstObserved then
+				Node:FirstObserved()
+				Node.FirstObserved = nil
 			end
 		end
 
-		numericalStore[name] = ret -- store so this doesnt have to be calculated multiple times for no reason
-		return ret
+		-- Perform actual resort
+		table.sort(Sorted, self.SortFunction)
 	end
-end
 
-function NODE.SortFunction(A, B)
-	local IsFileA, IsFileB = A:IsFile(), B:IsFile()
+	-- Returns an enumerator<Node>
+	function NODE:GetSortedChildNodes()
+		self:PerformResort()
+		return ipairs(self.Sorted)
+	end
 
-	if not IsFileA and IsFileB then return true end
-	if IsFileA and not IsFileB then return false end
-
-	local NameA, NameB = GetNumericalFilename(string.StripExtension(A.Text)), GetNumericalFilename(string.StripExtension(B.Text))
-
-	for I = 1, math.max(#NameA, #NameB) do
-		local AC, BC = NameA[I], NameB[I]
-
-		if AC == nil then return true end
-		if BC == nil then return false end
-
-		if AC ~= BC then
-			return AC < BC
+	function NODE.InjectIntoBrowser(Browser)
+		for FuncName, Func in pairs(NODE) do
+			Browser[FuncName] = Func
 		end
+
+		NODE.Init(Browser, ADVDUPE2_NODETYPE_FOLDER, Browser)
 	end
 end
-
-function NODE:PerformResort()
-	if not self.SortDirty then return end
-
-	local Sorted   = self.Sorted
-	local Files    = self.Files
-	local Folders  = self.Folders
-	table.Empty(Sorted)
-
-	for I = 1, #Files   do Sorted[#Sorted + 1] = Files[I]   end
-	for I = 1, #Folders do Sorted[#Sorted + 1] = Folders[I] end
-
-	-- For each node, check FirstObserved and call if it exists
-	for _, Node in ipairs(Sorted) do
-		if Node.FirstObserved then
-			Node:FirstObserved()
-			Node.FirstObserved = nil
-		end
-	end
-
-	-- Perform actual resort
-	table.sort(Sorted, self.SortFunction)
-end
-
--- Returns an enumerator<Node>
-function NODE:GetSortedChildNodes()
-	self:PerformResort()
-	return ipairs(self.Sorted)
-end
-
-function NODE.InjectIntoBrowser(Browser)
-	for FuncName, Func in pairs(NODE) do
-		Browser[FuncName] = Func
-	end
-
-	NODE.Init(Browser, ADVDUPE2_NODETYPE_FOLDER, Browser)
-end
-
-
-
 
 -- This interface describes the logic behind a root folder (like AdvDupe1 or AdvDupe2).
 
 local IRootFolder_MT = {}
 local IRootFolder    = setmetatable({}, IRootFolder_MT)
-AdvDupe2.IRootFolder = IRootFolder -- If other addons want to post-verify their IRootFolder implementations like we do
 
--- todo; debug.getinfo and determine argument counts to further sanity check?
-IRootFolder.Init             = function(Impl, Browser, Node) end
-IRootFolder.GetFolderName    = function(Impl) end
--- These define node operations
--- These are RAW operations, as in the underlying Browser might do some prompts first
--- But for example, calling IRootFolder:UserDelete() is expected to actually delete the node
--- (and the browser will create the prompt)
-IRootFolder.UserUpload       = function(Impl, Browser, Node) end
-IRootFolder.UserPreview      = function(Impl, Browser, Node) end
-IRootFolder.UserSave         = function(Impl, Browser, Node, Filename, Description) end
-IRootFolder.UserRename       = function(Impl, Browser, Node, RenameTo) end
-IRootFolder.UserMenu         = function(Impl, Browser, Node, Menu) end
-IRootFolder.UserDelete       = function(Impl, Browser, Node) end
+do
+	AdvDupe2.IRootFolder = IRootFolder -- If other addons want to post-verify their IRootFolder implementations like we do
 
--- Ensures the implementor implemented the interface correctly
--- if they didn't throw non-halting errors since it might be an optional method
-function IRootFolder_MT:__call(RootFolderType)
-	for FuncName, _ in pairs(IRootFolder) do
-		if not RootFolderType[FuncName] then
-			ErrorNoHaltWithStack("AdvDupe2: IRootFolder implementation failed to implement " .. FuncName .. ", this may not work as intended...")
+	-- todo; debug.getinfo and determine argument counts to further sanity check?
+	IRootFolder.Init             = function(Impl, Browser, Node) end
+	IRootFolder.GetFolderName    = function(Impl) end
+	-- These define node operations
+	-- These are RAW operations, as in the underlying Browser might do some prompts first
+	-- But for example, calling IRootFolder:UserDelete() is expected to actually delete the node
+	-- (and the browser will create the prompt)
+	IRootFolder.UserUpload       = function(Impl, Browser, Node) end
+	IRootFolder.UserPreview      = function(Impl, Browser, Node) end
+	IRootFolder.UserSave         = function(Impl, Browser, Node, Filename, Description) end
+	IRootFolder.UserRename       = function(Impl, Browser, Node, RenameTo) end
+	IRootFolder.UserMenu         = function(Impl, Browser, Node, Menu) end
+	IRootFolder.UserDelete       = function(Impl, Browser, Node) end
+
+	-- Ensures the implementor implemented the interface correctly
+	-- if they didn't throw non-halting errors since it might be an optional method
+	function IRootFolder_MT:__call(RootFolderType)
+		for FuncName, _ in pairs(IRootFolder) do
+			if not RootFolderType[FuncName] then
+				ErrorNoHaltWithStack("AdvDupe2: IRootFolder implementation failed to implement " .. FuncName .. ", this may not work as intended...")
+			end
 		end
-	end
 
-	return RootFolderType
+		return RootFolderType
+	end
 end
 
+-- This is a user prompt class, see Browser's UserPrompt stack methods
 
+local USERPROMPT_MT = {}
+local USERPROMPT    = setmetatable({}, USERPROMPT_MT)
 
+do
+	function USERPROMPT:Init(Browser)
+		self.Browser  = Browser
+		self.Blocking = false
+	end
 
+	function USERPROMPT_MT:__call(Browser)
+		if not IsValid(Browser) then return error ("Cannot create a headless node (we need a browser)") end
 
+		local Node   = setmetatable({}, {__index = USERPROMPT})
+		Node:Init(Browser)
 
-
-
-
-
-
+		return Node
+	end
+end
 
 -- This turns a data-folder path name into something AdvDupe2.UploadFile can tolerate
 local function GetNodeDataPath(Node)
@@ -612,7 +622,7 @@ local function OpenPreview(Node, Area)
 end
 
 
-
+-- These are the builtin IRootFolder implementations.
 local AdvDupe1Folder, AdvDupe2Folder
 
 do
@@ -679,17 +689,17 @@ do
 
 	function AdvDupe2Folder:UserMenu(Browser, Node, Menu)
 		if Node:IsFile() then
-			Menu:AddOption("Open", function() self:UserUpload(Browser, Node) end, "icon16/page_go.png")
+			Menu:AddOption("Open",    function() self:UserUpload(Browser, Node)  end, "icon16/page_go.png")
 			Menu:AddOption("Preview", function() self:UserPreview(Browser, Node) end, "icon16/information.png")
 			Menu:AddSpacer()
-			Menu:AddOption("Rename...", nil, "icon16/textfield_rename.png")
-			Menu:AddOption("Move...", nil, "icon16/arrow_right.png")
-			Menu:AddOption("Delete", nil, "icon16/bin_closed.png")
+			Menu:AddOption("Rename...", function() Browser:StartRename(Node) end, "icon16/textfield_rename.png")
+			Menu:AddOption("Move...",   function() Browser:StartMove(Node)   end, "icon16/arrow_right.png")
+			Menu:AddOption("Delete",    function() Browser:StartDelete(Node) end, "icon16/bin_closed.png")
 		else
-			Menu:AddOption("Save", nil, "icon16/disk.png")
-			Menu:AddOption("New Folder", nil, "icon16/folder_add.png")
+			Menu:AddOption("Save",       function() Browser:StartSave(Node)   end, "icon16/disk.png")
+			Menu:AddOption("New Folder", function() Browser:StartFolder(Node) end, "icon16/folder_add.png")
 			Menu:AddSpacer()
-			Menu:AddOption("Search", nil, "icon16/magnifier.png")
+			Menu:AddOption("Search",     function() Browser:StartSearch(Node) end, "icon16/magnifier.png")
 		end
 	end
 
@@ -700,20 +710,7 @@ do
 	IRootFolder(AdvDupe2Folder) -- validation
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- This is the base browser panel. Most VGUI interactions happen here
 
 local BROWSER = {}
 AccessorFunc(BROWSER, "m_pSelectedItem", "SelectedItem")
@@ -751,78 +748,6 @@ function BROWSER:DoNodeLeftClick(Node)
 	else
 		self:SetSelected(Node) -- A node was clicked, select it
 	end
-
-	self.LastClick = CurTime()
-end
-
-local function AddNewFolder(node)
-	local Controller = node.Control:GetParent():GetParent()
-	local name = Controller.FileName:GetValue()
-	local char = string.match(name, "[^%w_ ]")
-	if char then
-		AdvDupe2.Notify("Name contains invalid character ("..char..")!", NOTIFY_ERROR)
-		Controller.FileName:SelectAllOnFocus(true)
-		Controller.FileName:OnGetFocus()
-		Controller.FileName:RequestFocus()
-		return
-	end
-	if (name == "" or name == "Folder_Name...") then
-		AdvDupe2.Notify("Name is blank!", NOTIFY_ERROR)
-		Controller.FileName:SelectAllOnFocus(true)
-		Controller.FileName:OnGetFocus()
-		Controller.FileName:RequestFocus()
-		return
-	end
-	local path, area = GetNodePath(node)
-	if (area == 0) then
-		path = AdvDupe2.DataFolder .. "/" .. path .. "/" .. name
-	elseif (area == 1) then
-		path = AdvDupe2.DataFolder .. "/=Public=/" .. path .. "/" .. name
-	else
-		path = "adv_duplicator/" .. path .. "/" .. name
-	end
-
-	if (file.IsDir(path, "DATA")) then
-		AdvDupe2.Notify("Folder name already exists.", NOTIFY_ERROR)
-		Controller.FileName:SelectAllOnFocus(true)
-		Controller.FileName:OnGetFocus()
-		Controller.FileName:RequestFocus()
-		return
-	end
-	file.CreateDir(path)
-
-	local Folder = node:AddFolder(name)
-	node.Control:Sort(node)
-
-	if (not node.m_bExpanded) then
-		node:SetExpanded()
-	end
-
-	node.Control:SetSelected(Folder)
-	if (Controller.Expanded) then
-		AdvDupe2.FileBrowser:Slide(false)
-	end
-end
-
-local function CollapseChildren(node)
-	node.m_bExpanded = false
-	if (node.Expander) then
-		node.Expander:SetExpanded(false)
-		node.ChildList:SetTall(0)
-		for i = 1, #node.ChildrenExpanded do
-			CollapseChildren(node.ChildrenExpanded[i])
-		end
-		node.ChildrenExpanded = {}
-	end
-end
-
-local function CollapseParentsComplete(node)
-	if (not node.ParentNode.ParentNode) then
-		node:SetExpanded(false)
-		return
-	end
-	CollapseParentsComplete(node.ParentNode)
-end
 
 	self.LastClick = UserInterfaceTimeFunc()
 end
@@ -1144,16 +1069,25 @@ end
 -- and performs calculations that may be needed later on in a cached state
 -- The immediate state object is unique to the browser
 function BROWSER:FlushImmediateState()
+	self:SetMouseInputEnabled(self:ThinkAboutUserPrompts())
+
 	local ImmediateState = self:GetImmediateState()
 
 	local Scroll         = IsValid(self.VBar) and (self.VBar:GetScroll()) or 0
 
 	local MouseX, MouseY = self:CursorPos()
+	local CanInput       = self:IsMouseInputEnabled()
+	local Now            = UserInterfaceTimeFunc()
+
+	ImmediateState.LastTime     = ImmediateState.Time or Now
+	ImmediateState.Time         = Now
+	ImmediateState.DeltaTime    = ImmediateState.Time - ImmediateState.LastTime
 
 	ImmediateState.Mouse.Cursor = "arrow"
 	ImmediateState.LastScroll   = ImmediateState.Scroll or Scroll
 	ImmediateState.Scroll       = Scroll
 	ImmediateState.DeltaScroll  = Scroll - ImmediateState.LastScroll
+	ImmediateState.CanInput     = CanInput
 
 	ImmediateState.Width        = self:GetWide()
 	ImmediateState.Height       = self:GetTall()
@@ -1166,7 +1100,7 @@ function BROWSER:FlushImmediateState()
 		end
 
 		Mouse.LastDown = Mouse.Down or false
-		Mouse.Down     = input.IsMouseDown(I)
+		Mouse.Down     = input.IsMouseDown(I) and CanInput
 		Mouse.Clicked  = Mouse.Down and not Mouse.LastDown
 		Mouse.Released = not Mouse.Down and Mouse.LastDown
 
@@ -1205,7 +1139,7 @@ function BROWSER:FlushImmediateState()
 	-- Vis testing parameters
 	ImmediateState.TotalVisibleNodes = (ImmediateState.EndIndex - ImmediateState.StartIndex)
 	-- We test against this array subspan for mouse events
-	local BreakInputTesting = false
+	local BreakInputTesting = not CanInput -- if can't input, never even do input testing
 	for AbsIndex = ImmediateState.StartIndex, ImmediateState.EndIndex do
 		local Node = self.ExpandedNodeArray[AbsIndex]
 
@@ -1244,6 +1178,86 @@ function BROWSER:FlushImmediateState()
 	end
 end
 
+function BROWSER:GetUserPromptStack()
+	local UserPrompts = self.UserPrompts
+
+	if not UserPrompts then
+		UserPrompts = {}
+		self.UserPrompts = UserPrompts
+	end
+
+	return UserPrompts
+end
+
+-- Returns the index you should use for the stack.
+function BROWSER:IncrementUserPromptStackPtr()
+	local StackPtr = self.UserPromptStackPtr
+	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
+
+	StackPtr = StackPtr + 1
+	self.UserPromptStackPtr = StackPtr
+
+	return StackPtr
+end
+
+-- Returns the index to remove from the stack.
+function BROWSER:DecrementUserPromptStackPtr()
+	local StackPtr = self.UserPromptStackPtr
+	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
+
+	StackPtr = StackPtr - 1
+	if StackPtr < 0 then ErrorNoHaltWithStack("AdvDupe2: User prompt stack underflow???") StackPtr = 0 end
+	self.UserPromptStackPtr = StackPtr
+
+	return StackPtr + 1 -- +1 because we want to remove what was previously at that stack pointer
+end
+
+function BROWSER:GetUserPromptStackLength()
+	return self.UserPromptStackPtr or 0
+end
+
+function BROWSER:PushUserPrompt()
+	local UserPrompts  = self:GetUserPromptStack()
+	local StackPointer = self:IncrementUserPromptStackPtr()
+	local Prompt = USERPROMPT()
+	UserPrompts[StackPointer] = Prompt
+	return Prompt
+end
+
+function BROWSER:PopUserPrompt()
+	local UserPrompts  = self:GetUserPromptStack()
+	local StackPointer = self:DecrementUserPromptStackPtr()
+	local Prompt       = UserPrompts[StackPointer]
+	UserPrompts[StackPointer] = nil
+	return Prompt
+end
+
+-- Sets input enabled on user prompt stack and determines if user input should be enabled/disabled on the main browser
+-- Returns true if input is enabled
+function BROWSER:ThinkAboutUserPrompts()
+	local UserPrompts  = self:GetUserPromptStack()
+	local Blocking     = false
+
+	local LastBlocking = false
+
+	for _, Prompt in ipairs(UserPrompts) do
+		Prompt:SetMouseInputEnabled(true)
+		if LastBlocking then
+			LastBlocking:SetMouseInputEnabled(false)
+		end
+
+		Blocking = Blocking or Prompt.Blocking
+
+		if Prompt.Blocking then
+			LastBlocking = Prompt
+		else
+			LastBlocking = false
+		end
+	end
+
+	return not Blocking
+end
+
 -- This function considers the current immediate state and triggers events/sets cursor
 function BROWSER:ConsiderCurrentState()
 	local ImmediateState = self.ImmediateState
@@ -1278,7 +1292,7 @@ function BROWSER:ConsiderCurrentState()
 end
 
 -- This function paints the current immediate state to the DPanel.
-function BROWSER:PaintCurrentState()
+function BROWSER:PaintCurrentState(PanelWidth, PanelHeight)
 	local Skin           = self:GetSkin()
 	local SkinTex        = Skin.tex
 
@@ -1331,9 +1345,17 @@ function BROWSER:PaintCurrentState()
 		-- Paint text
 		draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 	end
+
+	ImmediateState.BlockingAlpha = math.Clamp((ImmediateState.BlockingAlpha or 0) + (ImmediateState.DeltaTime * 2 * (ImmediateState.CanInput and -1 or 1)), 0, 1)
+	if ImmediateState.BlockingAlpha > 0 then
+		local Alpha = math.ease.InOutQuad(ImmediateState.BlockingAlpha) * 255
+		surface.SetDrawColor(0, 0, 0, Alpha)
+		surface.DrawRect(0, 0, PanelWidth, PanelHeight)
+	end
 end
 
 function BROWSER:Think()
+	FlushConvars()
 	-- Perform a sort recheck ...
 	self:SortRecheck()
 	-- ... then flush the current state ...
@@ -1348,7 +1370,7 @@ end
 function BROWSER:Paint(w, h)
 	DPanel.Paint(self, w, h)
 	-- Renders the immediate state to the screen
-	self:PaintCurrentState()
+	self:PaintCurrentState(w, h)
 end
 
 function BROWSER:AddRootFolder(RootFolderType)
