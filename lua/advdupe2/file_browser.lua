@@ -1670,7 +1670,7 @@ AccessorFunc(PANEL, "m_bgColor", "BackgroundColor")
 Derma_Hook(PANEL, "Paint", "Paint", "Panel")
 Derma_Hook(PANEL, "PerformLayout", "Layout", "Panel")
 
-function PANEL:PerformLayout()
+function PANEL:PerformLayout(w, h)
 	if (self:GetWide() == self.LastX) then return end
 	local x = self:GetWide()
 
@@ -1679,11 +1679,24 @@ function PANEL:PerformLayout()
 	end
 
 	self.Browser:SetWide(x)
-	local x2, y2 = self.Browser:GetPos()
-	local BtnX = x - self.Help:GetWide() - 5
-	self.Help:SetPos(BtnX, 3)
-	BtnX = BtnX - self.Refresh:GetWide() - 5
-	self.Refresh:SetPos(BtnX, 3)
+
+	local BtnX
+	local BtnPad = 6
+	if self.LeftsideButtons then
+		BtnX = BtnPad
+		for _, Button in ipairs(self.LeftsideButtons) do
+			Button:SetPos(BtnX, 4)
+			BtnX = BtnX + Button:GetWide() + BtnPad
+		end
+	end
+
+	if self.RightsideButtons then
+		BtnX = w
+		for _, Button in ipairs(self.RightsideButtons) do
+			BtnX = BtnX - Button:GetWide() - BtnPad
+			Button:SetPos(BtnX, 4)
+		end
+	end
 
 	self.LastX = x
 end
@@ -1693,12 +1706,12 @@ local function PanelSetSize(self, x, y)
 	if (not self.LaidOut) then
 		pnlorigsetsize(self, x, y)
 
-		self.Browser:SetSize(x, y - 20)
-		self.Browser:SetPos(0, 20)
+		self.Browser:SetSize(x, y - 24)
+		self.Browser:SetPos(0, 24)
 
 		if (self.Search) then
-			self.Search:SetSize(x, y - 20)
-			self.Search:SetPos(0, 20)
+			self.Search:SetSize(x, y - 24)
+			self.Search:SetPos(0, 24)
 		end
 
 		self.LaidOut = true
@@ -1718,6 +1731,32 @@ local function UpdateClientFiles(Browser)
 	hook.Run(FileBrowserPrefix .. "_PostMenuFolders", Browser)
 end
 
+function PANEL:AddLeftsideButton(Icon, Tooltip, Action)
+	self.LeftsideButtons = self.LeftsideButtons or {}
+
+	local Button = self:Add "DImageButton"
+	Button:SetMaterial("icon16/" .. Icon .. ".png")
+	Button:SizeToContents()
+	Button:SetTooltip(Tooltip)
+
+	self.LeftsideButtons[#self.LeftsideButtons + 1] = Button
+
+	return Button
+end
+
+function PANEL:AddRightsideButton(Icon, Tooltip, Action)
+	self.RightsideButtons = self.RightsideButtons or {}
+
+	local Button = self:Add "DImageButton"
+	Button:SetMaterial("icon16/" .. Icon .. ".png")
+	Button:SizeToContents()
+	Button:SetTooltip(Tooltip)
+
+	self.RightsideButtons[#self.RightsideButtons + 1] = Button
+
+	return Button
+end
+
 function PANEL:Init()
 	AdvDupe2.FileBrowser = self
 	self.Expanded = false
@@ -1733,17 +1772,9 @@ function PANEL:Init()
 
 	self.Browser = self:Add(LowercaseFileBrowserPrefix .. "_browser_panel")
 	UpdateClientFiles(self.Browser)
-	self.Refresh = self:Add "DImageButton"
-	self.Refresh:SetMaterial("icon16/arrow_refresh.png")
-	self.Refresh:SizeToContents()
-	self.Refresh:SetTooltip("Refresh Files")
-	self.Refresh.DoClick = function(button) UpdateClientFiles(self.Browser) end
 
-	self.Help = self:Add "DImageButton"
-	self.Help:SetMaterial("icon16/help.png")
-	self.Help:SizeToContents()
-	self.Help:SetTooltip("Help Section")
-	self.Help.DoClick = function(btn)
+	self.Refresh = self:AddRightsideButton("arrow_refresh", "Refresh Files", function(button) UpdateClientFiles(self.Browser) end)
+	self.Help    = self:AddRightsideButton("help", "Help Section", function(btn)
 		local Menu = DermaMenu()
 		Menu:AddOption("Bug Reporting", function()
 			gui.OpenURL("https://github.com/wiremod/advdupe2/issues")
@@ -1756,7 +1787,8 @@ function PANEL:Init()
 				"https://github.com/wiremod/advdupe2/wiki/Server-settings")
 		end)
 		Menu:Open()
-	end
+	end)
+	self.Settings = self:AddRightsideButton("cog", "Settings", function() self:OpenSettings() end)
 end
 
 function PANEL:Slide(expand)
