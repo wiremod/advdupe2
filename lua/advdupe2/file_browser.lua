@@ -15,6 +15,10 @@ local ADVDUPE2_AREA_ADVDUPE1   = AdvDupe2.AREA_ADVDUPE1
 -- These are internal really, so i don't think these need to be exposed?
 local NODETYPE_FOLDER          = 1
 local NODETYPE_FILE            = 2
+-- I may implement more of these later, just defining them now
+local VIEWTYPE_TREE  = 0
+local VIEWTYPE_LIST  = 1
+local VIEWTYPE_TILES = 2
 
 -- This lets us rip this stuff out if we need to.
 local FileBrowserPrefix          = "AdvDupe2"
@@ -40,7 +44,7 @@ local UserInterfaceTimeFunc  =   RealTime
 do
 	TimeToOpenPrompts_cv   =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_promptopentime", "0.2", true, false,
 														"The time it takes for a user-prompt to fully open, in seconds.", 0, 1000000)
-	TimeToClosePrompts_cv  =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_promptclose_time", "0.3", true, false,
+	TimeToClosePrompts_cv  =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_promptclosetime", "0.3", true, false,
 														"The time it takes for a user-prompt to fully close, in seconds.", 0, 1000000)
 
 
@@ -89,9 +93,16 @@ do
 															CreateNodeTextRepresentation("Distance, in pixels, between the node icon and the node text.", 12), 0, 1000000)
 
 
-	ICON_FOLDER_EMPTY     = Material(NodeIconFolderEmpty_cv:GetString(), "smooth")
-	ICON_FOLDER_CONTAINS  = Material(NodeIconFolderContains_cv:GetString(), "smooth")
-	ICON_FILE             = Material(NodeIconFile_cv:GetString(), "smooth")
+	local IconFolderEmpty, IconFolderContains, IconFile
+
+	local function UpdateMaterial(Mat, Old, CV)
+		local New = CV:GetString()
+		if Old ~= New then
+			Mat = Material(New, "smooth")
+		end
+
+		return Mat
+	end
 
 	function FlushConvars()
 		MaxTimeToDoubleClick = MaxTimeToDoubleClick_cv:GetFloat()
@@ -110,6 +121,10 @@ do
 		ExpanderXOffset = LeftmostToExpanderPadding
 		IconXOffset     = ExpanderXOffset + ExpanderSize + ExpanderToIconPadding
 		TextXOffset     = IconXOffset + IconSize + IconToTextPadding
+
+		ICON_FOLDER_EMPTY    = UpdateMaterial(ICON_FOLDER_EMPTY,    IconFolderEmpty,    NodeIconFolderEmpty_cv)
+		ICON_FOLDER_CONTAINS = UpdateMaterial(ICON_FOLDER_CONTAINS, IconFolderContains, NodeIconFolderContains_cv)
+		ICON_FILE            = UpdateMaterial(ICON_FILE,            IconFile,           NodeIconFile_cv)
 	end
 end
 
@@ -539,7 +554,14 @@ do
 		self.StartOpen  = UserInterfaceTimeFunc()
 		self.WillOpenAt = self.StartOpen + TimeToOpenPrompts_cv:GetFloat()
 
-		self.Panel = Browser:Add("DPanel")
+		self.Panel = Browser:Add("DScrollPanel")
+		local PanelColor = Color(255, 255, 255, 213)
+		self.Panel.Paint = function(self, w, h)
+			local Skin = self:GetSkin()
+			local SkinTex = Skin.tex
+
+			SkinTex.Panels.Normal(0, 0, w, h, PanelColor)
+		end
 	end
 
 	function USERPROMPT:GetPanel() return self.Panel end
@@ -607,7 +629,7 @@ do
 		local SizeC
 
 		local ContentWide, ContentTall = self.Panel:ChildrenSize()
-
+		ContentTall = math.Min(ContentTall, self.Browser:GetTall() - 32)
 		local Dock = self.Dock
 		if not Dock then error("No dock??") end
 
@@ -1220,9 +1242,17 @@ function BROWSER:Init()
 	self:SetPaintBackgroundEnabled(false)
 	self:SetPaintBorderEnabled(false)
 	self:SetBackgroundColor(self:GetSkin().text_bright)
+
+	self:SetViewType(VIEWTYPE_TREE)
 end
 
 -- Public facing API
+
+function BROWSER:SetViewType(ViewType)
+	self.TreeView.ViewType = ViewType or error("No viewtype provided")
+	self:MarkSortDirty()
+end
+
 function BROWSER:MarkSortDirty()
 	if not self.TreeView then return end
 	self.TreeView.SortDirty = true
@@ -1731,6 +1761,26 @@ local function UpdateClientFiles(Browser)
 	hook.Run(FileBrowserPrefix .. "_PostMenuFolders", Browser)
 end
 
+function PANEL:AddLeftsideDivider()
+	self.LeftsideButtons = self.LeftsideButtons or {}
+
+	local Panel = self:Add "DPanel"
+	Panel:SetSize(2, 16)
+	Panel.Paint = function(_, w, h) surface.SetDrawColor(0, 0, 0, 50) surface.DrawRect(0, 0, w, h) end
+
+	self.LeftsideButtons[#self.LeftsideButtons + 1] = Panel
+end
+
+function PANEL:AddRightsideDivider()
+	self.RightsideButtons = self.RightsideButtons or {}
+
+	local Panel = self:Add "DPanel"
+	Panel:SetSize(2, 16)
+	Panel.Paint = function(_, w, h) surface.SetDrawColor(0, 0, 0, 50) surface.DrawRect(0, 0, w, h) end
+
+	self.RightsideButtons[#self.RightsideButtons + 1] = Panel
+end
+
 function PANEL:AddLeftsideButton(Icon, Tooltip, Action)
 	self.LeftsideButtons = self.LeftsideButtons or {}
 
@@ -1738,6 +1788,7 @@ function PANEL:AddLeftsideButton(Icon, Tooltip, Action)
 	Button:SetMaterial("icon16/" .. Icon .. ".png")
 	Button:SizeToContents()
 	Button:SetTooltip(Tooltip)
+	Button.DoClick = Action
 
 	self.LeftsideButtons[#self.LeftsideButtons + 1] = Button
 
@@ -1751,11 +1802,15 @@ function PANEL:AddRightsideButton(Icon, Tooltip, Action)
 	Button:SetMaterial("icon16/" .. Icon .. ".png")
 	Button:SizeToContents()
 	Button:SetTooltip(Tooltip)
+	Button.DoClick = Action
 
 	self.RightsideButtons[#self.RightsideButtons + 1] = Button
 
 	return Button
 end
+
+local VIEWTYPETREE_SELECTED = color_white
+local VIEWTYPETREE_UNSELECTED = Color(143, 143, 143, 143)
 
 function PANEL:Init()
 	AdvDupe2.FileBrowser = self
@@ -1773,6 +1828,16 @@ function PANEL:Init()
 	self.Browser = self:Add(LowercaseFileBrowserPrefix .. "_browser_panel")
 	UpdateClientFiles(self.Browser)
 
+	self.SearchAll     = self:AddLeftsideButton("folder_magnify", "Search all root folders", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+	self:AddLeftsideDivider()
+	self.SwitchToTree  = self:AddLeftsideButton("application_view_detail", "Tree view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+	self.SwitchToList  = self:AddLeftsideButton("application_view_list", "List view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+	self.SwitchToTiles = self:AddLeftsideButton("application_view_tile", "Tile view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+
+	self.SwitchToTree.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TREE and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
+	self.SwitchToList.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_LIST and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
+	self.SwitchToTiles.Think = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TILES and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
+
 	self.Refresh = self:AddRightsideButton("arrow_refresh", "Refresh Files", function(button) UpdateClientFiles(self.Browser) end)
 	self.Help    = self:AddRightsideButton("help", "Help Section", function(btn)
 		local Menu = DermaMenu()
@@ -1788,7 +1853,127 @@ function PANEL:Init()
 		end)
 		Menu:Open()
 	end)
+	self:AddRightsideDivider()
 	self.Settings = self:AddRightsideButton("cog", "Settings", function() self:OpenSettings() end)
+end
+
+function PANEL:OpenSettings()
+	if self.SettingsPanel then
+		self.SettingsPanel:Close()
+		self.SettingsPanel = nil
+		self.Settings:SetImage("icon16/cog.png")
+		return
+	end
+
+	self.Settings:SetImage("icon16/cog_delete.png")
+
+	local Panel = self.Browser:PushUserPrompt()
+	self.SettingsPanel = Panel
+
+	Panel:SetBlocking(true)
+	Panel:SetDock(BOTTOM)
+
+	local function CreateDivider()
+		local Div = Panel:Add("DPanel")
+		Div:Dock(TOP)
+		Div:DockMargin(16, 4, 16, 4)
+		Div:SetSize(0, 2)
+		Div.Paint = function(_, w, h) surface.SetDrawColor(0, 0, 0, 90) surface.DrawRect(0, 0, w, h) end
+	end
+	local function CreateConvarSlider(ConVar, CName, Min, Max)
+		local CV = GetConVar(ConVar)
+		local Name = Panel:Add("DLabel")
+		Name:Dock(TOP)
+		Name:SetText(CName or CV:GetName())
+		Name:SetDark(true)
+		Name:SetTextInset(8, 0)
+		Name:SetTooltip(CV:GetHelpText())
+		local Slider = Panel:Add("DNumSlider")
+		Slider:SetDark(true)
+		Slider:Dock(TOP)
+		Slider:SetSize(0, 14)
+		Slider:SetConVar(ConVar)
+		Slider:SetMinMax(Min or CV:GetMin(), Max or CV:GetMax())
+		Slider.Scratch.PaintScratchWindow = function(s)
+			if not s:GetActive() then return end
+			if s:GetZoom() == 0 then s:SetZoom(s:IdealZoom()) end
+
+			local w, h = 400, 200
+			local x, y = s:LocalToScreen(0, h + 24)
+
+			x = x + s:GetWide() * 0.5 - w * 0.5
+			y = y - 8 - h
+
+			if x + w + 32 > ScrW() then x = ScrW() - w - 32 end
+			if y + h + 32 > ScrH() then y = ScrH() - h - 32 end
+			if x < 32 then x = 32 end
+			if y < 32 then y = 32 end
+
+			if render then render.SetScissorRect(x, y, x + w, y + h, true) end
+				s:DrawScreen(x, y, w, h)
+			if render then render.SetScissorRect(x, y, w, h, false) end
+		end
+	end
+	local function CreateConvarEntry(ConVar, CName)
+		local CV = GetConVar(ConVar)
+		local Name = Panel:Add("DLabel")
+		Name:Dock(TOP)
+		Name:SetText(CName or CV:GetName())
+		Name:SetDark(true)
+		Name:SetTextInset(8, 0)
+		Name:SetTooltip(CV:GetHelpText())
+		local Entry = Panel:Add("DTextEntry")
+		Entry:Dock(TOP)
+		Entry:SetSize(0, 20)
+		Entry:DockMargin(8, 0, 8, 0)
+		Entry:SetConVar(ConVar)
+		return Entry
+	end
+	local function CreateConvarIconEntry(ConVar, CName)
+		local Entry = CreateConvarEntry(ConVar, CName)
+		local CV    = GetConVar(ConVar)
+
+		local IconSelector = Entry:Add("DImageButton")
+		IconSelector:SetSize(16, 16)
+		IconSelector:DockMargin(2, 2, 2, 2)
+		IconSelector:Dock(RIGHT)
+		IconSelector:SetImage(CV:GetString())
+
+		IconSelector.DoClick = function()
+			local Frame = vgui.Create("DFrame")
+			Frame:MakePopup()
+			Frame:SetSize(480, 360)
+			Frame:Center()
+
+			local Icons = Frame:Add("DIconBrowser")
+			Icons:Dock(FILL)
+			Icons:SelectIcon(CV:GetString())
+			Icons.OnChange = function()
+				CV:SetString(Icons:GetSelectedIcon())
+				IconSelector:SetImage(Icons:GetSelectedIcon())
+			end
+		end
+	end
+
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_promptopentime", "Prompt Open Animation Time (seconds)", 0, 2)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_promptclosetime", "Prompt Close Animation Time (seconds)", 0, 2)
+	CreateDivider()
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_maxtimetodoubleclick", "Max Deltatime for Double Clicks (seconds)", 0, 2)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodetall", "Node Height (pixels)", 0, 256)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding", "Node Height Padding (pixels)", 0, 256)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodedepthwidth", "Node Depth Width (pixels)", 0, 256)
+	CreateDivider()
+	CreateConvarEntry(LowercaseFileBrowserPrefix .. "_menu_nodefont", "Node Font")
+	CreateDivider()
+	CreateConvarIconEntry(LowercaseFileBrowserPrefix .. "_menu_nodeicon_folderempty", "Node Empty Folder Icon")
+	CreateConvarIconEntry(LowercaseFileBrowserPrefix .. "_menu_nodeicon_folder", "Node Folder Icon")
+	CreateConvarIconEntry(LowercaseFileBrowserPrefix .. "_menu_nodeicon_file", "Node File Icon")
+	CreateDivider()
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodeexpander_size", "Node Expander Size (pixels)", 0, 256)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodeicon_size", "Node Icon Size (pixels)", 0, 256)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_toexpander", "Left -> Expander Padding (pixels)", 0, 256)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_expandertoicon", "Expander -> Icon Padding (pixels)", 0, 256)
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_icontotext", "Icon -> Text Padding (pixels)", 0, 256)
 end
 
 function PANEL:Slide(expand)
