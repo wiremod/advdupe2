@@ -12,8 +12,9 @@
 local ADVDUPE2_AREA_ADVDUPE2   = AdvDupe2.AREA_ADVDUPE2
 local ADVDUPE2_AREA_PUBLIC     = AdvDupe2.AREA_PUBLIC
 local ADVDUPE2_AREA_ADVDUPE1   = AdvDupe2.AREA_ADVDUPE1
-local NODETYPE_FOLDER          = AdvDupe2.NODETYPE_FOLDER
-local NODETYPE_FILE            = AdvDupe2.NODETYPE_FILE
+-- These are internal really, so i don't think these need to be exposed?
+local NODETYPE_FOLDER          = 1
+local NODETYPE_FILE            = 2
 
 -- This lets us rip this stuff out if we need to.
 local FileBrowserPrefix          = "AdvDupe2"
@@ -303,7 +304,7 @@ do
 
 	function NODE:MarkSortDirty()
 		self.SortDirty         = true
-		self.Browser.SortDirty = true
+		self.Browser:MarkSortDirty()
 	end
 
 	function NODE:Clear()
@@ -595,10 +596,17 @@ do
 		self.Browser  = Browser
 		self.Blocking = false
 
+		self.StartOpen  = UserInterfaceTimeFunc()
+		self.WillOpenAt = self.StartOpen + 0.2
+
 		self.Panel = Browser:Add("DPanel")
 	end
 
 	function USERPROMPT:GetPanel() return self.Panel end
+
+	function USERPROMPT:Add(Type)
+		return self.Panel:Add(Type)
+	end
 
 	function USERPROMPT_MT:__call(Browser)
 		if not IsValid(Browser) then return error ("Cannot create a headless node (we need a browser)") end
@@ -619,20 +627,72 @@ do
 	end
 
 	function USERPROMPT:SetDock(Dock)
-		self.Panel:Dock(Dock)
-		self.Panel:SetSize(self.Browser:GetTall() / 6)
+		self.Dock = Dock
 	end
 
-	function USERPROMPT:ThinkAnimations()
+	local function Normalize(X, Min, Max)
+		return math.Clamp((X - Min) / (Max - Min), 0, 1)
+	end
 
+	function USERPROMPT:GetAnimationRatio(Now)
+		local Closing = self.Closing
+
+		local OpenRatio  = Normalize(Now, self.StartOpen, self.WillOpenAt)
+		local CloseRatio = Closing and (1 - Normalize(Now, self.StartClose, self.WillCloseAt)) or 1
+
+		local OpenX,  OpenY,  OpenA  = math.ease.OutQuad(OpenRatio),  math.ease.OutBack(OpenRatio), math.ease.OutQuad(OpenRatio)
+		local CloseX, CloseY, CloseA = math.ease.OutQuad(CloseRatio), math.ease.OutBack(CloseRatio), math.ease.InQuart(CloseRatio)
+
+		-- We return opening animation * closing animation to get smooth effects
+		-- This works because CloseRatio will be a downward value while OpenRatio will be an upward value 
+		return OpenX * CloseX, OpenY * CloseY, OpenA * CloseA
+	end
+
+	local DockPadding = 4
+
+	function USERPROMPT:DoThink()
+		local Now       = UserInterfaceTimeFunc()
+		local Closing   = self.Closing
+
+		if Closing and Now >= self.WillCloseAt then
+			return false
+		end
+
+		local RatioX, RatioY, RatioA    = self:GetAnimationRatio(Now)
+		local Browser                   = self.Browser
+		local ParentWidth, ParentHeight = Browser:GetWide(), Browser:GetTall()
+
+		local PosX,  PosY
+		local SizeW, SizeH
+		local SizeC
+
+		local ContentWide, ContentTall = self.Panel:ChildrenSize()
+
+		local Dock = self.Dock
+		if not Dock then error("No dock??") end
+
+		if Dock == BOTTOM then
+			SizeC = ContentTall
+			SizeW = (RatioX * ParentWidth) - (DockPadding * 2)
+			SizeH = SizeC * RatioY
+			PosX  = ((ParentWidth / 2) - (SizeW / 2))
+			PosY  = ParentHeight - SizeH - DockPadding
+		end
+
+		self.Panel:SetPos(PosX, PosY)
+		self.Panel:SetSize(SizeW, SizeH)
+		self.Panel:SetAlpha(RatioA * 255)
+
+		return true
 	end
 
 	-- Call this to close and pop later.
+	-- This also forces Blocking back to false for main UI panel.
 	function USERPROMPT:Close()
-		self.Blocking = false
-		timer.Simple(0.5, function()
-			self.Browser:PopUserPromptByValue(self)
-		end)
+		self.Blocking    = false
+		self.Closing     = true
+		self.StartClose  = UserInterfaceTimeFunc()
+		self.WillCloseAt = self.StartClose + 0.3
 	end
 end
 
@@ -1105,7 +1165,7 @@ function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 
 	ImmediateState.BlockingAlpha = math.Clamp((ImmediateState.BlockingAlpha or 0) + (ImmediateState.DeltaTime * 4 * (ImmediateState.CanInput and -1 or 1)), 0, 1)
 	if ImmediateState.BlockingAlpha > 0 then
-		local Alpha = math.ease.InOutQuad(ImmediateState.BlockingAlpha) * 125
+		local Alpha = math.ease.InOutQuad(ImmediateState.BlockingAlpha) * 66
 		local OldClipping = DisableClipping(true)
 		surface.SetDrawColor(0, 0, 0, Alpha)
 		surface.DrawRect(0, 0, self.Browser:GetSize())
@@ -1188,6 +1248,11 @@ function BROWSER:Init()
 end
 
 -- Public facing API
+function BROWSER:MarkSortDirty()
+	if not self.TreeView then return end
+	self.TreeView.SortDirty = true
+end
+
 function BROWSER:AddRootFolder(RootFolderType)
 	RootFolderType = IRootFolder(RootFolderType or error("RootFolderType must contain a IRootFolder implementation")) -- This checks if the type implemented the interface
 	local RealNode = self.TreeView:AddFolder(RootFolderType:GetFolderName())
@@ -1200,12 +1265,86 @@ function BROWSER:AddRootFolder(RootFolderType)
 	return RealNode
 end
 
+function BROWSER:GetRootImpl(Node)
+	return Node.Root.RootImpl or error "Cannot find IRootFolder implementation!"
+end
+
 function BROWSER:StartSave(Node)
 	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
 
 	local Prompt = self:PushUserPrompt()
 	Prompt:SetBlocking(true)
 	Prompt:SetDock(BOTTOM)
+
+	local Name, Desc
+
+	local function FinishSave()
+		local RootImpl = self:GetRootImpl(Node)
+		RootImpl:UserSave(self, Node, Name:GetText(), Desc:GetText())
+		Prompt:Close()
+	end
+
+	-- I tried SetTabPosition; it doesn't like to work, so we're doing it ourselves
+
+	Name = Prompt:Add("DTextEntry")
+		Name:SetAllowNonAsciiCharacters(true)
+		Name:SetTabbingDisabled(false)
+		Name:Dock(TOP)
+		Name:DockMargin(4, 4, 4, 2)
+		Name:SetPlaceholderText("Dupe name")
+
+	local Save = Prompt:Add("DImageButton")
+		Save:Dock(RIGHT)
+		Save:SetSize(24)
+		Save:SetStretchToFit(false)
+		Save:SetImage("icon16/disk.png")
+
+	Desc = Prompt:Add("DTextEntry")
+		Desc:SetAllowNonAsciiCharacters(true)
+		Desc:SetTabbingDisabled(false)
+		Desc:Dock(FILL)
+		Desc:DockMargin(4, 4, 0, 4)
+		Desc:SelectAllOnFocus()
+		Desc:SetPlaceholderText("Dupe description (optional)")
+
+	function Name:OnEnter()
+		self:KillFocus()
+		Desc:SelectAllOnFocus(true)
+		Desc:OnMousePressed()
+		Desc:RequestFocus()
+	end
+	function Name:OnKeyCode(KeyCode)
+		if KeyCode == KEY_TAB then
+			return timer.Simple(0, function() if IsValid(self) then self:OnEnter() end end)
+		end
+
+		DTextEntry.OnKeyCode(self, KeyCode)
+	end
+	function Name:OnMousePressed()
+		self:OnGetFocus()
+		self:SelectAllOnFocus(true)
+	end
+
+	function Desc:OnEnter()
+		self:KillFocus()
+		FinishSave()
+	end
+	function Desc:OnKeyCode(KeyCode)
+		if KeyCode == KEY_TAB then
+			return timer.Simple(0, function() if IsValid(self) then self:OnEnter() end end)
+		end
+
+		DTextEntry.OnKeyCode(self, KeyCode)
+	end
+	function Desc:OnMousePressed()
+		self:OnGetFocus()
+		self:SelectAllOnFocus(true)
+	end
+
+	function Save:DoClick()
+		FinishSave()
+	end
+	timer.Simple(0, function() if IsValid(Name) then Name:OnMousePressed() end end)
 end
 
 function BROWSER:GetUserPromptStack()
@@ -1263,10 +1402,15 @@ function BROWSER:PopUserPrompt()
 end
 
 function BROWSER:PopUserPromptByValue(UserPrompt)
-	table.RemoveByValue(self:GetUserPromptStack(), UserPrompt)
+	if table.RemoveByValue(self:GetUserPromptStack(), UserPrompt) then
+		self:DecrementUserPromptStackPtr()
+	end
 end
 
 function BROWSER:ClearAllUserPrompts()
+	for _, Prompt in ipairs(self:GetUserPromptStack()) do
+		Prompt.Panel:Remove()
+	end
 	table.Empty(self:GetUserPromptStack())
 	self.UserPromptStackPtr = 0
 end
@@ -1279,6 +1423,7 @@ function BROWSER:ThinkAboutUserPrompts()
 
 	local LastBlockingPanel = false
 
+	local RemoveValues
 	for K, Prompt in ipairs(UserPrompts) do
 		local Panel = Prompt:GetPanel()
 		Panel:SetMouseInputEnabled(true)
@@ -1287,6 +1432,7 @@ function BROWSER:ThinkAboutUserPrompts()
 			LastBlockingPanel:SetMouseInputEnabled(false)
 		end
 
+		Panel:SetZPos(1000 + K)
 		Blocking = Blocking or Prompt.Blocking
 
 		if Prompt.Blocking then
@@ -1294,16 +1440,28 @@ function BROWSER:ThinkAboutUserPrompts()
 		else
 			LastBlockingPanel = false
 		end
+
+		if not Prompt:DoThink() then
+			RemoveValues = RemoveValues or {} -- Only allocate this table if we need to remove prompts
+			RemoveValues[#RemoveValues + 1] = Prompt
+		end
+	end
+
+	if RemoveValues then
+		for _, Prompt in ipairs(RemoveValues) do
+			self:PopUserPromptByValue(Prompt)
+		end
 	end
 
 	return not Blocking
 end
 
 function BROWSER:Think()
-	self.TreeView:SetMouseInputEnabled(self:ThinkAboutUserPrompts())
+	local CanInput = self:ThinkAboutUserPrompts()
+	self.TreeView:SetMouseInputEnabled(CanInput)
 end
 
-derma.DefineControl(FileBrowserPrefix .. "_browser_panel", "AD2 File Browser", BROWSER, "Panel")
+derma.DefineControl(LowercaseFileBrowserPrefix .. "_browser_panel", "AD2 File Browser", BROWSER, "Panel")
 
 
 
