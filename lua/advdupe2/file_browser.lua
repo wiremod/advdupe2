@@ -527,6 +527,8 @@ do
 	IRootFolder.UserMenu         = function(Impl, Browser, Node, Menu) end
 	IRootFolder.UserDelete       = function(Impl, Browser, Node) end
 	IRootFolder.UserMakeFolder   = function(Impl, Browser, Node, Foldername) end
+	IRootFolder.UserGetModTime   = function(Impl, Browser, Node) return 0 end
+	IRootFolder.UserGetSize      = function(Impl, Browser, Node) return 0 end
 
 	-- Ensures the implementor implemented the interface correctly
 	-- if they didn't throw non-halting errors since it might be an optional method
@@ -757,11 +759,25 @@ do
 
 	end
 
+	function AdvDupe1Folder:UserGetModTime(Browser, Node)
+		return 0
+	end
+
+	function AdvDupe1Folder:UserGetSize(Browser, Node)
+		return 0
+	end
+
 	IRootFolder(AdvDupe1Folder) -- validation
 end
 
 do
-	AdvDupe2Folder = {}
+	AdvDupe2Folder = {
+		-- Key-weak LUT's for size/modtimes.
+		-- They're key-weak so if a node gets deleted it isn't hung up by GC thinking
+		-- we care about the reference still
+		SizeCache = setmetatable({}, {__mode = 'k'}),
+		TimeCache = setmetatable({}, {__mode = 'k'})
+	}
 	function AdvDupe2Folder:GetFolderName() return "Advanced Duplicator 2" end
 	function AdvDupe2Folder:Init(Browser, Node)
 		Node:LoadDataFolder("advdupe2/")
@@ -828,6 +844,26 @@ do
 		Node:Expand()
 		NewNode:Expand()
 		Browser:ScrollTo(NewNode)
+	end
+
+	function AdvDupe2Folder:UserGetModTime(Browser, Node)
+		if not Node.Path then return end
+
+		local Time = self.TimeCache[Node]
+		if Time then return Time end
+
+		Time = file.Time(Node.Path, "DATA")
+		self.TimeCache[Node] = Time
+	end
+
+	function AdvDupe2Folder:UserGetSize(Browser, Node)
+		if Node:IsFolder() then return -1 end
+
+		local Size = self.SizeCache[Node]
+		if Size then return Size end
+
+		Size = file.Size(Node.Path, "DATA")
+		self.SizeCache[Node] = Size
 	end
 
 	IRootFolder(AdvDupe2Folder) -- validation
