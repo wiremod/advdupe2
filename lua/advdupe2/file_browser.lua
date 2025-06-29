@@ -153,54 +153,123 @@ local function GetTextPosition(X, Y, W, H, Depth)
 	return (Depth * NodeDepthWidth) + X + TextXOffset, Y + (H / 2)
 end
 
-local count = 0
+-- Defines GetNumericalFilename
+-- May need optimization and refactoring later - especially for non-ASCII strings...
+-- This handles things very similarly to how Windows does in terms of sorting, but also adds sorting by month
+-- May also be a good idea in the future to add a setting for the above functionality.
+local GetNumericalFilename
+do
+	local isDigit = {
+		['0'] = 0,
+		['1'] = 1,
+		['2'] = 2,
+		['3'] = 3,
+		['4'] = 4,
+		['5'] = 5,
+		['6'] = 6,
+		['7'] = 7,
+		['8'] = 8,
+		['9'] = 9
+	}
 
+	-- faster than string.byte calls
+	local char2byte = {}
+	for i = 1, 255 do char2byte[string.char(i)] = string.byte(string.lower(string.char(i))) end
+	char2byte['_'] = 2000
 
+	local buildMonth = {}
+	for k, v in ipairs{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"} do
+		local tbl = buildMonth
+		for i = 1, #v do
+			local c = v[i]
+			if i == #v then
+				tbl[c] = k
+			else
+				if not tbl[c] then
+					tbl[c] = {}
+				end
 
+				tbl = tbl[c]
+			end
+		end
+	end
 
+	local numericalStore = {}
+	function GetNumericalFilename(name)
+		if numericalStore[name] then return numericalStore[name] end
 
+		local ret = {}
+		local digit = nil
+		local monthTester = buildMonth
+		local monthStoreJustInCase = {}
 
+		local function testMonth(i, c)
+			monthTester = monthTester[c]
+			monthStoreJustInCase[#monthStoreJustInCase + 1] = char2byte[c]
+			if type(monthTester) == "number" then
+				local nextC = name[i + 1]
+				local nextIfine = nextC == ' ' or nextC == '_' or nextC == '-'
+				if i == #name or nextIfine then
+					ret[#ret + 1] = monthTester
+					monthStoreJustInCase = {}
+					monthTester = buildMonth
+					if nextIfine then
+						i = i + 1
+					end
+				else
+					for i2 = 1, #monthStoreJustInCase do
+						ret[#ret + 1] = monthStoreJustInCase[i2]
+					end
+					monthStoreJustInCase = {}
+					monthTester = buildMonth
+				end
+			end
+		end
 
+		local function finalTest(i, c)
+			if monthTester ~= buildMonth then
+				for i2 = 1, #monthStoreJustInCase do
+					ret[#ret + 1] = monthStoreJustInCase[i2]
+				end
+				monthStoreJustInCase = {}
+				monthTester = buildMonth
+			end
+			ret[#ret + 1] = char2byte[c]
+		end
 
+		for i = 1, #name do
+			local c = name[i]
+			local cIsDigit = isDigit[c]
+			if cIsDigit then
+				if digit == nil then
+					digit = 0
+				end
+				digit = (digit * 10) + cIsDigit
+			else
+				if monthTester[c] then
+					testMonth(i, c)
+				elseif digit ~= nil then
+					ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+					digit = nil
+				else
+					finalTest(i, c)
+				end
+			end
+		end
 
+		if digit ~= nil then
+			ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
+		end
+		if monthTester ~= buildMonth then
+			for i = 1, #monthStoreJustInCase do
+				ret[#ret + 1] = monthStoreJustInCase[i]
+			end
+		end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		numericalStore[name] = ret -- store so this doesnt have to be calculated multiple times for no reason
+		return ret
+	end
+end
 
 local SetupDataFile, SetupDataSubfolder
 local NODE_MT = {}
@@ -337,116 +406,6 @@ do
 		LoadDataFolderInternal(self, Path)
 	end
 
-	-- Defines GetNumericalFilename
-	-- May need optimization and refactoring later - especially for non-ASCII strings...
-	-- This handles things very similarly to how Windows does in terms of sorting, but also adds sorting by month
-	-- May also be a good idea in the future to add a setting for the above functionality.
-	local GetNumericalFilename
-	do
-		local isDigit = {
-			['0'] = 0,
-			['1'] = 1,
-			['2'] = 2,
-			['3'] = 3,
-			['4'] = 4,
-			['5'] = 5,
-			['6'] = 6,
-			['7'] = 7,
-			['8'] = 8,
-			['9'] = 9
-		}
-
-		-- faster than string.byte calls
-		local char2byte = {}
-		for i = 1, 255 do char2byte[string.char(i)] = string.byte(string.lower(string.char(i))) end
-		char2byte['_'] = 2000
-
-		local buildMonth = {}
-		for k, v in ipairs{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"} do
-			local tbl = buildMonth
-			for i = 1, #v do
-				local c = v[i]
-				if i == #v then
-					tbl[c] = k
-				else
-					if not tbl[c] then
-						tbl[c] = {}
-					end
-
-					tbl = tbl[c]
-				end
-			end
-		end
-
-		local numericalStore = {}
-		function GetNumericalFilename(name)
-			if numericalStore[name] then return numericalStore[name] end
-
-			local ret = {}
-			local digit = nil
-			local monthTester = buildMonth
-			local monthStoreJustInCase = {}
-
-			for i = 1, #name do
-				local c = name[i]
-				local cIsDigit = isDigit[c]
-				if cIsDigit then
-					if digit == nil then
-						digit = 0
-					end
-					digit = (digit * 10) + cIsDigit
-				else
-					if monthTester[c] then
-						monthTester = monthTester[c]
-						monthStoreJustInCase[#monthStoreJustInCase + 1] = char2byte[c]
-						if type(monthTester) == "number" then
-							local nextC = name[i + 1]
-							local nextIfine = nextC == ' ' or nextC == '_' or nextC == '-'
-							if i == #name or nextIfine then
-								ret[#ret + 1] = monthTester
-								monthStoreJustInCase = {}
-								monthTester = buildMonth
-								if nextIfine then
-									i = i + 1
-								end
-							else
-								for i = 1, #monthStoreJustInCase do
-									ret[#ret + 1] = monthStoreJustInCase[i]
-								end
-								monthStoreJustInCase = {}
-								monthTester = buildMonth
-							end
-						end
-					elseif digit ~= nil then
-						ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
-						digit = nil
-					else
-						if monthTester ~= buildMonth then
-							for i = 1, #monthStoreJustInCase do
-								ret[#ret + 1] = monthStoreJustInCase[i]
-							end
-							monthStoreJustInCase = {}
-							monthTester = buildMonth
-						end
-						ret[#ret + 1] = char2byte[c]
-					end
-				end
-			end
-
-			if digit ~= nil then
-				ret[#ret + 1] = digit - (#ret == 0 and 100000000 or 0)
-			end
-			if monthTester ~= buildMonth then
-				for i = 1, #monthStoreJustInCase do
-					ret[#ret + 1] = monthStoreJustInCase[i]
-				end
-			end
-
-			numericalStore[name] = ret -- store so this doesnt have to be calculated multiple times for no reason
-			return ret
-		end
-	end
-
 	function NODE.SortFunction(A, B)
 		local IsFileA, IsFileB = A:IsFile(), B:IsFile()
 
@@ -558,8 +517,8 @@ do
 
 		self.Panel = Browser:Add("DScrollPanel")
 		local PanelColor = Color(255, 255, 255, 213)
-		self.Panel.Paint = function(self, w, h)
-			local Skin = self:GetSkin()
+		self.Panel.Paint = function(panel, w, h)
+			local Skin = panel:GetSkin()
 			local SkinTex = Skin.tex
 
 			SkinTex.Panels.Normal(0, 0, w, h, PanelColor)
@@ -630,7 +589,7 @@ do
 		local SizeW, SizeH
 		local SizeC
 
-		local ContentWide, ContentTall = self.Panel:ChildrenSize()
+		local _, ContentTall = self.Panel:ChildrenSize()
 		ContentTall = math.Min(ContentTall, self.Browser:GetTall() - 32)
 		local Dock = self.Dock
 		if not Dock then error("No dock??") end
@@ -1227,35 +1186,6 @@ end
 
 derma.DefineControl(LowercaseFileBrowserPrefix .. "_browser_tree", FileBrowserPrefix .. " File Browser", BROWSERTREE, "Panel")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 local BROWSER = {}
 AccessorFunc(BROWSER, "m_bBackground", "PaintBackground", FORCE_BOOL)
 AccessorFunc(BROWSER, "m_bgColor", "BackgroundColor")
@@ -1702,33 +1632,6 @@ function BROWSER:Think()
 end
 
 derma.DefineControl(LowercaseFileBrowserPrefix .. "_browser_panel", "AD2 File Browser", BROWSER, "Panel")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 local PANEL = {}
 AccessorFunc(PANEL, "m_bBackground", "PaintBackground", FORCE_BOOL)
