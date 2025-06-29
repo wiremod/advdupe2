@@ -1064,10 +1064,17 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
 
-	local function BuildCPanel(CPanel)
+	local BuildCPanel
+	function BuildCPanel(CPanel)
 		CPanel:ClearControls()
 
-		local FileBrowser = vgui.Create("advdupe2_browser")
+		local refresh = vgui.Create("DButton")
+		refresh:SetText("Hard-refresh")
+		refresh:Dock(TOP)
+		refresh.DoClick = function() CPanel:Clear() BuildCPanel(CPanel) end
+		CPanel:AddItem(refresh)
+
+		local FileBrowser = vgui.Create("advdupe2_browser", CPanel)
 		CPanel:AddItem(FileBrowser)
 		FileBrowser:SetSize(CPanel:GetWide(), 405)
 		AdvDupe2.FileBrowser = FileBrowser
@@ -1078,7 +1085,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_original_origin" )
 		Check:SetValue( 0 )
-		Check:SetToolTip("Paste at the position originally copied")
+		Check:SetTooltip("Paste at the position originally copied")
 		CPanel:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
