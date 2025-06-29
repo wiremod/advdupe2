@@ -29,6 +29,7 @@ local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth
 local ExpanderSize,  IconSize, LeftmostToExpanderPadding, ExpanderToIconPadding, IconToTextPadding
 
 local ExpanderXOffset, IconXOffset, TextXOffset
+local TimeToOpenPrompts_cv, TimeToClosePrompts_cv
 
 local ICON_FOLDER_EMPTY
 local ICON_FOLDER_CONTAINS
@@ -40,6 +41,12 @@ local UserInterfaceTimeFunc  =   RealTime
 -- Convars and flushing convars into local registers.
 -- FlushConvars gets called in BROWSER:Think() before anything else
 do
+	TimeToOpenPrompts_cv   =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_promptopentime", "0.2", true, false,
+														"The time it takes for a user-prompt to fully open, in seconds.", 0, 1000000)
+	TimeToClosePrompts_cv  =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_promptclose_time", "0.3", true, false,
+														"The time it takes for a user-prompt to fully close, in seconds.", 0, 1000000)
+
+
 	local MaxTimeToDoubleClick_cv   =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_maxtimetodoubleclick", "0.25", true, false,
 														"Max time delta between clicks to count as a double click, in seconds.", 0, 1000000)
 	local NodeTall_cv               =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodetall", "24", true, false,
@@ -136,68 +143,6 @@ end
 
 local count = 0
 
-local function AddHistory(txt)
-	txt = string.lower(txt)
-	local char1 = txt[1]
-	local char2
-	for i = 1, #History do
-		char2 = History[i][1]
-		if (char1 == char2) then
-			if (History[i] == txt) then
-				return
-			end
-		elseif (char1 < char2) then
-			break
-		end
-	end
-
-	table.insert(History, txt)
-	table.sort(History, function(a, b) return a < b end)
-end
-
-local function NarrowHistory(txt, last)
-	txt = string.lower(txt)
-	local temp = {}
-	if (last <= #txt and last ~= 0 and #txt ~= 1) then
-		for i = 1, #Narrow do
-			if (Narrow[i][last + 1] == txt[last + 1]) then
-				table.insert(temp, Narrow[i])
-			elseif (Narrow[i][last + 1] ~= '') then
-				break
-			end
-		end
-	else
-		local char1 = txt[1]
-		local char2
-		for i = 1, #History do
-			char2 = History[i][1]
-			if (char1 == char2) then
-				if (#txt > 1) then
-					for k = 2, #txt do
-						if (txt[k] ~= History[i][k]) then
-							break
-						end
-						if (k == #txt) then
-							table.insert(temp, History[i])
-						end
-					end
-				else
-					table.insert(temp, History[i])
-				end
-			elseif (char1 < char2) then
-				break
-			end
-		end
-	end
-
-	Narrow = temp
-end
-
-local function tableSortNodes(tbl)
-    for k, v in ipairs(tbl) do tbl[k] = {string.lower(v.Label:GetText()), v} end
-    table.sort(tbl, function(a,b) return a[1]<b[1] end)
-    for k, v in ipairs(tbl) do tbl[k] = v[2] end
-end
 
 
 
@@ -245,10 +190,7 @@ end
 
 
 
-
-
-
-
+local SetupDataFile, SetupDataSubfolder
 local NODE_MT = {}
 local NODE    = setmetatable({}, NODE_MT)
 do
@@ -345,12 +287,12 @@ do
 	function NODE:Collapse()       self:SetExpanded(false)             end
 	function NODE:ToggleExpanded() self:SetExpanded(not self.Expanded) end
 
-	local function SetupDataFile(Node, Path, Name)
+	function SetupDataFile(Node, Path, Name)
 		Node.Text = Name
 		Node.Path = Path
 	end
 
-	local function SetupDataSubfolder(Node, Path, Name)
+	function SetupDataSubfolder(Node, Path, Name)
 		Node.Text = Name
 		Node.Path = Path
 	end
@@ -566,7 +508,7 @@ do
 	-- These are RAW operations, as in the underlying Browser might do some prompts first
 	-- But for example, calling IRootFolder:UserDelete() is expected to actually delete the node
 	-- (and the browser will create the prompt)
-	IRootFolder.UserUpload       = function(Impl, Browser, Node) end
+	IRootFolder.UserLoad         = function(Impl, Browser, Node) end
 	IRootFolder.UserPreview      = function(Impl, Browser, Node) end
 	IRootFolder.UserSave         = function(Impl, Browser, Node, Filename, Description) end
 	IRootFolder.UserRename       = function(Impl, Browser, Node, RenameTo) end
@@ -597,7 +539,7 @@ do
 		self.Blocking = false
 
 		self.StartOpen  = UserInterfaceTimeFunc()
-		self.WillOpenAt = self.StartOpen + 0.2
+		self.WillOpenAt = self.StartOpen + TimeToOpenPrompts_cv:GetFloat()
 
 		self.Panel = Browser:Add("DPanel")
 	end
@@ -671,10 +613,16 @@ do
 		local Dock = self.Dock
 		if not Dock then error("No dock??") end
 
-		if Dock == BOTTOM then
+		if Dock == TOP then
 			SizeC = ContentTall
-			SizeW = (RatioX * ParentWidth) - (DockPadding * 2)
-			SizeH = SizeC * RatioY
+			SizeW = math.ceil((RatioX * ParentWidth) - (DockPadding * 2))
+			SizeH = math.ceil(SizeC * RatioY)
+			PosX  = ((ParentWidth / 2) - (SizeW / 2))
+			PosY  = DockPadding
+		elseif Dock == BOTTOM then
+			SizeC = ContentTall
+			SizeW = math.ceil((RatioX * ParentWidth) - (DockPadding * 2))
+			SizeH = math.ceil(SizeC * RatioY)
 			PosX  = ((ParentWidth / 2) - (SizeW / 2))
 			PosY  = ParentHeight - SizeH - DockPadding
 		end
@@ -692,13 +640,15 @@ do
 		self.Blocking    = false
 		self.Closing     = true
 		self.StartClose  = UserInterfaceTimeFunc()
-		self.WillCloseAt = self.StartClose + 0.3
+		self.WillCloseAt = self.StartClose + TimeToClosePrompts_cv:GetFloat()
 	end
 end
 
 -- This turns a data-folder path name into something AdvDupe2.UploadFile can tolerate
 local function GetNodeDataPath(Node)
 	local Path                = Node.Path
+	if not Path then return "" end
+
 	local FirstSlash          = string.find(Path, "/")
 	local RemovedFirstDirPath = string.sub(Path, FirstSlash + 1)
 	return string.StripExtension(RemovedFirstDirPath)
@@ -758,7 +708,7 @@ do
 		end
 	end
 
-	function AdvDupe1Folder:UserUpload(Browser, Node)
+	function AdvDupe1Folder:UserLoad(Browser, Node)
 		AdvDupe2.UploadFile(GetNodeDataPath(Node), ADVDUPE2_AREA_ADVDUPE1)
 	end
 
@@ -793,7 +743,7 @@ do
 		Node:LoadDataFolder("advdupe2/")
 	end
 
-	function AdvDupe2Folder:UserUpload(Browser, Node)
+	function AdvDupe2Folder:UserLoad(Browser, Node)
 		AdvDupe2.UploadFile(GetNodeDataPath(Node), ADVDUPE2_AREA_ADVDUPE2)
 	end
 
@@ -802,7 +752,22 @@ do
 	end
 
 	function AdvDupe2Folder:UserSave(Browser, Node, Filename, Description)
+		local DataPath = (Node.Path or "advdupe2") .. "/" .. Filename
+		AdvDupe2.SavePath = DataPath
 
+		-- Enqueue handler
+		Browser:AwaitingFile(DataPath .. ".txt", function()
+			Node:Expand()
+			local File = Filename .. ".txt"
+			local NewNode = Node:AddFile()
+			SetupDataFile(NewNode, DataPath, File)
+		end)
+
+		if game.SinglePlayer() then
+			RunConsoleCommand("AdvDupe2_SaveFile", Filename, Description, GetNodePath(Node))
+		else
+			RunConsoleCommand("AdvDupe2_SaveFile", Filename)
+		end
 	end
 
 	function AdvDupe2Folder:UserRename(Browser, Node, RenameTo)
@@ -811,7 +776,7 @@ do
 
 	function AdvDupe2Folder:UserMenu(Browser, Node, Menu)
 		if Node:IsFile() then
-			Menu:AddOption("Open",    function() self:UserUpload(Browser, Node)  end, "icon16/page_go.png")
+			Menu:AddOption("Open",    function() self:UserLoad(Browser, Node)  end, "icon16/page_go.png")
 			Menu:AddOption("Preview", function() self:UserPreview(Browser, Node) end, "icon16/information.png")
 			Menu:AddSpacer()
 			Menu:AddOption("Rename...", function() Browser:StartRename(Node) end, "icon16/textfield_rename.png")
@@ -865,7 +830,7 @@ function BROWSERTREE:DoNodeLeftClick(Node)
 			Node:ToggleExpanded()
 		else
 			local RootImpl = Node.Root.RootImpl
-			RootImpl:UserUpload(self.Browser, Node)
+			RootImpl:UserLoad(self.Browser, Node)
 		end
 	else
 		self:SetSelected(Node) -- A node was clicked, select it
@@ -1253,6 +1218,24 @@ function BROWSER:MarkSortDirty()
 	self.TreeView.SortDirty = true
 end
 
+-- Call this to enqueue a file callback, if you need one.
+-- The filepath should be unique.
+function BROWSER:AwaitingFile(Filepath, Callback)
+	self.WaitingQueue = self.WaitingQueue or {}
+	self.WaitingQueue[Filepath] = Callback
+end
+
+-- Call this to call any file callback with that name and remove it from the callback list.
+function BROWSER:IncomingFile(Filepath, ...)
+	if not self.WaitingQueue then return end
+
+	local Callback = self.WaitingQueue[Filepath]
+	if not Callback then ErrorNoHalt("File Browser ['" .. FileBrowserPrefix .. "'] error: incoming file '" .. Filepath .. "' had no event handler.\n") return end
+
+	self.WaitingQueue[Filepath] = nil
+	return Callback(...)
+end
+
 function BROWSER:AddRootFolder(RootFolderType)
 	RootFolderType = IRootFolder(RootFolderType or error("RootFolderType must contain a IRootFolder implementation")) -- This checks if the type implemented the interface
 	local RealNode = self.TreeView:AddFolder(RootFolderType:GetFolderName())
@@ -1269,18 +1252,68 @@ function BROWSER:GetRootImpl(Node)
 	return Node.Root.RootImpl or error "Cannot find IRootFolder implementation!"
 end
 
+local NotifIcons = {
+	[NOTIFY_CLEANUP] = "bin",
+	[NOTIFY_ERROR]   = "error",
+	[NOTIFY_GENERIC] = "information",
+	[NOTIFY_HINT]    = "lightbulb",
+	[NOTIFY_UNDO]    = "arrow_undo",
+}
+
+function BROWSER:Notify(Message, Level, Time)
+	Level = Level or NOTIFY_GENERIC
+	Time  = Time or 5
+
+	local Notif = self:PushUserPrompt()
+	Notif:SetDock(TOP)
+
+	local Text = Notif:Add("DLabel")
+		Text:SetText(Message or "<nil>")
+		Text:Dock(FILL)
+		Text:SetContentAlignment(5)
+		Text:SetDark(true)
+
+	local Icon = Notif:Add("DImageButton")
+		Icon:SetMouseInputEnabled(false) -- DImageButton provides SetStretchToFit while DImage doesn't - that's all we need here
+		Icon:SetSize(20, 20)
+		Icon:SetStretchToFit(false)
+		Icon:SetKeepAspect(true)
+		Icon:SetImage("icon16/" .. NotifIcons[Level] .. ".png")
+
+	local OldLayout = Notif.Panel.PerformLayout
+	function Notif.Panel:PerformLayout(W, H)
+		OldLayout(self, W, H)
+		local CW = Text:GetContentSize()
+		Icon:SetPos((W / 2) - (CW / 2) - 12)
+		Text:SetTextInset(12, 0)
+	end
+	-- bit too hacky?
+	function Notif.Panel:ChildrenSize()
+		return 0, 24
+	end
+
+	timer.Simple(Time, function() if IsValid(Notif.Panel) then Notif:Close() end end)
+end
+
 function BROWSER:StartSave(Node)
 	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
 
 	local Prompt = self:PushUserPrompt()
 	Prompt:SetBlocking(true)
 	Prompt:SetDock(BOTTOM)
+	Prompt.Panel:DockPadding(4,4,4,4)
 
 	local Name, Desc
 
 	local function FinishSave()
+		-- Require filename
+		local FileName = Name:GetText()
+		if FileName == nil or FileName == "" then
+			self:Notify("You must specify a filename.", NOTIFY_ERROR, 2)
+			return
+		end
 		local RootImpl = self:GetRootImpl(Node)
-		RootImpl:UserSave(self, Node, Name:GetText(), Desc:GetText())
+		RootImpl:UserSave(self, Node, FileName, Desc:GetText())
 		Prompt:Close()
 	end
 
@@ -1290,20 +1323,32 @@ function BROWSER:StartSave(Node)
 		Name:SetAllowNonAsciiCharacters(true)
 		Name:SetTabbingDisabled(false)
 		Name:Dock(TOP)
-		Name:DockMargin(4, 4, 4, 2)
 		Name:SetPlaceholderText("Dupe name")
+		Name:SetZPos(1)
 
-	local Save = Prompt:Add("DImageButton")
+	local DescParent = Prompt:Add("Panel")
+		DescParent:Dock(TOP)
+		DescParent:DockMargin(0, 4, 0, 0)
+		DescParent:SetSize(20, 20)
+		DescParent:SetPaintBackgroundEnabled(false)
+		DescParent:SetZPos(10000)
+
+	local Cancel = DescParent:Add("DImageButton")
+		Cancel:Dock(RIGHT)
+		Cancel:SetSize(20)
+		Cancel:SetStretchToFit(false)
+		Cancel:SetImage("icon16/cancel.png")
+
+	local Save = DescParent:Add("DImageButton")
 		Save:Dock(RIGHT)
 		Save:SetSize(24)
 		Save:SetStretchToFit(false)
 		Save:SetImage("icon16/disk.png")
 
-	Desc = Prompt:Add("DTextEntry")
+	Desc = DescParent:Add("DTextEntry")
 		Desc:SetAllowNonAsciiCharacters(true)
 		Desc:SetTabbingDisabled(false)
 		Desc:Dock(FILL)
-		Desc:DockMargin(4, 4, 0, 4)
 		Desc:SelectAllOnFocus()
 		Desc:SetPlaceholderText("Dupe description (optional)")
 
@@ -1325,13 +1370,19 @@ function BROWSER:StartSave(Node)
 		self:SelectAllOnFocus(true)
 	end
 
-	function Desc:OnEnter()
+	function Desc:OnEnter(_, WasTab)
 		self:KillFocus()
-		FinishSave()
+		if WasTab then -- Wrap back to Name.
+			Name:SelectAllOnFocus(true)
+			Name:OnMousePressed()
+			Name:RequestFocus()
+		else
+			FinishSave()
+		end
 	end
 	function Desc:OnKeyCode(KeyCode)
 		if KeyCode == KEY_TAB then
-			return timer.Simple(0, function() if IsValid(self) then self:OnEnter() end end)
+			return timer.Simple(0, function() if IsValid(self) then self:OnEnter(nil, true) end end)
 		end
 
 		DTextEntry.OnKeyCode(self, KeyCode)
@@ -1344,7 +1395,21 @@ function BROWSER:StartSave(Node)
 	function Save:DoClick()
 		FinishSave()
 	end
-	timer.Simple(0, function() if IsValid(Name) then Name:OnMousePressed() end end)
+	function Cancel:DoClick()
+		Prompt:Close()
+	end
+
+	-- This is a hack to make the name field discard the first released character for spawnmenu/contextmenu saving.
+	-- Since now the Name field automatically requests focus this is necessary to avoid an unnecessary character.
+	-- Hopefully it works (it seems to in testing)
+	local OnKeyCodeTyped = Name.OnKeyCodeTyped
+	function Name:OnKeyCodeTyped(KeyCode)
+		-- discard, reset back
+		self.OnKeyCodeTyped = OnKeyCodeTyped
+	end
+
+	Name:RequestFocus()
+	Name:OnMousePressed()
 end
 
 function BROWSER:GetUserPromptStack()
@@ -1414,23 +1479,27 @@ function BROWSER:ClearAllUserPrompts()
 	table.Empty(self:GetUserPromptStack())
 	self.UserPromptStackPtr = 0
 end
+
 -- Sets input enabled on user prompt stack and determines if user input should be enabled/disabled on the main browser
 -- Returns true if input is enabled
-
+-- This stuff is kinda weird, but doesnt run that much and seems to be pretty OK. Real docking seems to cause
+-- layout issues that I would rather not deal with, especially during animation.
 function BROWSER:ThinkAboutUserPrompts()
-	local UserPrompts  = self:GetUserPromptStack()
-	local Blocking     = false
+	local StackDocks     = self.StackDocks or {}
+	StackDocks[TOP] = 0
+	StackDocks[LEFT] = 0
+	StackDocks[RIGHT] = 0
+	StackDocks[BOTTOM] = 0
+
+	local UserPrompts    = self:GetUserPromptStack()
+	local Blocking       = false
 
 	local LastBlockingPanel = false
 
 	local RemoveValues
 	for K, Prompt in ipairs(UserPrompts) do
 		local Panel = Prompt:GetPanel()
-		Panel:SetMouseInputEnabled(true)
-
-		if LastBlockingPanel then
-			LastBlockingPanel:SetMouseInputEnabled(false)
-		end
+		Panel:SetMouseInputEnabled(LastBlockingPanel and false or true)
 
 		Panel:SetZPos(1000 + K)
 		Blocking = Blocking or Prompt.Blocking
@@ -1444,6 +1513,31 @@ function BROWSER:ThinkAboutUserPrompts()
 		if not Prompt:DoThink() then
 			RemoveValues = RemoveValues or {} -- Only allocate this table if we need to remove prompts
 			RemoveValues[#RemoveValues + 1] = Prompt
+		end
+	end
+
+	local DockPadding = 4
+
+	for I = #UserPrompts, 1, -1 do
+		local Prompt = UserPrompts[I]
+		if Prompt and IsValid(Prompt.Panel) then
+			local Panel = Prompt.Panel
+
+			local X, Y = Panel:GetPos()
+			local W, H = Panel:GetSize()
+			local Dock = Prompt.Dock
+
+			if Dock ~= NODOCK and Dock ~= FILL then
+				if Dock == TOP or Dock == BOTTOM then
+					Y = Y + StackDocks[Dock]
+					StackDocks[Dock] = StackDocks[Dock] + H + DockPadding
+				else
+					X = X + StackDocks[Dock]
+					StackDocks[Dock] = StackDocks[Dock] + W + DockPadding
+				end
+			end
+
+			Panel:SetPos(X, Y)
 		end
 	end
 

@@ -52,6 +52,9 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 	end
 
 	local filename = string.StripExtension(string.GetFileFromFilename( path ))
+
+	local Browser = AdvDupe2.FileBrowser.Browser
+
 	if autoSave then
 		if IsValid(AdvDupe2.FileBrowser.AutoSaveNode) then
 			local add = true
@@ -62,13 +65,13 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 				end
 			end
 			if add then
-				AdvDupe2.FileBrowser.AutoSaveNode:AddFile(filename)
-				AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
+				error "Not implemented yet"
+				-- AutoSaveNode:AddFile(filename)
+				-- Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
 			end
 		end
 	else
-		AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(filename)
-		AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
+		Browser:IncomingFile("advdupe2/" .. filename .. ".txt")
 	end
 
 	if not errored then
