@@ -20,7 +20,6 @@ local NODETYPE_FILE            = 2
 local FileBrowserPrefix          = "AdvDupe2"
 local LowercaseFileBrowserPrefix = string.lower(FileBrowserPrefix)
 
-local History = {}
 local Narrow  = {}
 
 -- Just in case this needs to be changed later
@@ -514,6 +513,7 @@ do
 	IRootFolder.UserRename       = function(Impl, Browser, Node, RenameTo) end
 	IRootFolder.UserMenu         = function(Impl, Browser, Node, Menu) end
 	IRootFolder.UserDelete       = function(Impl, Browser, Node) end
+	IRootFolder.UserMakeFolder   = function(Impl, Browser, Node, Foldername) end
 
 	-- Ensures the implementor implemented the interface correctly
 	-- if they didn't throw non-halting errors since it might be an optional method
@@ -733,6 +733,10 @@ do
 
 	end
 
+	function AdvDupe1Folder:UserMakeFolder(Browser, Node, Foldername)
+
+	end
+
 	IRootFolder(AdvDupe1Folder) -- validation
 end
 
@@ -791,7 +795,11 @@ do
 	end
 
 	function AdvDupe2Folder:UserDelete(Browser, Node)
-		
+
+	end
+
+	function AdvDupe2Folder:UserMakeFolder(Browser, Node, Foldername)
+		Browser:Notify("Not implemented.", NOTIFY_ERROR, 4)
 	end
 
 	IRootFolder(AdvDupe2Folder) -- validation
@@ -841,10 +849,6 @@ end
 
 function BROWSERTREE:DoNodeRightClick(Node)
 	self:SetSelected(Node)
-
-	local BrowserPanel = self:GetParent():GetParent()
-	BrowserPanel.FileName:KillFocus()
-	BrowserPanel.Desc:KillFocus()
 
 	local Menu     = DermaMenu()
 	local RootImpl = Node.Root.RootImpl
@@ -1295,7 +1299,7 @@ function BROWSER:Notify(Message, Level, Time)
 	timer.Simple(Time, function() if IsValid(Notif.Panel) then Notif:Close() end end)
 end
 
-function BROWSER:StartSave(Node)
+local function SharedFileFolderLogic(self, Node, DoDesc, TypeName, Icon, Completed)
 	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
 
 	local Prompt = self:PushUserPrompt()
@@ -1303,93 +1307,132 @@ function BROWSER:StartSave(Node)
 	Prompt:SetDock(BOTTOM)
 	Prompt.Panel:DockPadding(4,4,4,4)
 
-	local Name, Desc
+	local Name, Desc, Cancel, Save
 
 	local function FinishSave()
 		-- Require filename
 		local FileName = Name:GetText()
 		if FileName == nil or FileName == "" then
-			self:Notify("You must specify a filename.", NOTIFY_ERROR, 2)
+			self:Notify("You must specify a file/folder path.", NOTIFY_ERROR, 2)
 			return
 		end
+
 		local RootImpl = self:GetRootImpl(Node)
-		RootImpl:UserSave(self, Node, FileName, Desc:GetText())
+		Completed(self, RootImpl, Node, FileName, Desc and Desc:GetText() or "")
 		Prompt:Close()
 	end
 
 	-- I tried SetTabPosition; it doesn't like to work, so we're doing it ourselves
 
-	Name = Prompt:Add("DTextEntry")
-		Name:SetAllowNonAsciiCharacters(true)
-		Name:SetTabbingDisabled(false)
-		Name:Dock(TOP)
-		Name:SetPlaceholderText("Dupe name")
-		Name:SetZPos(1)
+	if DoDesc then
+		Name = Prompt:Add("DTextEntry")
+			Name:SetAllowNonAsciiCharacters(true)
+			Name:SetTabbingDisabled(false)
+			Name:Dock(TOP)
+			Name:SetPlaceholderText(TypeName .. " name")
+			Name:SetZPos(1)
 
-	local DescParent = Prompt:Add("Panel")
-		DescParent:Dock(TOP)
-		DescParent:DockMargin(0, 4, 0, 0)
-		DescParent:SetSize(20, 20)
-		DescParent:SetPaintBackgroundEnabled(false)
-		DescParent:SetZPos(10000)
+		local DescParent = Prompt:Add("Panel")
+			DescParent:Dock(TOP)
+			DescParent:DockMargin(0, 4, 0, 0)
+			DescParent:SetSize(20, 20)
+			DescParent:SetPaintBackgroundEnabled(false)
+			DescParent:SetZPos(10000)
 
-	local Cancel = DescParent:Add("DImageButton")
-		Cancel:Dock(RIGHT)
-		Cancel:SetSize(20)
-		Cancel:SetStretchToFit(false)
-		Cancel:SetImage("icon16/cancel.png")
+		Cancel = DescParent:Add("DImageButton")
+			Cancel:Dock(RIGHT)
+			Cancel:SetSize(20)
+			Cancel:SetStretchToFit(false)
+			Cancel:SetImage("icon16/cancel.png")
 
-	local Save = DescParent:Add("DImageButton")
-		Save:Dock(RIGHT)
-		Save:SetSize(24)
-		Save:SetStretchToFit(false)
-		Save:SetImage("icon16/disk.png")
+		Save = DescParent:Add("DImageButton")
+			Save:Dock(RIGHT)
+			Save:SetSize(24)
+			Save:SetStretchToFit(false)
+			Save:SetImage("icon16/" .. Icon .. ".png")
 
-	Desc = DescParent:Add("DTextEntry")
-		Desc:SetAllowNonAsciiCharacters(true)
-		Desc:SetTabbingDisabled(false)
-		Desc:Dock(FILL)
-		Desc:SelectAllOnFocus()
-		Desc:SetPlaceholderText("Dupe description (optional)")
+		Desc = DescParent:Add("DTextEntry")
+			Desc:SetAllowNonAsciiCharacters(true)
+			Desc:SetTabbingDisabled(false)
+			Desc:Dock(FILL)
+			Desc:SelectAllOnFocus()
+			Desc:SetPlaceholderText(TypeName .. " description (optional)")
+	else
+		local DescParent = Prompt:Add("Panel")
+			DescParent:Dock(TOP)
+			DescParent:DockMargin(0, 4, 0, 0)
+			DescParent:SetSize(20, 20)
+			DescParent:SetPaintBackgroundEnabled(false)
+			DescParent:SetZPos(10000)
+
+		Cancel = DescParent:Add("DImageButton")
+			Cancel:Dock(RIGHT)
+			Cancel:SetSize(20)
+			Cancel:SetStretchToFit(false)
+			Cancel:SetImage("icon16/cancel.png")
+
+		Save = DescParent:Add("DImageButton")
+			Save:Dock(RIGHT)
+			Save:SetSize(24)
+			Save:SetStretchToFit(false)
+			Save:SetImage("icon16/" .. Icon .. ".png")
+
+		Name = DescParent:Add("DTextEntry")
+			Name:SetAllowNonAsciiCharacters(true)
+			Name:SetTabbingDisabled(false)
+			Name:Dock(FILL)
+			Name:SetPlaceholderText(TypeName .. " name")
+			Name:SetZPos(1)
+	end
 
 	function Name:OnEnter()
 		self:KillFocus()
-		Desc:SelectAllOnFocus(true)
-		Desc:OnMousePressed()
-		Desc:RequestFocus()
-	end
-	function Name:OnKeyCode(KeyCode)
-		if KeyCode == KEY_TAB then
-			return timer.Simple(0, function() if IsValid(self) then self:OnEnter() end end)
+		if Desc then
+			Desc:SelectAllOnFocus(true)
+			Desc:OnMousePressed()
+			Desc:RequestFocus()
+		else
+			FinishSave()
 		end
-
-		DTextEntry.OnKeyCode(self, KeyCode)
 	end
+
+	if Desc then
+		function Name:OnKeyCode(KeyCode)
+			if KeyCode == KEY_TAB then
+				return timer.Simple(0, function() if IsValid(self) then self:OnEnter() end end)
+			end
+
+			DTextEntry.OnKeyCode(self, KeyCode)
+		end
+	end
+
 	function Name:OnMousePressed()
 		self:OnGetFocus()
 		self:SelectAllOnFocus(true)
 	end
 
-	function Desc:OnEnter(_, WasTab)
-		self:KillFocus()
-		if WasTab then -- Wrap back to Name.
-			Name:SelectAllOnFocus(true)
-			Name:OnMousePressed()
-			Name:RequestFocus()
-		else
-			FinishSave()
+	if Desc then
+		function Desc:OnEnter(_, WasTab)
+			self:KillFocus()
+			if WasTab then -- Wrap back to Name.
+				Name:SelectAllOnFocus(true)
+				Name:OnMousePressed()
+				Name:RequestFocus()
+			else
+				FinishSave()
+			end
 		end
-	end
-	function Desc:OnKeyCode(KeyCode)
-		if KeyCode == KEY_TAB then
-			return timer.Simple(0, function() if IsValid(self) then self:OnEnter(nil, true) end end)
-		end
+		function Desc:OnKeyCode(KeyCode)
+			if KeyCode == KEY_TAB then
+				return timer.Simple(0, function() if IsValid(self) then self:OnEnter(nil, true) end end)
+			end
 
-		DTextEntry.OnKeyCode(self, KeyCode)
-	end
-	function Desc:OnMousePressed()
-		self:OnGetFocus()
-		self:SelectAllOnFocus(true)
+			DTextEntry.OnKeyCode(self, KeyCode)
+		end
+		function Desc:OnMousePressed()
+			self:OnGetFocus()
+			self:SelectAllOnFocus(true)
+		end
 	end
 
 	function Save:DoClick()
@@ -1411,6 +1454,20 @@ function BROWSER:StartSave(Node)
 	Name:RequestFocus()
 	Name:OnMousePressed()
 end
+
+function BROWSER:StartSave(Node)
+	SharedFileFolderLogic(self, Node, true, "Dupe", "disk", function(_, RootImpl, _, FileName, Desc)
+		RootImpl:UserSave(self, Node, FileName, Desc)
+	end)
+end
+
+function BROWSER:StartFolder(Node)
+	SharedFileFolderLogic(self, Node, false, "Folder", "folder_add", function(_, RootImpl, _, FileName, Desc)
+		RootImpl:UserMakeFolder(self, Node, FileName, Desc)
+	end)
+end
+
+
 
 function BROWSER:GetUserPromptStack()
 	local UserPrompts = self.UserPrompts
@@ -1605,17 +1662,6 @@ function PANEL:PerformLayout()
 	BtnX = BtnX - self.Refresh:GetWide() - 5
 	self.Refresh:SetPos(BtnX, 3)
 
-	BtnX = x - self.Submit:GetWide() - 15
-	self.Cancel:SetPos(BtnX, self.Browser:GetTall() + 20)
-	BtnX = BtnX - self.Submit:GetWide() - 5
-	self.Submit:SetPos(BtnX, self.Browser:GetTall() + 20)
-
-	self.FileName:SetWide(BtnX - 10)
-	self.FileName:SetPos(5, self.Browser:GetTall() + 20)
-	self.Desc:SetWide(x - 10)
-	self.Desc:SetPos(5, self.Browser:GetTall() + 39)
-	self.Info:SetPos(5, self.Browser:GetTall() + 20)
-
 	self.LastX = x
 end
 
@@ -1688,193 +1734,11 @@ function PANEL:Init()
 		end)
 		Menu:Open()
 	end
-
-	self.Submit = self:Add "DImageButton"
-	self.Submit:SetMaterial("icon16/page_save.png")
-	self.Submit:SizeToContents()
-	self.Submit:SetTooltip("Confirm Action")
-	self.Submit.DoClick = function()
-		self.Expanding = true
-		AdvDupe2.FileBrowser:Slide(false)
-	end
-
-	self.Cancel = self:Add "DImageButton"
-	self.Cancel:SetMaterial("icon16/cross.png")
-	self.Cancel:SizeToContents()
-	self.Cancel:SetTooltip("Cancel Action")
-	self.Cancel.DoClick = function()
-		self.Expanding = true
-		AdvDupe2.FileBrowser:Slide(false)
-	end
-
-	self.FileName = self:Add "DTextEntry"
-	self.FileName:SetAllowNonAsciiCharacters(true)
-	self.FileName:SetText("File_Name...")
-	self.FileName.Last = 0
-
-	self.FileName.OnEnter = function()
-		self.FileName:KillFocus()
-		self.Desc:SelectAllOnFocus(true)
-		self.Desc.OnMousePressed()
-		self.Desc:RequestFocus()
-	end
-	self.FileName.OnMousePressed = function()
-		self.FileName:OnGetFocus()
-		if (self.FileName:GetValue() == "File_Name..." or
-			self.FileName:GetValue() == "Folder_Name...") then
-			self.FileName:SelectAllOnFocus(true)
-		end
-	end
-	self.FileName:SetUpdateOnType(true)
-	self.FileName.OnTextChanged = function()
-
-		if (self.FileName.FirstChar) then
-			if (string.lower(self.FileName:GetValue()[1] or "") == string.lower(input.LookupBinding("menu") or "q")) then
-				self.FileName:SetText(self.FileName.PrevText)
-				self.FileName:SelectAll()
-				self.FileName.FirstChar = false
-			else
-				self.FileName.FirstChar = false
-			end
-		end
-
-		local new, changed = self.FileName:GetValue():gsub("[^%w_ ]", "")
-		if changed > 0 then
-			self.FileName:SetText(new)
-			self.FileName:SetCaretPos(#new)
-		end
-		if (#self.FileName:GetValue() > 0) then
-			NarrowHistory(self.FileName:GetValue(), self.FileName.Last)
-			local options = {}
-			if (#Narrow > 4) then
-				for i = 1, 4 do table.insert(options, Narrow[i]) end
-			else
-				options = Narrow
-			end
-			if (#options ~= 0 and #self.FileName:GetValue() ~= 0) then
-				self.FileName.HistoryPos = 0
-				self.FileName:OpenAutoComplete(options)
-				self.FileName.Menu.Attempts = 1
-				if (#Narrow > 4) then
-					self.FileName.Menu:AddOption("...", function() end)
-				end
-			elseif (IsValid(self.FileName.Menu)) then
-				self.FileName.Menu:Remove()
-			end
-		end
-		self.FileName.Last = #self.FileName:GetValue()
-	end
-	self.FileName.OnKeyCodeTyped = function(txtbox, code)
-		txtbox:OnKeyCode(code)
-
-		if (code == KEY_ENTER and not txtbox:IsMultiline() and txtbox:GetEnterAllowed()) then
-			if (txtbox.HistoryPos == 5 and txtbox.Menu:ChildCount() == 5) then
-				if ((txtbox.Menu.Attempts + 1) * 4 < #Narrow) then
-					for i = 1, 4 do
-						txtbox.Menu:GetChild(i):SetText(Narrow[i + txtbox.Menu.Attempts * 4])
-					end
-				else
-					txtbox.Menu:GetChild(5):Remove()
-					for i = 4, (txtbox.Menu.Attempts * 4 - #Narrow) * -1 + 1, -1 do
-						txtbox.Menu:GetChild(i):Remove()
-					end
-
-					for i = 1, #Narrow - txtbox.Menu.Attempts * 4 do
-						txtbox.Menu:GetChild(i):SetText(Narrow[i + txtbox.Menu.Attempts * 4])
-					end
-				end
-				txtbox.Menu:ClearHighlights()
-				txtbox.Menu:HighlightItem(txtbox.Menu:GetChild(1))
-				txtbox.HistoryPos = 1
-				txtbox.Menu.Attempts = txtbox.Menu.Attempts + 1
-				return true
-			end
-
-			if (IsValid(txtbox.Menu)) then
-				txtbox.Menu:Remove()
-			end
-			txtbox:FocusNext()
-			txtbox:OnEnter()
-			txtbox.HistoryPos = 0
-		end
-
-		if (txtbox.m_bHistory or IsValid(txtbox.Menu)) then
-			if (code == KEY_UP) then
-				txtbox.HistoryPos = txtbox.HistoryPos - 1;
-				if (txtbox.HistoryPos ~= -1 or txtbox.Menu:ChildCount() ~= 5) then
-					txtbox:UpdateFromHistory()
-				else
-					txtbox.Menu:ClearHighlights()
-					txtbox.Menu:HighlightItem(txtbox.Menu:GetChild(5))
-					txtbox.HistoryPos = 5
-				end
-			end
-			if (code == KEY_DOWN or code == KEY_TAB) then
-				txtbox.HistoryPos = txtbox.HistoryPos + 1;
-				if (txtbox.HistoryPos ~= 5 or txtbox.Menu:ChildCount() ~= 5) then
-					txtbox:UpdateFromHistory()
-				else
-					txtbox.Menu:ClearHighlights()
-					txtbox.Menu:HighlightItem(txtbox.Menu:GetChild(5))
-				end
-			end
-
-		end
-	end
-	self.FileName.OnValueChange = function()
-		if (self.FileName:GetValue() ~= "File_Name..." and
-			self.FileName:GetValue() ~= "Folder_Name...") then
-			local new, changed = self.FileName:GetValue():gsub("[^%w_ ]", "")
-			if changed > 0 then
-				self.FileName:SetText(new)
-				self.FileName:SetCaretPos(#new)
-			end
-		end
-	end
-
-	self.Desc = self:Add "DTextEntry"
-	self.Desc.OnEnter = self.Submit.DoClick
-	self.Desc:SetText("Description...")
-	self.Desc.OnMousePressed = function()
-		self.Desc:OnGetFocus()
-		if (self.Desc:GetValue() == "Description...") then
-			self.Desc:SelectAllOnFocus(true)
-		end
-	end
-
-	self.Info = self:Add "DLabel"
-	self.Info:SetVisible(false)
-
 end
 
 function PANEL:Slide(expand)
-	if (expand) then
-		if (self.Expanded) then
-			self:SetTall(self:GetTall() - 40)
-			self.Expanded = false
-		else
-			self:SetTall(self:GetTall() + 5)
-		end
-	else
-		if (not self.Expanded) then
-			self:SetTall(self:GetTall() + 40)
-			self.Expanded = true
-		else
-			self:SetTall(self:GetTall() - 5)
-		end
-	end
-	count = count + 1
-	if (count < 9) then
-		timer.Simple(0.01, function() self:Slide(expand) end)
-	else
-		if (expand) then
-			self.Expanded = true
-		else
-			self.Expanded = false
-		end
-		self.Expanding = false
-		count = 0
-	end
+	-- Stub. Need to entirely remove this.
+	ErrorNoHalt("AdvDupe2:Slide is no longer implemented")
 end
 
 function PANEL:GetFullPath(node)
