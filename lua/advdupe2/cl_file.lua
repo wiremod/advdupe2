@@ -71,7 +71,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 			end
 		end
 	else
-		Browser:IncomingFile("advdupe2/" .. filename .. ".txt")
+		Browser:IncomingFile(path)
 	end
 
 	if not errored then

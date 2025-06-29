@@ -20,8 +20,6 @@ local NODETYPE_FILE            = 2
 local FileBrowserPrefix          = "AdvDupe2"
 local LowercaseFileBrowserPrefix = string.lower(FileBrowserPrefix)
 
-local Narrow  = {}
-
 -- Just in case this needs to be changed later
 
 local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth, NodeFont
@@ -763,7 +761,7 @@ do
 		Browser:AwaitingFile(DataPath .. ".txt", function()
 			Node:Expand()
 			local File = Filename .. ".txt"
-			local NewNode = Node:AddFile()
+			local NewNode = Node:AddFile(File)
 			SetupDataFile(NewNode, DataPath, File)
 		end)
 
@@ -799,7 +797,15 @@ do
 	end
 
 	function AdvDupe2Folder:UserMakeFolder(Browser, Node, Foldername)
-		Browser:Notify("Not implemented.", NOTIFY_ERROR, 4)
+		local DataPath = (Node.Path or "advdupe2") .. "/" .. Foldername
+
+		file.CreateDir(DataPath)
+
+		local NewNode = Node:AddFolder(Foldername)
+		SetupDataSubfolder(NewNode, DataPath, Foldername)
+		Node:Expand()
+		NewNode:Expand()
+		Browser:ScrollTo(NewNode)
 	end
 
 	IRootFolder(AdvDupe2Folder) -- validation
@@ -1605,6 +1611,23 @@ function BROWSER:ThinkAboutUserPrompts()
 	end
 
 	return not Blocking
+end
+
+function BROWSER:ScrollTo(Node)
+	self.TreeView:SortRecheck()
+	local Index = -1
+
+	for K, ENode in ipairs(self.TreeView.ExpandedNodeArray) do
+		if ENode == Node then
+			Index = K
+			break
+		end
+	end
+
+	if Index == -1 then return end
+
+	local ScrollPos = math.Max(0, (Index * TallOfOneNode) - (self:GetTall() / 2))
+	self.TreeView.VBar:SetScroll(ScrollPos)
 end
 
 function BROWSER:Think()
