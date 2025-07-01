@@ -761,7 +761,7 @@ do
 			Node:Expand()
 			local NewFilename = string.GetFileFromFilename(NewFilepath)
 			local NewNode = Node:AddFile(NewFilename)
-			SetupDataFile(NewNode, File, NewFilename)
+			SetupDataFile(NewNode, NewFilepath, NewFilename)
 		end)
 
 		if game.SinglePlayer() then
