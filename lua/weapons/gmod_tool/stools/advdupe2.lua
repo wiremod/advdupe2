@@ -1064,6 +1064,14 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
 
+	local function AddSpacer(Panel)
+		local Spacer = vgui.Create("DPanel", Panel)
+		Spacer:SetSize(2, 1)
+		Spacer:DockMargin(32, 0, 32, 0)
+		Spacer.Paint = function(self, w, h) self:GetSkin():PaintMenuSpacer(self, w, h) end
+		Panel:AddItem(Spacer)
+	end
+
 	local BuildCPanel
 	function BuildCPanel(CPanel)
 		CPanel:ClearControls()
@@ -1093,7 +1101,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_constraints" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Paste with or without constraints")
+		Check:SetTooltip("Paste with or without constraints")
 		CPanel:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1101,42 +1109,64 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_parents" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Paste with or without parenting")
+		Check:SetTooltip("Paste with or without parenting")
 		CPanel:AddItem(Check)
+
+		AddSpacer(CPanel)
 
 		local Check_1 = vgui.Create("DCheckBoxLabel")
 		local Check_2 = vgui.Create("DCheckBoxLabel")
+		local Check_3 = vgui.Create("DCheckBoxLabel")
 
-		Check_1:SetText( "Unfreeze all after paste" )
+		Check_1:SetText( "Keep props frozen after paste" )
 		Check_1:SetDark(true)
-		Check_1:SetConVar( "advdupe2_paste_unfreeze" )
-		Check_1:SetValue( 0 )
+		Check_1:SetValue( 1 )
 		Check_1.OnChange = function()
-			if(Check_1:GetChecked() and Check_2:GetChecked()) then
-				Check_2:SetValue(0)
+			if Check_1:GetChecked() then
+				if Check_2:GetChecked() then Check_2:SetValue(0) end
+				if Check_3:GetChecked() then Check_3:SetValue(0) end
 			end
 		end
-		Check_1:SetToolTip("Unfreeze all props after pasting")
+		Check_1:SetTooltip("Keeps all props frozen after pasting")
+		Check_1.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
 		CPanel:AddItem(Check_1)
 
-		Check_2:SetText( "Preserve frozen state after paste" )
+		Check_2:SetText( "Unfreeze all after paste" )
 		Check_2:SetDark(true)
-		Check_2:SetConVar( "advdupe2_preserve_freeze" )
+		Check_2:SetConVar( "advdupe2_paste_unfreeze" )
 		Check_2:SetValue( 0 )
 		Check_2.OnChange = function()
-			if(Check_2:GetChecked() and Check_1:GetChecked()) then
-				Check_1:SetValue(0)
+			if Check_2:GetChecked() then
+				if Check_1:GetChecked() then Check_1:SetValue(0) end
+				if Check_3:GetChecked() then Check_3:SetValue(0) end
 			end
 		end
-		Check_2:SetToolTip("Makes props have the same frozen state as when they were copied")
+		Check_2:SetTooltip("Unfreeze all props after pasting")
+		Check_2.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
 		CPanel:AddItem(Check_2)
+
+		Check_3:SetText( "Preserve frozen state after paste" )
+		Check_3:SetDark(true)
+		Check_3:SetConVar( "advdupe2_preserve_freeze" )
+		Check_3:SetValue( 0 )
+		Check_3.OnChange = function()
+			if Check_3:GetChecked() then
+				if Check_1:GetChecked() then Check_1:SetValue(0) end
+				if Check_2:GetChecked() then Check_2:SetValue(0) end
+			end
+		end
+		Check_3:SetTooltip("Makes props have the same frozen state as when they were copied")
+		Check_3.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
+		CPanel:AddItem(Check_3)
+
+		AddSpacer(CPanel)
 
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Area copy constrained props outside of box" )
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_outside" )
 		Check:SetValue( 0 )
-		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
+		Check:SetTooltip("Copy entities outside of the area copy that are constrained to entities insde")
 		CPanel:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1147,6 +1177,8 @@ if(CLIENT) then
 		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
 		CPanel:AddItem(Check)
 
+		AddSpacer(CPanel)
+
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Sort constraints by their connections" )
 		Check:SetDark(true)
@@ -1154,6 +1186,8 @@ if(CLIENT) then
 		Check:SetValue( GetConVarNumber("advdupe2_sort_constraints") )
 		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
 		CPanel:AddItem(Check)
+
+		AddSpacer(CPanel)
 
 		-- Ghost Percentage
 		local NumSlider = vgui.Create( "DNumSlider" )
@@ -1194,6 +1228,8 @@ if(CLIENT) then
 		NumSlider:SetConVar( "advdupe2_area_copy_size" )
 		NumSlider:SetToolTip("Change the size of the area copy")
 		CPanel:AddItem(NumSlider)
+
+		AddSpacer(CPanel)
 
 		local Category1 = vgui.Create("DCollapsibleCategory")
 		CPanel:AddItem(Category1)
