@@ -24,7 +24,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 	else
 		path = AdvDupe2.GetFilename(AdvDupe2.SavePath)
 	end
-
+	local OriginalPath = AdvDupe2.SavePath .. ".txt"
 	path = AdvDupe2.SanitizeFilename(path)
 	local dupefile = file.Open(path, "wb", "DATA")
 	if not dupefile then
@@ -71,7 +71,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 			end
 		end
 	else
-		Browser:IncomingFile(path)
+		Browser:IncomingFile(OriginalPath, path)
 	end
 
 	if not errored then

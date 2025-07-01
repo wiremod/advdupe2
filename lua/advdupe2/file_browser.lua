@@ -755,11 +755,11 @@ do
 		AdvDupe2.SavePath = DataPath
 
 		-- Enqueue handler
-		Browser:AwaitingFile(DataPath .. ".txt", function()
+		Browser:AwaitingFile(DataPath .. ".txt", function(NewFilepath)
 			Node:Expand()
-			local File = Filename .. ".txt"
-			local NewNode = Node:AddFile(File)
-			SetupDataFile(NewNode, DataPath, File)
+			local NewFilename = string.GetFileFromFilename(NewFilepath)
+			local NewNode = Node:AddFile(NewFilename)
+			SetupDataFile(NewNode, File, NewFilename)
 		end)
 
 		if game.SinglePlayer() then
@@ -770,7 +770,16 @@ do
 	end
 
 	function AdvDupe2Folder:UserRename(Browser, Node, RenameTo)
+		local NodePath = "advdupe2/" .. GetNodeDataPath(Node) .. ".txt"
+		local NewNodePath = string.GetPathFromFilename(NodePath) .. RenameTo .. ".txt"
+		if file.Rename(NodePath, NewNodePath) then
+			SetupDataFile(Node, NewNodePath, RenameTo .. ".txt")
+			Node.ParentNode:MarkSortDirty()
+			Browser:ScrollTo(Node)
+			return true
+		end
 
+		return false
 	end
 
 	function AdvDupe2Folder:UserMenu(Browser, Node, Menu)
@@ -1301,9 +1310,7 @@ function BROWSER:Notify(Message, Level, Time)
 	timer.Simple(Time, function() if IsValid(Notif.Panel) then Notif:Close() end end)
 end
 
-local function SharedFileFolderLogic(self, Node, DoDesc, TypeName, Icon, Completed)
-	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
-
+local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, DescTextPlaceholder, Icon, Completed, LastName, LastDesc, SkipToDesc, BlockName)
 	local Prompt = self:PushUserPrompt()
 	Prompt:SetBlocking(true)
 	Prompt:SetDock(BOTTOM)
@@ -1331,8 +1338,10 @@ local function SharedFileFolderLogic(self, Node, DoDesc, TypeName, Icon, Complet
 			Name:SetAllowNonAsciiCharacters(true)
 			Name:SetTabbingDisabled(false)
 			Name:Dock(TOP)
-			Name:SetPlaceholderText(TypeName .. " name")
+			Name:SetPlaceholderText(NameTextPlaceholder)
 			Name:SetZPos(1)
+			if LastName then Name:SetText(LastName) end
+			if BlockName then Name:SetEnabled(false) end
 
 		local DescParent = Prompt:Add("Panel")
 			DescParent:Dock(TOP)
@@ -1358,7 +1367,8 @@ local function SharedFileFolderLogic(self, Node, DoDesc, TypeName, Icon, Complet
 			Desc:SetTabbingDisabled(false)
 			Desc:Dock(FILL)
 			Desc:SelectAllOnFocus()
-			Desc:SetPlaceholderText(TypeName .. " description (optional)")
+			Desc:SetPlaceholderText(DescTextPlaceholder)
+			if LastDesc then Desc:SetText(LastDesc) end
 	else
 		local DescParent = Prompt:Add("Panel")
 			DescParent:Dock(TOP)
@@ -1383,8 +1393,9 @@ local function SharedFileFolderLogic(self, Node, DoDesc, TypeName, Icon, Complet
 			Name:SetAllowNonAsciiCharacters(true)
 			Name:SetTabbingDisabled(false)
 			Name:Dock(FILL)
-			Name:SetPlaceholderText(TypeName .. " name")
+			Name:SetPlaceholderText(NameTextPlaceholder)
 			Name:SetZPos(1)
+			if LastName then Name:SetText(LastName) end
 	end
 
 	function Name:OnEnter()
@@ -1453,20 +1464,39 @@ local function SharedFileFolderLogic(self, Node, DoDesc, TypeName, Icon, Complet
 		self.OnKeyCodeTyped = OnKeyCodeTyped
 	end
 
-	Name:RequestFocus()
-	Name:OnMousePressed()
+	if SkipToDesc then
+		Desc:RequestFocus()
+		Desc:OnMousePressed()
+	else
+		Name:RequestFocus()
+		Name:OnMousePressed()
+	end
 end
 
 function BROWSER:StartSave(Node)
-	SharedFileFolderLogic(self, Node, true, "Dupe", "disk", function(_, RootImpl, _, FileName, Desc)
+	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
+
+	SharedFileFolderLogic(self, Node, true, "Dupe name", "Dupe description", "disk", function(_, RootImpl, _, FileName, Desc)
 		RootImpl:UserSave(self, Node, FileName, Desc)
-	end)
+		self.LastFileName = FileName
+		self.LastFileDesc = Desc
+	end, self.LastFileName, self.LastFileDesc)
 end
 
 function BROWSER:StartFolder(Node)
-	SharedFileFolderLogic(self, Node, false, "Folder", "folder_add", function(_, RootImpl, _, FileName, Desc)
+	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
+
+	SharedFileFolderLogic(self, Node, false, "Dupe name", "Dupe description", "folder_add", function(_, RootImpl, _, FileName, Desc)
 		RootImpl:UserMakeFolder(self, Node, FileName, Desc)
 	end)
+end
+
+function BROWSER:StartRename(Node)
+	SharedFileFolderLogic(self, Node, true, "", "New filename", "page_go", function(_, RootImpl, _, FileName, Desc)
+		if not RootImpl:UserRename(self, Node, Desc) then
+			self:Notify("Rename failed.", NOTIFY_ERROR, 5)
+		end
+	end, string.GetFileFromFilename(Node.Path), nil, true, true)
 end
 
 
