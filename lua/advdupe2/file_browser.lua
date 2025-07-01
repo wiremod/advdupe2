@@ -703,15 +703,17 @@ do
 	end
 
 	function AdvDupe1Folder:UserRename(Browser, Node, RenameTo)
-
+		return false
 	end
 
 	function AdvDupe1Folder:UserMenu(Browser, Node, Menu)
-
+		if Node:IsFile() then
+			Menu:AddOption("Open",    function() self:UserLoad(Browser, Node)  end, "icon16/page_go.png")
+		end
 	end
 
 	function AdvDupe1Folder:UserDelete(Browser, Node)
-
+		return false
 	end
 
 	function AdvDupe1Folder:UserMakeFolder(Browser, Node, Foldername)
