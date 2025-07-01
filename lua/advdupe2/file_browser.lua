@@ -1559,6 +1559,7 @@ end
 
 function BROWSER:PopUserPromptByValue(UserPrompt)
 	if table.RemoveByValue(self:GetUserPromptStack(), UserPrompt) then
+		if IsValid(UserPrompt.Panel) then UserPrompt.Panel:Remove() end
 		self:DecrementUserPromptStackPtr()
 	end
 end
