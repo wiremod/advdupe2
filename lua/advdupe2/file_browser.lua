@@ -1566,10 +1566,8 @@ end
 
 function BROWSER:ClearAllUserPrompts()
 	for _, Prompt in ipairs(self:GetUserPromptStack()) do
-		Prompt.Panel:Remove()
+		Prompt:Close()
 	end
-	table.Empty(self:GetUserPromptStack())
-	self.UserPromptStackPtr = 0
 end
 
 -- Sets input enabled on user prompt stack and determines if user input should be enabled/disabled on the main browser
@@ -1810,7 +1808,11 @@ function PANEL:Init()
 	self.SwitchToList.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_LIST and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
 	self.SwitchToTiles.Think = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TILES and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
 
-	self.Refresh = self:AddRightsideButton("arrow_refresh", "Refresh Files", function(button) UpdateClientFiles(self.Browser) end)
+	self.Refresh = self:AddRightsideButton("arrow_refresh", "Refresh Files", function(button)
+		self.Browser:ClearAllUserPrompts()
+		self.Settings:SetImage("icon16/cog.png")
+		UpdateClientFiles(self.Browser)
+	end)
 	self.Help    = self:AddRightsideButton("help", "Help Section", function(btn)
 		local Menu = DermaMenu()
 		Menu:AddOption("Bug Reporting", function()
