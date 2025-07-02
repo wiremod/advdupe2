@@ -587,25 +587,27 @@ do
 
 		local PosX,  PosY
 		local SizeW, SizeH
-		local SizeC
 
-		local _, ContentTall = self.Panel:ChildrenSize()
+		local ContentWide, ContentTall = self.Panel:ChildrenSize()
 		ContentTall = math.Min(ContentTall, self.Browser:GetTall() - 32)
 		local Dock = self.Dock
 		if not Dock then error("No dock??") end
 
 		if Dock == TOP then
-			SizeC = ContentTall
 			SizeW = math.ceil((RatioX * ParentWidth) - (DockPadding * 2))
-			SizeH = math.ceil(SizeC * RatioY)
+			SizeH = math.ceil(ContentTall * RatioY)
 			PosX  = ((ParentWidth / 2) - (SizeW / 2))
 			PosY  = DockPadding
 		elseif Dock == BOTTOM then
-			SizeC = ContentTall
 			SizeW = math.ceil((RatioX * ParentWidth) - (DockPadding * 2))
-			SizeH = math.ceil(SizeC * RatioY)
+			SizeH = math.ceil(ContentTall * RatioY)
 			PosX  = ((ParentWidth / 2) - (SizeW / 2))
 			PosY  = ParentHeight - SizeH - DockPadding
+		elseif Dock == FILL then
+			SizeW = math.ceil((RatioX * ContentWide) - (DockPadding * 2))
+			SizeH = math.ceil(ContentTall * RatioY)
+			PosX  = ((ParentWidth / 2) - (SizeW / 2))
+			PosY  = (ParentHeight / 2) - (SizeH / 2) - (DockPadding / 2)
 		end
 
 		self.Panel:SetPos(PosX, PosY)
@@ -756,12 +758,28 @@ do
 		local DataPath = (Node.Path or "advdupe2") .. "/" .. Filename
 		AdvDupe2.SavePath = DataPath
 
+		-- This is kinda weird but it's the only way I've been able to reliably avoid deadlocks here
+		hook.Add("AdvDupe2_InitProgressBar", "AdvDupe2_BrowserDownloadPrompt", function(Txt)
+			hook.Remove("AdvDupe2_InitProgressBar", "AdvDupe2_BrowserDownloadPrompt")
+			if Txt ~= "Saving:" then return end
+
+			Browser:ShowSavePrompt()
+			hook.Add("AdvDupe2_RemoveProgressBar", "AdvDupe2_BrowserDownloadPrompt", function()
+				hook.Remove("AdvDupe2_RemoveProgressBar", "AdvDupe2_BrowserDownloadPrompt")
+				Browser:HideSavePrompt()
+			end)
+		end)
 		-- Enqueue handler
 		Browser:AwaitingFile(DataPath .. ".txt", function(NewFilepath)
+			if not NewFilepath then
+				Browser:HideSavePrompt()
+				return
+			end
 			Node:Expand()
 			local NewFilename = string.GetFileFromFilename(NewFilepath)
 			local NewNode = Node:AddFile(NewFilename)
 			SetupDataFile(NewNode, NewFilepath, NewFilename)
+			Browser:HideSavePrompt()
 		end)
 
 		if game.SinglePlayer() then
@@ -1568,6 +1586,52 @@ function BROWSER:ClearAllUserPrompts()
 	for _, Prompt in ipairs(self:GetUserPromptStack()) do
 		Prompt:Close()
 	end
+end
+
+local WORLD  = Material("icon16/world.png", "smooth")
+local FOLDER = Material("icon16/folder.png", "smooth")
+local PAGE   = Material("icon16/page.png", "smooth")
+
+function BROWSER:ShowSavePrompt()
+	if self.BrowserWait then return end
+
+	local BrowserWait = self:PushUserPrompt()
+	self.BrowserWait = BrowserWait
+
+	BrowserWait:SetDock(FILL)
+	BrowserWait.Panel.ChildrenSize = function(notif)
+		local Parent = notif:GetParent()
+		local W, _ = Parent:GetSize()
+		return W / 1.5, 128
+	end
+	BrowserWait:SetBlocking(true)
+	BrowserWait.Panel:SetPaintBackground(true)
+
+	local Text = BrowserWait.Panel:Add("DLabel")
+	Text:SetText("Downloading...")
+	Text:Dock(TOP)
+	Text:SetTextInset(0, 6)
+	Text:SetDark(true)
+	Text:SetContentAlignment(8)
+
+	function BrowserWait.Panel:Paint(w, h)
+		DPanel.Paint(self, w, h)
+		local AnimTime = 1.5
+		local Time = (UserInterfaceTimeFunc() % AnimTime) / AnimTime
+		local SinTime = math.sin(Time * math.pi)
+		local Size = math.ease.OutQuad(SinTime) * 32
+
+		surface.SetDrawColor(255, 255, 255, 255)
+		surface.SetMaterial(WORLD)  surface.DrawTexturedRectRotated(24, h / 2, 32, 32, 0)
+		surface.SetMaterial(FOLDER) surface.DrawTexturedRectRotated(w - 24, h / 2, 32, 32, 0)
+		surface.SetMaterial(PAGE)   surface.DrawTexturedRectRotated(math.Remap(Time, 0, 1, 24, w - 24), math.Remap(SinTime, 0, 1, h / 2, h / 3), Size, Size, 0)
+	end
+end
+
+function BROWSER:HideSavePrompt()
+	if not self.BrowserWait then return end
+	self.BrowserWait:Close()
+	self.BrowserWait = nil
 end
 
 -- Sets input enabled on user prompt stack and determines if user input should be enabled/disabled on the main browser

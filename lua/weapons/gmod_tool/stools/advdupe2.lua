@@ -1894,11 +1894,15 @@ if(CLIENT) then
 		AdvDupe2.BusyBar = true
 	end
 	net.Receive("AdvDupe2_InitProgressBar", function()
-		AdvDupe2.InitProgressBar(net.ReadString())
+		local Label = net.ReadString()
+		AdvDupe2.InitProgressBar(Label)
+		hook.Run("AdvDupe2_InitProgressBar", Label)
 	end)
 
 	net.Receive("AdvDupe2_UpdateProgressBar", function()
-		AdvDupe2.ProgressBar.Percent = net.ReadFloat()
+		local Percent = net.ReadFloat()
+		AdvDupe2.ProgressBar.Percent = Percent
+		hook.Run("AdvDupe2_UpdateProgressBar", Percent)
 	end)
 
 	function AdvDupe2.RemoveProgressBar()
@@ -1912,6 +1916,7 @@ if(CLIENT) then
 	end
 	net.Receive("AdvDupe2_RemoveProgressBar", function()
 		AdvDupe2.RemoveProgressBar()
+		hook.Run("AdvDupe2_RemoveProgressBar")
 	end)
 
 	net.Receive("AdvDupe2_ResetOffsets", function()
@@ -1963,7 +1968,7 @@ if(CLIENT) then
 		end
 	end)
 
-	net.Receive("AdvDupe2_SetDupeInfo", function(len, ply, len2)
+	net.Receive("AdvDupe2_SetDupeInfo", function(len, ply)
 		if AdvDupe2.Info then
 			AdvDupe2.Info.File:SetText("File: "..net.ReadString())
 			AdvDupe2.Info.Creator:SetText("Creator: "..net.ReadString())
