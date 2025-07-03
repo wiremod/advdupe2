@@ -1,25 +1,21 @@
-AdvDupe2 = {
-	Version = "1.1.0",
-	Revision = 51
-}
+AdvDupe2 = AdvDupe2 or {}
 
-AdvDupe2.DataFolder = "advdupe2" --name of the folder in data where dupes will be saved
-
-function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
+function AdvDupe2.Notify(ply, msg, typ, showsvr, dur)
 	net.Start("AdvDupe2Notify")
 		net.WriteString(msg)
 		net.WriteUInt(typ or 0, 8)
 		net.WriteFloat(dur or 5)
 	net.Send(ply)
 
-	if(showsvr==true)then
-		print("[AdvDupe2Notify]\t"..ply:Nick()..": "..msg)
+	if showsvr == true then
+		print("[AdvDupe2Notify]\t" .. ply:Nick() .. ": " .. msg)
 	end
 end
 
 AddCSLuaFile( "autorun/client/advdupe2_cl_init.lua" )
 AddCSLuaFile( "advdupe2/file_browser.lua" )
 AddCSLuaFile( "advdupe2/sh_codec.lua" )
+AddCSLuaFile( "advdupe2/sh_file.lua" )
 AddCSLuaFile( "advdupe2/cl_file.lua" )
 AddCSLuaFile( "advdupe2/cl_ghost.lua" )
 
@@ -124,5 +120,6 @@ end)
 include( "advdupe2/sv_clipboard.lua" )
 include( "advdupe2/sh_codec.lua" )
 include( "advdupe2/sv_misc.lua" )
+include( "advdupe2/sh_file.lua" )
 include( "advdupe2/sv_file.lua" )
 include( "advdupe2/sv_ghost.lua" )
