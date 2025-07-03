@@ -1,13 +1,3 @@
---[[
-	Title: Adv. Dupe 2 File Browser
-
-	Desc: Displays and interfaces with duplication files.
-
-	Authors: March (v2.0), TB (v1.0)
-
-	Version: 2.0
-]]
-
 -- Enums
 local ADVDUPE2_AREA_ADVDUPE2   = AdvDupe2.AREA_ADVDUPE2
 local ADVDUPE2_AREA_PUBLIC     = AdvDupe2.AREA_PUBLIC
