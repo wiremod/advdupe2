@@ -40,7 +40,7 @@ util.AddNetworkString("AdvDupe2_ReceiveFile")
 util.AddNetworkString("AdvDupe2_CanAutoSave")
 
 CreateConVar("AdvDupe2_DebugInfo", "0", {FCVAR_ARCHIVE}, "Should extra info be printed to console?", 0, 1)
-CreateConVar("AdvDupe2_SpawnRate", "1", {FCVAR_ARCHIVE})
+CreateConVar("AdvDupe2_SpawnRate", "1", {FCVAR_ARCHIVE}, "Determines the spawn speed of duplicates", 0, 100)
 CreateConVar("AdvDupe2_MaxFileSize", "200", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxEntities", "0", {FCVAR_ARCHIVE})
 CreateConVar("AdvDupe2_MaxConstraints", "0", {FCVAR_ARCHIVE})
