@@ -114,7 +114,7 @@ end
 ---------------------------------------------------------]]
 
 function AdvDupe2.duplicator.IsCopyable(Ent)
-	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass())
+	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass()) and IsValid(Ent:GetPhysicsObject())
 end
 
 local function CopyEntTable(Ent, Offset)
@@ -201,7 +201,6 @@ local function CopyEntTable(Ent, Offset)
 		end
 	end
 
-	if not Tab.PhysicsObjects[0] then Tab.PhysicsObjects[0] = {Angle = Ent:GetAngles()} end
 	Tab.PhysicsObjects[0].Pos = Tab.Pos - Offset
 
 	Tab.Pos = nil
@@ -435,11 +434,7 @@ local function Copy(ply, Ent, EntTable, ConstraintTable, Offset)
 		end
 
 		for k, v in pairs(EntData.PhysicsObjects) do
-			local phys = Ent:GetPhysicsObjectNum(k)
-
-			if IsValid(phys) then
-				phys:EnableMotion(v.Frozen)
-			end
+			Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 		end
 	end
 	RecursiveCopy(Ent)
@@ -464,11 +459,7 @@ function AdvDupe2.duplicator.AreaCopy(ply, Entities, Offset, CopyOutside)
 
 			if (not constraint.HasConstraints(Ent)) then
 				for k, v in pairs(EntTable[Ent:EntIndex()].PhysicsObjects) do
-					local phys = Ent:GetPhysicsObjectNum(k)
-
-					if IsValid(phys) then
-						phys:EnableMotion(v.Frozen)
-					end
+					Ent:GetPhysicsObjectNum(k):EnableMotion(v.Frozen)
 				end
 			else
 				for k, v in pairs(Ent.Constraints) do
