@@ -809,7 +809,12 @@ do
 	end
 
 	function AdvDupe2Folder:UserDelete(Browser, Node)
-
+		local NodePath = "advdupe2/" .. GetNodeDataPath(Node) .. ".txt"
+		local Success = file.Delete(NodePath)
+		if Success then
+			Node:Remove(Node)
+		end
+		return Success
 	end
 
 	function AdvDupe2Folder:UserMakeFolder(Browser, Node, Foldername)
@@ -1509,7 +1514,52 @@ function BROWSER:StartRename(Node)
 	end, string.GetFileFromFilename(Node.Path), nil, true, true)
 end
 
+function BROWSER:StartDelete(Node)
+	local Prompt = self:PushUserPrompt()
+	Prompt:SetBlocking(true)
+	Prompt:SetDock(BOTTOM)
+	Prompt.Panel:DockPadding(4,4,4,4)
 
+	local DescParent = Prompt:Add("Panel")
+		DescParent:Dock(TOP)
+		DescParent:DockMargin(0, 4, 0, 0)
+		DescParent:SetSize(20, 32)
+		DescParent:SetPaintBackgroundEnabled(false)
+		DescParent:SetZPos(10000)
+
+	local Cancel = DescParent:Add("DImageButton")
+		Cancel:Dock(RIGHT)
+		Cancel:SetSize(20)
+		Cancel:SetStretchToFit(false)
+		Cancel:SetImage("icon16/cancel.png")
+
+	local Delete = DescParent:Add("DImageButton")
+		Delete:Dock(RIGHT)
+		Delete:SetSize(24)
+		Delete:SetStretchToFit(false)
+		Delete:SetImage("icon16/bin.png")
+
+	local Name = DescParent:Add("DLabel")
+		Name:Dock(FILL)
+		Name:SetDark(true)
+		Name:SetText("Are you sure to want to delete\n" .. Node.Path .. "?")
+		Name:SetAutoStretchVertical(true)
+		Name:SetZPos(1)
+
+	function Delete.DoClick()
+		local RootImpl = self:GetRootImpl(Node)
+		if RootImpl:UserDelete(self, Node) then
+			self:Notify("Deleted " .. Node.Text .. ".", NOTIFY_CLEANUP, 5)
+		else
+			self:Notify("Delete failed.", NOTIFY_ERROR, 5)
+		end
+		Prompt:Close()
+	end
+
+	function Cancel:DoClick()
+		Prompt:Close()
+	end
+end
 
 function BROWSER:GetUserPromptStack()
 	local UserPrompts = self.UserPrompts
