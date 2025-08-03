@@ -115,11 +115,7 @@ end
 
 function AdvDupe2.duplicator.IsCopyable(ent)
 	local class = ent:GetClass()
-	if ent.DoNotDuplicate or not duplicator.IsAllowed(class) then return false end
-
-	-- Don't dupe SWEPSs that aren't spawnable
-	local weapon_info = list.GetForEdit("Weapon")[class]
-	if weapon_info and weapon_info.Spawnable == false then return false end
+	if not duplicator.IsAllowed(class) or ent.DoNotDuplicate then return false end
 
 	-- Don't dupe SENTs that aren't spawnable or registered
 	if scripted_ents.GetMember(class, "Spawnable") == false and not duplicator.FindEntityClass(class) then return false end
