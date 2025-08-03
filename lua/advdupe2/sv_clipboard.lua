@@ -117,11 +117,11 @@ function AdvDupe2.duplicator.IsCopyable(ent)
 	local class = ent:GetClass()
 	if not duplicator.IsAllowed(class) or ent.DoNotDuplicate then return false end
 
-	-- Don't dupe SENTs that aren't spawnable or registered
-	if scripted_ents.GetMember(class, "Spawnable") == false and not duplicator.FindEntityClass(class) then return false end
-
-	-- Don't dupe carried weapons
-	if ent:IsWeapon() and ent:GetOwner():IsValid() then return false end
+	if not ent:GetPhysicsObject():IsValid() then
+		-- Support for rare cases when an entity does not have a physical object but still can be copied
+		if scripted_ents.GetMember(class, "Spawnable") == false and not duplicator.FindEntityClass(class) then return false end
+		if ent:IsWeapon() and ent:GetOwner():IsValid() then return false end
+	end
 
 	return true
 end
