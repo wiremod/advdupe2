@@ -113,8 +113,17 @@ end
 	Returns a copy of the passed entity's table
 ---------------------------------------------------------]]
 
-function AdvDupe2.duplicator.IsCopyable(Ent)
-	return not Ent.DoNotDuplicate and duplicator.IsAllowed(Ent:GetClass())
+function AdvDupe2.duplicator.IsCopyable(ent)
+	local class = ent:GetClass()
+	if not duplicator.IsAllowed(class) or ent.DoNotDuplicate then return false end
+
+	if not ent:GetPhysicsObject():IsValid() then
+		-- Support for rare cases when an entity does not have a physical object but still can be copied
+		if scripted_ents.GetMember(class, "Spawnable") == false and not duplicator.FindEntityClass(class) then return false end
+		if ent:IsWeapon() and ent:GetOwner():IsValid() then return false end
+	end
+
+	return true
 end
 
 local function CopyEntTable(Ent, Offset)
