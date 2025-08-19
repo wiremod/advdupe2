@@ -30,7 +30,7 @@ local function SaveFile(ply, cmd, args)
 	local Tab = {Entities = ply.AdvDupe2.Entities, Constraints = ply.AdvDupe2.Constraints, HeadEnt = ply.AdvDupe2.HeadEnt, Description=args[2]}
 
 	AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-		AdvDupe2.SendToClient(ply, data, 0)
+		AdvDupe2.SendToClient(ply, data, false)
 	end)
 end
 concommand.Add("AdvDupe2_SaveFile", SaveFile)
@@ -46,7 +46,7 @@ function AdvDupe2.SendToClient(ply, data, autosave)
 	AdvDupe2.InitProgressBar(ply,"Saving:")
 
 	net.Start("AdvDupe2_ReceiveFile")
-	net.WriteUInt(autosave, 8)
+	net.WriteBool(autosave)
 	net.WriteStream(data, function()
 		ply.AdvDupe2.Downloading = false
 	end)

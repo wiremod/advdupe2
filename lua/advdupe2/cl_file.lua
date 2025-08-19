@@ -76,7 +76,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 end
 
 net.Receive("AdvDupe2_ReceiveFile", function()
-	local autoSave = net.ReadUInt(8) == 1
+	local autoSave = net.ReadBool()
 	net.ReadStream(nil, function(data)
 		AdvDupe2.ReceiveFile(data, autoSave)
 	end)

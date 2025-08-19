@@ -799,7 +799,7 @@ if(SERVER) then
 			Tab.Description = dupe.AutoSaveDesc
 
 			AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-				AdvDupe2.SendToClient(ply, data, 1)
+				AdvDupe2.SendToClient(ply, data, true)
 			end)
 			dupe.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay"))
 		end)
