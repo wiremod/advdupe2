@@ -815,48 +815,57 @@ if(SERVER) then
 	end)
 
 	concommand.Add("AdvDupe2_SaveMap", function(ply, cmd, args)
-		if(not ply:IsAdmin()) then
-			AdvDupe2.Notify(ply, "You do not have permission to this function.", NOTIFY_ERROR)
-			return
-		end
+	    if not ply:IsAdmin() then
+	        AdvDupe2.Notify(ply, "You do not have permission to this function.", NOTIFY_ERROR)
+	        return
+	    end
 
-		local Entities = {}
-		for _, v in ents.Iterator() do
-			if not v:CreatedByMap() and AdvDupe2.duplicator.IsCopyable(v) then
-				Entities[v:EntIndex()] = v
-			end
-		end
+	    ply.AdvDupe2 = ply.AdvDupe2 or {}
+	    local now = CurTime()
+	    if ply.AdvDupe2.LastSaveMap and (now - ply.AdvDupe2.LastSaveMap) < 0.5 then
+	        AdvDupe2.Notify(ply, "Please wait before using this command again.", NOTIFY_ERROR)
+	        return
+	    end
+	    ply.AdvDupe2.LastSaveMap = now
 
-		local _, HeadEnt = next(Entities)
-		if not HeadEnt then return end
-
-		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
-		Tab.HeadEnt.Index = HeadEnt:EntIndex()
-		Tab.HeadEnt.Pos = HeadEnt:GetPos()
-
-		local WorldTrace = util.TraceLine({
-			mask   = MASK_NPCWORLDSTATIC,
-			start  = Tab.HeadEnt.Pos + Vector(0,0,1),
-			endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)
-		})
-
-		Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
-		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(ply, Entities, Tab.HeadEnt.Pos, true)
-		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
-
-		Tab.Map = true
-		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
-			if #data > AdvDupe2.MaxDupeSize then
-				AdvDupe2.Notify(ply, "Copied duplicator filesize is too big!",NOTIFY_ERROR)
-				return 
-			end
-			if(not file.IsDir("advdupe2_maps", "DATA")) then
-				file.CreateDir("advdupe2_maps")
-			end
-			file.Write("advdupe2_maps/"..args[1]..".txt", data)
-			AdvDupe2.Notify(ply, "Map save, saved successfully.")
-		end)
+	    local Entities = {}
+	    for _, v in ents.Iterator() do
+	        if not v:CreatedByMap() and AdvDupe2.duplicator.IsCopyable(v) then
+	            Entities[v:EntIndex()] = v
+	        end
+	    end
+	
+	    local _, HeadEnt = next(Entities)
+	    if not HeadEnt then return end
+	
+	    local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
+	    Tab.HeadEnt.Index = HeadEnt:EntIndex()
+	    Tab.HeadEnt.Pos = HeadEnt:GetPos()
+	
+	    local WorldTrace = util.TraceLine({
+	        mask   = MASK_NPCWORLDSTATIC,
+	        start  = Tab.HeadEnt.Pos + Vector(0,0,1),
+	        endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)
+	    })
+	
+	    Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
+	    Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(ply, Entities, Tab.HeadEnt.Pos, true)
+	    Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
+	
+	    Tab.Map = true
+	    AdvDupe2.Encode(Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
+	        if #data > AdvDupe2.MaxDupeSize then
+	            AdvDupe2.Notify(ply, "Copied duplicator filesize is too big!", NOTIFY_ERROR)
+	            return 
+	        end
+	        if not file.IsDir("advdupe2_maps", "DATA") then
+	            file.CreateDir("advdupe2_maps")
+	        end
+	        file.Write("advdupe2_maps/"..args[1]..".txt", data)
+	        AdvDupe2.Notify(ply, "Map save, saved successfully.")
+	    end)
 	end)
+
 end
 
 if(CLIENT) then
