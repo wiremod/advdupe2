@@ -853,7 +853,10 @@ if(SERVER) then
 			if(not file.IsDir("advdupe2_maps", "DATA")) then
 				file.CreateDir("advdupe2_maps")
 			end
-			file.Write("advdupe2_maps/"..args[1]..".txt", data)
+
+			local savename = args[1] or game.GetMap() .. "_" .. util.DateStamp()
+			file.Write("advdupe2_maps/" .. savename .. ".txt", data)
+
 			AdvDupe2.Notify(ply, "Map save, saved successfully.")
 		end)
 	end)
