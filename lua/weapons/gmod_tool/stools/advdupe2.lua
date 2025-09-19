@@ -815,12 +815,13 @@ if(SERVER) then
 	end)
 
 	concommand.Add("AdvDupe2_SaveMap", function(ply, cmd, args)
-		if(not ply:IsAdmin()) then
+		if not ply:IsSuperAdmin() then
 			AdvDupe2.Notify(ply, "You do not have permission to this function.", NOTIFY_ERROR)
 			return
 		end
 
 		local Entities = {}
+
 		for _, v in ents.Iterator() do
 			if not v:CreatedByMap() and AdvDupe2.duplicator.IsCopyable(v) then
 				Entities[v:EntIndex()] = v
@@ -828,34 +829,34 @@ if(SERVER) then
 		end
 
 		local _, HeadEnt = next(Entities)
-		if not HeadEnt then return end
+		if not HeadEnt then AdvDupe2.Notify(ply, "There is nothing to save!", NOTIFY_ERROR) return end
 
-		local Tab = {Entities={}, Constraints={}, HeadEnt={}, Description=""}
+		local Tab = {Entities = {}, Constraints = {}, HeadEnt = {}, Description = ""}
 		Tab.HeadEnt.Index = HeadEnt:EntIndex()
 		Tab.HeadEnt.Pos = HeadEnt:GetPos()
 
 		local WorldTrace = util.TraceLine({
 			mask   = MASK_NPCWORLDSTATIC,
-			start  = Tab.HeadEnt.Pos + Vector(0,0,1),
-			endpos = Tab.HeadEnt.Pos - Vector(0,0,50000)
+			start  = Tab.HeadEnt.Pos + Vector(0, 0, 1),
+			endpos = Tab.HeadEnt.Pos - Vector(0, 0, 50000)
 		})
 
 		Tab.HeadEnt.Z = WorldTrace.Hit and math.abs(Tab.HeadEnt.Pos.Z - WorldTrace.HitPos.Z) or 0
 		Tab.Entities, Tab.Constraints = AdvDupe2.duplicator.AreaCopy(ply, Entities, Tab.HeadEnt.Pos, true)
 		Tab.Constraints = GetSortedConstraints(ply, Tab.Constraints)
-
 		Tab.Map = true
-		AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
+
+		AdvDupe2.Encode(Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
 			if #data > AdvDupe2.MaxDupeSize then
-				AdvDupe2.Notify(ply, "Copied duplicator filesize is too big!",NOTIFY_ERROR)
-				return 
-			end
-			if(not file.IsDir("advdupe2_maps", "DATA")) then
-				file.CreateDir("advdupe2_maps")
+				AdvDupe2.Notify(ply, "Copied duplicator filesize is too big!", NOTIFY_ERROR)
+				return
 			end
 
-			local savename = args[1] or game.GetMap() .. "_" .. util.DateStamp()
-			file.Write("advdupe2_maps/" .. savename .. ".txt", data)
+			local map = game.GetMap()
+			file.CreateDir("advdupe2/maps/" .. map)
+
+			local savename = args[1] or util.DateStamp()
+			file.Write("advdupe2/maps/" .. map .. "/" .. savename .. ".txt", data)
 
 			AdvDupe2.Notify(ply, "Map save, saved successfully.")
 		end)
