@@ -67,12 +67,12 @@ local function PasteMap()
 		return
 	end
 
-	if(not file.Exists("advdupe2_maps/"..filename..".txt", "DATA"))then
+	if(not file.Exists("advdupe2/"..filename..".txt", "DATA"))then
 		print("[AdvDupe2Notify]\tFile does not exist for a map save.")
 		return
 	end
 
-	local map = file.Read("advdupe2_maps/"..filename..".txt")
+	local map = file.Read("advdupe2/"..filename..".txt")
 	local success,dupe,info,moreinfo = AdvDupe2.Decode(map)
 	if not success then
 		print("[AdvDupe2Notify]\tCould not open map save "..dupe)
