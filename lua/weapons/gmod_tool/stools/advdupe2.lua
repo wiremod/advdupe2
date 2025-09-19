@@ -855,7 +855,7 @@ if(SERVER) then
 			local map = game.GetMap()
 			file.CreateDir("advdupe2/maps/" .. map)
 
-			local savename = args[1] or util.DateStamp()
+			local savename = AdvDupe2.SanitizeFilename(args[1]) or util.DateStamp()
 			file.Write("advdupe2/maps/" .. map .. "/" .. savename .. ".txt", data)
 
 			AdvDupe2.Notify(ply, "Map save, saved successfully.")
