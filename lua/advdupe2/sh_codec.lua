@@ -48,14 +48,8 @@ function AdvDupe2.GenerateDupeStamp(ply)
 	return stamp
 end
 
-local invalidCharacters = {"\"", ":"}
-
 function AdvDupe2.SanitizeFilename(filename)
-	for i = 1, #invalidCharacters do
-		filename = string.gsub(filename, invalidCharacters[i], "_")
-	end
-
-	return string.gsub(filename, "%s+", " ")
+	return string.gsub(string.gsub(filename, "[\":]", "_"), "%s+", " ")
 end
 
 local function makeInfo(tbl)
