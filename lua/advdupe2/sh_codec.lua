@@ -48,6 +48,10 @@ function AdvDupe2.GenerateDupeStamp(ply)
 	return stamp
 end
 
+function AdvDupe2.SanitizeFilename(filename)
+	return string.gsub(string.gsub(filename, "[\":]", "_"), "%s+", " ")
+end
+
 local function makeInfo(tbl)
 	local info = ""
 	for k, v in pairs(tbl) do

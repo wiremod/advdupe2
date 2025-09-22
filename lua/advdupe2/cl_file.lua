@@ -1,13 +1,3 @@
-local invalidCharacters = { "\"", ":"}
-function AdvDupe2.SanitizeFilename(filename)
-	for i=1, #invalidCharacters do
-		filename = string.gsub(filename, invalidCharacters[i], "_")
-	end
-	filename = string.gsub(filename, "%s+", " ")
-
-	return filename
-end
-
 function AdvDupe2.ReceiveFile(data, autoSave)
 	AdvDupe2.RemoveProgressBar()
 	if not data then
