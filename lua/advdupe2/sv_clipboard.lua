@@ -788,46 +788,23 @@ end
 	Params: <player> Player, <table> data
 	Returns: <entity> Entity, <table> data
 ]]
-local function DoGenericPhysics(Entity, data, Player)
+local function DoGenericPhysics(entity, data, ply)
+	if not data.PhysicsObjects then return end
 
-	if (not data) then return end
-	if (not data.PhysicsObjects) then return end
-	local Phys
-	if (Player) then
-		for Bone, Args in pairs(data.PhysicsObjects) do
-			Phys = Entity:GetPhysicsObjectNum(Bone)
-			if (IsValid(Phys)) then
-				Phys:SetPos(Args.Pos)
-				Phys:SetAngles(Args.Angle)
-				Phys:EnableMotion(false)
-				Player:AddFrozenPhysicsObject(Entity, Phys)
-			end
-		end
-	else
-		for Bone, Args in pairs(data.PhysicsObjects) do
-			Phys = Entity:GetPhysicsObjectNum(Bone)
-			if (IsValid(Phys)) then
-				Phys:SetPos(Args.Pos)
-				Phys:SetAngles(Args.Angle)
-				Phys:EnableMotion(false)
+	for bone, args in ipairs(data.PhysicsObjects) do
+		local phys = entity:GetPhysicsObjectNum(bone)
+
+		if IsValid(phys) then
+			phys:SetPos(args.Pos)
+			phys:SetAngles(args.Angle)
+			phys:EnableMotion(false)
+
+			if ply then
+				ply:AddFrozenPhysicsObject(entity, phys)
 			end
 		end
 	end
 end
-
-local function reportclass(ply, class)
-	net.Start("AdvDupe2_ReportClass")
-	net.WriteString(class)
-	net.Send(ply)
-end
-
-local function reportmodel(ply, model)
-	net.Start("AdvDupe2_ReportModel")
-	net.WriteString(model)
-	net.Send(ply)
-end
-
-local strictConvar = GetConVar("AdvDupe2_Strict")
 
 --[[
 	Name: GenericDuplicatorFunction
@@ -835,37 +812,48 @@ local strictConvar = GetConVar("AdvDupe2_Strict")
 	Params: <table> data, <player> Player
 	Returns: <entity> Entity
 ]]
-local function GenericDuplicatorFunction(data, Player)
+local strictConvar = GetConVar("AdvDupe2_Strict")
 
-	local Entity = ents.Create(data.Class)
-	if (not IsValid(Entity)) then
-		if (Player) then
-			reportclass(Player, data.Class)
-		else
-			print("Advanced Duplicator 2 Invalid Class: " .. data.Class)
-		end
-		return nil
-	end
-
-	if (not util.IsValidModel(data.Model) and not file.Exists(data.Model, "GAME")) then
-		if (Player) then
-			reportmodel(Player, data.Model)
+local function GenericDuplicatorFunction(data, ply)
+	if not util.IsValidModel(data.Model) then
+		if ply then
+			net.Start("AdvDupe2_ReportModel")
+			net.WriteString(data.Model)
+			net.Send(ply)
 		else
 			print("Advanced Duplicator 2 Invalid Model: " .. data.Model)
 		end
-		return nil
+
+		return
 	end
 
-	duplicator.DoGeneric(Entity, data)
-	if (Player) then Entity:SetCreator(Player) end
-	Entity:Spawn()
-	Entity:Activate()
-	DoGenericPhysics(Entity, data, Player)
+	local entity = ents.Create(data.Class)
 
-	if (not strictConvar:GetBool()) then
-		table.Add(Entity:GetTable(), data)
+	if not IsValid(entity) then
+		if ply then
+			net.Start("AdvDupe2_ReportClass")
+			net.WriteString(class)
+			net.Send(ply)
+		else
+			print("Advanced Duplicator 2 Invalid Class: " .. data.Class)
+		end
+
+		return
 	end
-	return Entity
+
+	duplicator.DoGeneric(entity, data)
+	if ply then entity:SetCreator(ply) end
+
+	entity:Spawn()
+	entity:Activate()
+
+	DoGenericPhysics(entity, data, ply)
+
+	if not strictConvar:GetBool() then
+		table.Add(entity:GetTable(), data)
+	end
+
+	return entity
 end
 
 --[[
@@ -874,43 +862,47 @@ end
 	Params: <player> Player, <vector> Pos, <angle> Ang, <string> Model, <table> PhysicsObject, <table> Data
 	Returns: <entity> Prop
 ]]
-local function MakeProp(Player, Pos, Ang, Model, PhysicsObject, Data)
+local function MakeProp(ply, pos, ang, model, physicsobject, data)
+	if data.ModelScale then Data.ModelScale = math.Clamp(data.ModelScale, 1e-5, 1e5) end
 
-    if Data.ModelScale then Data.ModelScale = math.Clamp(Data.ModelScale, 1e-5, 1e5) end
-
-	if (not util.IsValidModel(Model) and not file.Exists(Data.Model, "GAME")) then
-		if (Player) then
-			reportmodel(Player, Data.Model)
+	if not util.IsValidModel(model) then
+		if ply then
+			net.Start("AdvDupe2_ReportModel")
+			net.WriteString(model)
+			net.Send(ply)
 		else
-			print("Advanced Duplicator 2 Invalid Model: " .. Model)
+			print("Advanced Duplicator 2 Invalid Model: " .. model)
 		end
-		return nil
+
+		return
 	end
 
-	Data.Pos = Pos
-	Data.Angle = Ang
-	Data.Model = Model
-	Data.Frozen = true
-	-- Make sure this is allowed
-	if (Player) then
-		if (not gamemode.Call("PlayerSpawnProp", Player, Model)) then
-			return false
+	data.Pos = pos
+	data.Angle = ang
+	data.Model = model
+	data.Frozen = true
+
+	if ply then
+		if not gamemode.Call("PlayerSpawnProp", ply, model) then
+			return
 		end
 	end
 
-	local Prop = ents.Create("prop_physics")
-	if not IsValid(Prop) then return false end
+	local prop = ents.Create("prop_physics")
+	if not IsValid(prop) then return end
 
-	duplicator.DoGeneric(Prop, Data)
-	if (Player) then Prop:SetCreator(Player) end
-	Prop:Spawn()
-	Prop:Activate()
-	DoGenericPhysics(Prop, Data, Player)
-	if (Data.Flex) then
-		duplicator.DoFlex(Prop, Data.Flex, Data.FlexScale)
+	duplicator.DoGeneric(prop, data)
+
+	if ply then prop:SetCreator(ply) end
+	prop:Spawn()
+
+	DoGenericPhysics(prop, data, ply)
+
+	if data.Flex then
+		duplicator.DoFlex(prop, data.Flex, data.FlexScale)
 	end
 
-	return Prop
+	return prop
 end
 
 local function RestoreBodyGroups(ent, BodyG)
