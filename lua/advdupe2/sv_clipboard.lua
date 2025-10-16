@@ -832,7 +832,7 @@ local function GenericDuplicatorFunction(data, ply)
 	if not IsValid(entity) then
 		if ply then
 			net.Start("AdvDupe2_ReportClass")
-			net.WriteString(class)
+			net.WriteString(data.Class)
 			net.Send(ply)
 		else
 			print("Advanced Duplicator 2 Invalid Class: " .. data.Class)
@@ -863,7 +863,7 @@ end
 	Returns: <entity> Prop
 ]]
 local function MakeProp(ply, pos, ang, model, physicsobject, data)
-	if data.ModelScale then Data.ModelScale = math.Clamp(data.ModelScale, 1e-5, 1e5) end
+	if data.ModelScale then data.ModelScale = math.Clamp(data.ModelScale, 1e-5, 1e5) end
 
 	if not util.IsValidModel(model) then
 		if ply then
