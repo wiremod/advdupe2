@@ -314,9 +314,7 @@ local function RenameFileCl(node, name)
 		return
 	end
 
-	print(FilePath)
 	FilePath = AdvDupe2.SanitizeFilename(FilePath)
-	print(FilePath)
 	file.Write(FilePath, File)
 	if (file.Exists(FilePath, "DATA")) then
 		file.Delete(tempFilePath .. ".txt")
