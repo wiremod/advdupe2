@@ -1,7 +1,7 @@
 function AdvDupe2.ReceiveFile(data, autoSave)
 	AdvDupe2.RemoveProgressBar()
 	if not data then
-		AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+		AdvDupe2.Notify("File was not saved! (No data)",NOTIFY_ERROR,5)
 		return
 	end
 	local path
@@ -18,7 +18,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 	path = AdvDupe2.SanitizeFilename(path)
 	local dupefile = file.Open(path, "wb", "DATA")
 	if not dupefile then
-		AdvDupe2.Notify("File was not saved!",NOTIFY_ERROR,5)
+		AdvDupe2.Notify("File was not saved! (Could not open file for writing)",NOTIFY_ERROR,5)
 		return
 	end
 	dupefile:Write(data)
@@ -32,7 +32,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 		if not readFile then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
 		local readData = readFile:Read(readFile:Size())
 		readFile:Close()
-		local success,dupe,info,moreinfo = AdvDupe2.Decode(readData)
+		local success, dupe, _info, _moreinfo = AdvDupe2.Decode(readData)
 		if(success)then
 			AdvDupe2.Notify("DEBUG CHECK: File successfully opens. No EOF errors.")
 		else
@@ -60,7 +60,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 		AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(filename)
 		AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
 	end
-	if(!errored)then
+	if not errored then
 		AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
 	end
 end

@@ -49,6 +49,7 @@ function AdvDupe2.GenerateDupeStamp(ply)
 end
 
 function AdvDupe2.SanitizeFilename(filename)
+	filename = string.Replace( filename, " ", "_" )
 	return string.gsub(string.gsub(filename, "[\":]", "_"), "%s+", " ")
 end
 
