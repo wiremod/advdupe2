@@ -49,8 +49,9 @@ function AdvDupe2.GenerateDupeStamp(ply)
 end
 
 function AdvDupe2.SanitizeFilename(filename)
+	filename = string.gsub( filename, "%s+", " " )
 	filename = string.Replace( filename, " ", "_" )
-	return string.gsub(string.gsub(filename, "[\":]", "_"), "%s+", " ")
+	return string.gsub(filename, "[\":]", "_")
 end
 
 local function makeInfo(tbl)
