@@ -16,18 +16,11 @@ include( "sh_codec_legacy.lua" )
 AddCSLuaFile( "sh_codec_legacy.lua" )
 
 local pairs = pairs
-local type = type
 local error = error
 local Vector = Vector
 local Angle = Angle
 local format = string.format
 local char = string.char
-local byte = string.byte
-local sub = string.sub
-local gsub = string.gsub
-local find = string.find
-local gmatch = string.gmatch
-local match = string.match
 local concat = table.concat
 local compress = util.Compress
 local decompress = util.Decompress
@@ -49,7 +42,10 @@ function AdvDupe2.GenerateDupeStamp(ply)
 end
 
 function AdvDupe2.SanitizeFilename(filename)
-	return string.gsub(string.gsub(filename, "[\":]", "_"), "%s+", " ")
+	filename = string.gsub( filename, "[\":]", "_" )
+	filename = string.gsub( filename, "%s+", " " )
+	filename = string.gsub( filename, "%s*([\\/%.])%s*", "%1" )
+	return filename
 end
 
 local function makeInfo(tbl)

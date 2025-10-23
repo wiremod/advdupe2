@@ -257,6 +257,7 @@ local function CollapseParentsComplete(node)
 end
 
 function AdvDupe2.GetFilename(path, overwrite)
+	path = AdvDupe2.SanitizeFilename(path)
 	if not overwrite and file.Exists(path .. ".txt", "DATA") then
 		for i = 1, AdvDupe2.FileRenameTryLimit do
 			local p = string.format("%s_%03d.txt", path, i)
@@ -339,8 +340,6 @@ local function MoveFileClient(node)
 		return
 	end
 	local base = AdvDupe2.DataFolder
-	local ParentNode
-
 	local node2 = node.Control.ActionNode
 	local path, area = GetNodePath(node2)
 	local path2, area2 = GetNodePath(node)
