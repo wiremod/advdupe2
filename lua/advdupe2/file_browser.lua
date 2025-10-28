@@ -2070,10 +2070,11 @@ function PANEL:AddLeftsideButton(Icon, Tooltip, Action)
 	Button:SetMaterial("icon16/" .. Icon .. ".png")
 	Button:SizeToContents()
 	Button:SetTooltip(Tooltip)
+	Button:SetTooltipDelay(0)
 	Button.DoClick = Action
-
+	
 	self.LeftsideButtons[#self.LeftsideButtons + 1] = Button
-
+	
 	return Button
 end
 
@@ -2084,6 +2085,7 @@ function PANEL:AddRightsideButton(Icon, Tooltip, Action)
 	Button:SetMaterial("icon16/" .. Icon .. ".png")
 	Button:SizeToContents()
 	Button:SetTooltip(Tooltip)
+	Button:SetTooltipDelay(0)
 	Button.DoClick = Action
 
 	self.RightsideButtons[#self.RightsideButtons + 1] = Button
