@@ -1,3 +1,17 @@
+function AdvDupe2.GetFilename(path, overwrite)
+	path = AdvDupe2.SanitizeFilename(path)
+	if not overwrite and file.Exists(path .. ".txt", "DATA") then
+		for i = 1, AdvDupe2.FileRenameTryLimit do
+			local p = string.format("%s_%03d.txt", path, i)
+			if not file.Exists(p, "DATA") then
+				return p
+			end
+		end
+		return false
+	end
+	return path .. ".txt"
+end
+
 function AdvDupe2.ReceiveFile(data, autoSave)
 	AdvDupe2.RemoveProgressBar()
 	if not data then
@@ -42,24 +56,28 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 	end
 
 	local filename = string.StripExtension(string.GetFileFromFilename( path ))
+
+	local Browser = AdvDupe2.FileBrowser.Browser
+
 	if autoSave then
-		if(IsValid(AdvDupe2.FileBrowser.AutoSaveNode))then
+		if IsValid(AdvDupe2.FileBrowser.AutoSaveNode) then
 			local add = true
-			for i=1, #AdvDupe2.FileBrowser.AutoSaveNode.Files do
-				if(filename==AdvDupe2.FileBrowser.AutoSaveNode.Files[i].Label:GetText())then
-					add=false
+			for i = 1, #AdvDupe2.FileBrowser.AutoSaveNode.Files do
+				if filename == AdvDupe2.FileBrowser.AutoSaveNode.Files[i].Label:GetText() then
+					add = false
 					break
 				end
 			end
-			if(add)then
-				AdvDupe2.FileBrowser.AutoSaveNode:AddFile(filename)
-				AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
+			if add then
+				error "Not implemented yet"
+				-- AutoSaveNode:AddFile(filename)
+				-- Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
 			end
 		end
 	else
-		AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode:AddFile(filename)
-		AdvDupe2.FileBrowser.Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.Browser.pnlCanvas.ActionNode)
+		Browser:IncomingFile(path, path)
 	end
+
 	if not errored then
 		AdvDupe2.Notify("File successfully saved!",NOTIFY_GENERIC, 5)
 	end
@@ -86,15 +104,15 @@ end
 
 function AdvDupe2.UploadFile(ReadPath, ReadArea)
 	if AdvDupe2.Uploading then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
-	if(ReadArea==0)then
-		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
-	elseif(ReadArea==1)then
-		ReadPath = AdvDupe2.DataFolder.."/-Public-/"..ReadPath..".txt"
+	if ReadArea == ADVDUPE2_AREA_ADVDUPE2 then
+		ReadPath = AdvDupe2.DataFolder .. "/" .. ReadPath .. ".txt"
+	elseif ReadArea == ADVDUPE2_AREA_PUBLIC then
+		ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
 	else
-		ReadPath = "adv_duplicator/"..ReadPath..".txt"
+		ReadPath = "adv_duplicator/" .. ReadPath .. ".txt"
 	end
 
-	if(not file.Exists(ReadPath, "DATA"))then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
+	if not file.Exists(ReadPath, "DATA") then AdvDupe2.Notify("File does not exist", NOTIFY_ERROR) return end
 
 	local read = file.Read(ReadPath)
 	if not read then AdvDupe2.Notify("File could not be read", NOTIFY_ERROR) return end
@@ -103,11 +121,11 @@ function AdvDupe2.UploadFile(ReadPath, ReadArea)
 	name = string.sub(name, 1, #name-4)
 
 	local success, dupe, info, moreinfo = AdvDupe2.Decode(read)
-	if(success)then
+	if success then
 		AdvDupe2.SendFile(name, read)
 
 		AdvDupe2.LoadGhosts(dupe, info, moreinfo, name)
 	else
-		AdvDupe2.Notify("File could not be decoded. ("..dupe..") Upload Canceled.", NOTIFY_ERROR)
+		AdvDupe2.Notify("File could not be decoded. (" .. dupe .. ") Upload Canceled.", NOTIFY_ERROR)
 	end
 end
