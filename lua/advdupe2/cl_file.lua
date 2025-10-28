@@ -1,3 +1,17 @@
+function AdvDupe2.GetFilename(path, overwrite)
+	path = AdvDupe2.SanitizeFilename(path)
+	if not overwrite and file.Exists(path .. ".txt", "DATA") then
+		for i = 1, AdvDupe2.FileRenameTryLimit do
+			local p = string.format("%s_%03d.txt", path, i)
+			if not file.Exists(p, "DATA") then
+				return p
+			end
+		end
+		return false
+	end
+	return path .. ".txt"
+end
+
 function AdvDupe2.ReceiveFile(data, autoSave)
 	AdvDupe2.RemoveProgressBar()
 	if not data then
