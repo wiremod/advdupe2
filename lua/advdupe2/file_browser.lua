@@ -2016,7 +2016,12 @@ function PANEL:Init()
 	self.Browser = self:Add(LowercaseFileBrowserPrefix .. "_browser_panel")
 	UpdateClientFiles(self.Browser)
 
-	self.SearchAll     = self:AddLeftsideButton("folder_magnify", "Search all root folders", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+	self.SearchAll     = self:AddLeftsideButton("folder_magnify", "Search all root folders", function()
+		self.Browser:StartSearch(self.Browser.TreeView)
+		for _, Root in ipairs(self.Browser.TreeView.Folders) do
+			Root:Expand()
+		end
+	end)
 	self:AddLeftsideDivider()
 	self.SwitchToTree  = self:AddLeftsideButton("application_view_detail", "Tree view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
 	self.SwitchToList  = self:AddLeftsideButton("application_view_list", "List view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
