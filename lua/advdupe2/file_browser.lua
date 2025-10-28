@@ -877,6 +877,11 @@ function BROWSERTREE:Init()
 	self.ExpandedNodeArray = {}
 
 	self.LastClick = UserInterfaceTimeFunc()
+	self.VBar.OldPaint = self.VBar.Paint
+	function self.VBar:Paint(w, h)
+		self:OldPaint(w, h)
+		-- todo
+	end
 end
 
 function BROWSERTREE:DoNodeLeftClick(Node)
@@ -952,11 +957,26 @@ function BROWSERTREE:SortRecheck()
 	if not self.SortDirty then return end
 
 	table.Empty(self.ExpandedNodeArray)
-	DoRecursiveVistesting(self, self.ExpandedNodeArray)
+	DoRecursiveVistesting(self.TargetNode and self.TargetNode or self, self.ExpandedNodeArray)
 
 	-- This is how tall we are
 	local Tall = #self.ExpandedNodeArray * TallOfOneNode
 	self:SetTall(Tall)
+
+	if self.SearchQuery ~= nil and #self.SearchQuery > 0 then
+		self.SearchableNodes = {}
+		for _, Node in ipairs(self.ExpandedNodeArray) do
+			Node.SearchExcluded = string.find(Node.Text, self.SearchQuery) == nil
+			if not Node.SearchExcluded then
+				self.SearchableNodes[#self.SearchableNodes + 1] = Node
+			end
+		end
+	else
+		for _, Node in ipairs(self.ExpandedNodeArray) do
+			Node.SearchExcluded = nil
+		end
+		self.SearchableNodes = nil
+	end
 
 	self.SortDirty = false
 end
@@ -978,6 +998,54 @@ function BROWSERTREE:GetImmediateState()
 	end
 
 	return ImmediateState
+end
+
+function BROWSERTREE:StartSearch(TargetNode, LastSearch)
+	self.SearchQuery    = LastSearch
+	self.TargetNode     = TargetNode
+	self.LastSearchNode = nil
+	self.SortDirty = true
+	self.LastSearchIndex = 0
+
+	TargetNode:Expand()
+end
+
+function BROWSERTREE:UpdateSearchQuery(Text)
+	self.SearchQuery = Text
+	if self.LastSearchNode ~= nil then self.LastSearchNode.SearchQueryHighlighted = nil end
+	self.LastSearchNode = nil
+	self.SortDirty = true
+	self.LastSearchIndex = 0
+	print(Text)
+	return Text
+end
+
+function BROWSERTREE:HighlightSearchNode(Node)
+	if self.LastSearchNode ~= nil then self.LastSearchNode.SearchQueryHighlighted = nil end
+	if Node ~= nil then Node.SearchQueryHighlighted = true end
+	self.LastSearchNode = Node
+end
+
+function BROWSERTREE:NextSearchNode()
+	if self.SearchQuery == nil then return end
+	if #self.SearchQuery == 0 then return end
+
+	self.LastSearchIndex = self.LastSearchIndex + 1
+	if self.LastSearchIndex > #self.SearchableNodes then
+		self.LastSearchIndex = 1
+	end
+
+	self:HighlightSearchNode(self.SearchableNodes[self.LastSearchIndex])
+	return self.LastSearchNode
+end
+
+function BROWSERTREE:EndSearch()
+	self.SearchQuery    = LastSearch
+	self.TargetNode     = TargetNode
+	if self.LastSearchNode ~= nil then self.LastSearchNode.SearchQueryHighlighted = nil end
+	self.LastSearchNode = nil
+	self.SortDirty = true
+	self.LastSearchIndex = 0
 end
 
 -- This function flushes in the immediate-mode state from C-funcs into Lua-land
@@ -1147,8 +1215,10 @@ function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 		local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
 
 		-- Paint background
-		if IsDepressed then
+		if IsDepressed or Node.SearchExcluded then
 			SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
+		elseif Node.SearchQueryHighlighted then
+			SkinTex.Panels.Highlight(NX, NY, NW, NH, color_white)
 		elseif IsHovered then
 			SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
 		else
@@ -1470,15 +1540,6 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 		Prompt:Close()
 	end
 
-	-- This is a hack to make the name field discard the first released character for spawnmenu/contextmenu saving.
-	-- Since now the Name field automatically requests focus this is necessary to avoid an unnecessary character.
-	-- Hopefully it works (it seems to in testing)
-	local OnKeyCodeTyped = Name.OnKeyCodeTyped
-	function Name:OnKeyCodeTyped(KeyCode)
-		-- discard, reset back
-		self.OnKeyCodeTyped = OnKeyCodeTyped
-	end
-
 	if SkipToDesc then
 		Desc:RequestFocus()
 		Desc:OnMousePressed()
@@ -1496,6 +1557,59 @@ function BROWSER:StartSave(Node)
 		self.LastFileName = FileName
 		self.LastFileDesc = Desc
 	end, self.LastFileName, self.LastFileDesc)
+end
+
+local LastSearch = ""
+function BROWSER:StartSearch(Node)
+	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSearch on a non-folder. Operation canceled.") return false end
+
+	self.TreeView:StartSearch(Node, LastSearch)
+
+	local Prompt = self:PushUserPrompt()
+	Prompt:SetDock(BOTTOM)
+	Prompt.Panel:DockPadding(4,4,4,4)
+
+	local Cancel = Prompt:Add("DImageButton")
+		Cancel:Dock(RIGHT)
+		Cancel:SetSize(20)
+		Cancel:SetStretchToFit(false)
+		Cancel:SetImage("icon16/cancel.png")
+
+	local DescParent = Prompt:Add("Panel")
+		DescParent:Dock(TOP)
+		DescParent:DockMargin(0, 4, 0, 0)
+		DescParent:SetSize(20, 32)
+		DescParent:SetPaintBackgroundEnabled(false)
+		DescParent:SetZPos(10000)
+
+	local Search = DescParent:Add("DTextEntry")
+		Search:SetAllowNonAsciiCharacters(true)
+		Search:SetTabbingDisabled(false)
+		Search:Dock(TOP)
+		Search:SetPlaceholderText("Search...")
+		if LastSearch then Search:SetText(LastSearch) end
+
+	function Search.OnChange()
+		local value = Search:GetText()
+		LastSearch = self.TreeView:UpdateSearchQuery(value)
+	end
+
+	local _OnKeyCodeTyped = Search.OnKeyCodeTyped
+	function Search.OnKeyCodeTyped(dte, code)
+		if code ~= KEY_ENTER then return _OnKeyCodeTyped(dte, code) end
+		local Node = self.TreeView:NextSearchNode()
+		if Node then
+			self:ScrollTo(Node)
+		else
+			self:Notify("No search query!", NOTIFY_ERROR, 3)
+		end
+		return true
+	end
+
+	function Cancel.DoClick(_)
+		Prompt:Close()
+		self.TreeView:EndSearch()
+	end
 end
 
 function BROWSER:StartFolder(Node)
