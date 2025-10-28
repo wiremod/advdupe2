@@ -1,3 +1,9 @@
+surface.CreateFont("AdvDupe2_SmallFont", {
+	font = "Tahoma",
+	size = 11,
+	antialias = false
+})
+
 -- Enums
 local ADVDUPE2_AREA_ADVDUPE2   = AdvDupe2.AREA_ADVDUPE2
 local ADVDUPE2_AREA_PUBLIC     = AdvDupe2.AREA_PUBLIC
@@ -10,14 +16,18 @@ local VIEWTYPE_TREE  = 0
 local VIEWTYPE_LIST  = 1
 local VIEWTYPE_TILES = 2
 
+local SORTTYPE_NAME = 0
+local SORTTYPE_TIME = 1
+
 -- This lets us rip this stuff out if we need to.
 local FileBrowserPrefix          = "AdvDupe2"
 local LowercaseFileBrowserPrefix = string.lower(FileBrowserPrefix)
 
 -- Just in case this needs to be changed later
 
-local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth, NodeFont
+local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth, NodeFont, NodeFontSmall
 local ExpanderSize,  IconSize, LeftmostToExpanderPadding, ExpanderToIconPadding, IconToTextPadding
+local DrawTimeAlways, DateFormat
 
 local ExpanderXOffset, IconXOffset, TextXOffset
 local TimeToOpenPrompts_cv, TimeToClosePrompts_cv
@@ -52,6 +62,8 @@ do
 														"The width of a single node layet, in pixels. For example a file in folder1/folder2 has a depth of 2, so the pixel width, given the default value, will be (12 * 2) == 24.", 0, 1000000)
 	local NodeFont_cv               =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodefont", "DermaDefault", true, false,
 														"The surface.CreateFont-registered font the file browser uses.")
+	local NodeFontSmall_cv               =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodefontsmall", "DefaultSmall", true, false,
+														"The surface.CreateFont-registered font the file browser uses for smaller fonts.")
 
 
 
@@ -61,6 +73,11 @@ do
 														"The materials/ localized path for a folder with contents.")
 	local NodeIconFile_cv           =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodeicon_file", "icon16/page.png", true, false,
 														"The materials/ localized path for a file.")
+
+	local DrawTimeAlways_cv          =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_nodedrawtimealways", "0", true, false,
+														"When 0: the time is only drawn when sorting by time.\nWhen 1: the time will always draw\nWhen -1: the time will never draw.")
+	local DateFormat_cv              =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_dateformat", "%Y/%m/%d %H:%M", true, false,
+														"The format passed into os.date.")
 
 	local function CreateNodeTextRepresentation(Label, Offset)
 		return table.concat{
@@ -101,6 +118,7 @@ do
 		TallOfOneNode        = TallOfOneNode_cv()
 		NodeDepthWidth       = NodeDepthWidth_cv:GetFloat()
 		NodeFont			 = NodeFont_cv:GetString()
+		NodeFontSmall		 = NodeFontSmall_cv:GetString()
 
 		ExpanderSize              = ExpanderSize_cv:GetFloat()
 		IconSize                  = IconSize_cv:GetFloat()
@@ -111,6 +129,9 @@ do
 		ExpanderXOffset = LeftmostToExpanderPadding
 		IconXOffset     = ExpanderXOffset + ExpanderSize + ExpanderToIconPadding
 		TextXOffset     = IconXOffset + IconSize + IconToTextPadding
+
+		DrawTimeAlways = DrawTimeAlways_cv:GetInt()
+		DateFormat     = DateFormat_cv:GetString()
 
 		ICON_FOLDER_EMPTY    = UpdateMaterial(ICON_FOLDER_EMPTY,    IconFolderEmpty,    NodeIconFolderEmpty_cv)
 		ICON_FOLDER_CONTAINS = UpdateMaterial(ICON_FOLDER_CONTAINS, IconFolderContains, NodeIconFolderContains_cv)
@@ -291,6 +312,24 @@ do
 	function NODE:IsFolder() return self.Type == NODETYPE_FOLDER    end
 	function NODE:IsFile()   return self.Type == NODETYPE_FILE      end
 
+	function NODE:GetTime()
+		if not self.Path then return 0 end
+		if self.Time then return self.Time end
+
+		local Time = file.Time(self.Path, "DATA")
+		self.Time = Time or 0 -- I don't think it will return nil but I don't want to spam file.Time requests
+		return Time
+	end
+
+	function NODE:GetTimeString()
+		if self.TimeStr then return self.TimeStr end
+		local Time = self:GetTime()
+		if Time == 0 then return "" end
+		local TimeStr = os.date(DateFormat, Time)
+		self.TimeStr = TimeStr
+		return TimeStr
+	end
+
 	function NODE:AddFolder(Text)
 		local Node = NODE(NODETYPE_FOLDER, self.Browser)
 		Node.Text = Text
@@ -396,27 +435,7 @@ do
 		LoadDataFolderInternal(self, Path)
 	end
 
-	function NODE.SortFunction(A, B)
-		local IsFileA, IsFileB = A:IsFile(), B:IsFile()
-
-		if not IsFileA and IsFileB then return true end
-		if IsFileA and not IsFileB then return false end
-
-		local NameA, NameB = GetNumericalFilename(string.StripExtension(A.Text)), GetNumericalFilename(string.StripExtension(B.Text))
-
-		for I = 1, math.max(#NameA, #NameB) do
-			local AC, BC = NameA[I], NameB[I]
-
-			if AC == nil then return true end
-			if BC == nil then return false end
-
-			if AC ~= BC then
-				return AC < BC
-			end
-		end
-	end
-
-	function NODE:PerformResort()
+	function NODE:PerformResort(SortFunction)
 		if not self.SortDirty then return end
 
 		local Sorted   = self.Sorted
@@ -436,12 +455,12 @@ do
 		end
 
 		-- Perform actual resort
-		table.sort(Sorted, self.SortFunction)
+		table.sort(Sorted, SortFunction)
 	end
 
 	-- Returns an enumerator<Node>
-	function NODE:GetSortedChildNodes()
-		self:PerformResort()
+	function NODE:GetSortedChildNodes(SortFunction)
+		self:PerformResort(SortFunction)
 		return ipairs(self.Sorted)
 	end
 
@@ -941,14 +960,69 @@ function BROWSERTREE:SetSelected(node)
 	end
 end
 
-local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeArray, Depth)
+-- annoying this cant be a parameter but whatever
+local AscendingSwitch
+
+local function SortNodesByName(A, B)
+	local IsFileA, IsFileB = A:IsFile(), B:IsFile()
+
+	if not IsFileA and IsFileB then return true end
+	if IsFileA and not IsFileB then return false end
+
+	local NameA, NameB = GetNumericalFilename(string.StripExtension(A.Text)), GetNumericalFilename(string.StripExtension(B.Text))
+
+	for I = 1, math.max(#NameA, #NameB) do
+		local AC, BC = NameA[I], NameB[I]
+
+		if AC == nil then return true end
+		if BC == nil then return false end
+
+		if AC ~= BC then
+			if AscendingSwitch then
+				return AC < BC
+			else
+				return AC > BC
+			end
+		end
+	end
+end
+
+local function SortNodesByTime(A, B)
+	local IsFileA, IsFileB = A:IsFile(), B:IsFile()
+
+	if not IsFileA and IsFileB then return true end
+	if IsFileA and not IsFileB then return false end
+
+	local TA, TB = A:GetTime(), B:GetTime()
+	if TA ~= TB then
+		if AscendingSwitch then
+			return TA < TB
+		else
+			return TA > TB
+		end
+	end
+end
+
+local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeArray, Depth, SortFunction)
 	Depth = Depth or 0
-	for _, Child in Parent:GetSortedChildNodes() do
+	for _, Child in Parent:GetSortedChildNodes(SortFunction) do
 		Child.Depth = Depth
 		ExpandedNodeArray[#ExpandedNodeArray + 1] = Child
 		if Child.Expanded then
-			DoRecursiveVistesting(Child, ExpandedNodeArray, Depth + 1)
+			DoRecursiveVistesting(Child, ExpandedNodeArray, Depth + 1, SortFunction)
 		end
+	end
+end
+
+function BROWSERTREE:GetSortFunction()
+	local SortType = self.SortType
+
+	if SortType == SORTTYPE_NAME then
+		return SortNodesByName
+	elseif SortType == SORTTYPE_TIME then
+		return SortNodesByTime
+	else
+		return SortNodesByName
 	end
 end
 
@@ -957,7 +1031,8 @@ function BROWSERTREE:SortRecheck()
 	if not self.SortDirty then return end
 
 	table.Empty(self.ExpandedNodeArray)
-	DoRecursiveVistesting(self.TargetNode and self.TargetNode or self, self.ExpandedNodeArray)
+	AscendingSwitch = self.Ascending
+	DoRecursiveVistesting(self.TargetNode and self.TargetNode or self, self.ExpandedNodeArray, nil, self:GetSortFunction())
 
 	-- This is how tall we are
 	local Tall = #self.ExpandedNodeArray * TallOfOneNode
@@ -1203,50 +1278,57 @@ function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 
 	for AbsIndex = ImmediateState.StartIndex, ImmediateState.EndIndex do
 		local Node = self.ExpandedNodeArray[AbsIndex]
+		if Node then
+			local IsHovered           = ImmediateState.Hovered   == Node
+			local IsDepressed         = ImmediateState.Depressed == Node
+			local IsExpanderHovered   = IsHovered and ImmediateState.IsExpanderHovered
+			local IsExpanderDepressed = IsDepressed and ImmediateState.IsExpanderDepressed
 
-		local IsHovered           = ImmediateState.Hovered   == Node
-		local IsDepressed         = ImmediateState.Depressed == Node
-		local IsExpanderHovered   = IsHovered and ImmediateState.IsExpanderHovered
-		local IsExpanderDepressed = IsDepressed and ImmediateState.IsExpanderDepressed
+			local NX, NY, NW, NH      = GetNodeBounds(ScrollOffset, AbsIndex, Width, Node.Depth)
+			local IX, IY, IW, IH      = GetIconBounds(NX, NY, NW, NH, nil, Node.Depth)
+			local EX, EY, EW, EH      = GetExpanderBounds(NX, NY, NW, NH, IsExpanderDepressed and -2 or IsExpanderHovered and 2 or 0, Node.Depth)
+			local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
 
-		local NX, NY, NW, NH      = GetNodeBounds(ScrollOffset, AbsIndex, Width, Node.Depth)
-		local IX, IY, IW, IH      = GetIconBounds(NX, NY, NW, NH, nil, Node.Depth)
-		local EX, EY, EW, EH      = GetExpanderBounds(NX, NY, NW, NH, IsExpanderDepressed and -2 or IsExpanderHovered and 2 or 0, Node.Depth)
-		local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
-
-		-- Paint background
-		if IsDepressed or Node.SearchExcluded then
-			SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
-		elseif Node.SearchQueryHighlighted then
-			SkinTex.Panels.Highlight(NX, NY, NW, NH, color_white)
-		elseif IsHovered then
-			SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
-		else
-			SkinTex.Panels.Normal(NX, NY, NW, NH, color_white)
-		end
-
-		-- Paint expander
-		if Node:IsFolder() and Node:Count() > 0 then
-			if not Node.Expanded then
-				SkinTex.TreePlus(EX, EY, EW, EH)
+			-- Paint background
+			if IsDepressed or Node.SearchExcluded then
+				SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
+			elseif Node.SearchQueryHighlighted then
+				SkinTex.Panels.Highlight(NX, NY, NW, NH, color_white)
+			elseif IsHovered then
+				SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
 			else
-				SkinTex.TreeMinus(EX, EY, EW, EH)
+				SkinTex.Panels.Normal(NX, NY, NW, NH, color_white)
 			end
+
+			-- Paint expander
+			if Node:IsFolder() and Node:Count() > 0 then
+				if not Node.Expanded then
+					SkinTex.TreePlus(EX, EY, EW, EH)
+				else
+					SkinTex.TreeMinus(EX, EY, EW, EH)
+				end
+			end
+
+			-- Paint icon
+			local Icon
+			if Node:IsFolder() then
+				Icon = Node:Count() > 0 and ICON_FOLDER_CONTAINS or ICON_FOLDER_EMPTY
+			else
+				Icon = ICON_FILE
+			end
+
+			if DrawTimeAlways ~= -1 then
+				if DrawTimeAlways == 1 or self.SortType == SORTTYPE_TIME then
+					draw.SimpleText(Node:GetTimeString(), NodeFontSmall, PanelWidth - 4 - (self.VBar:IsVisible() and self.VBar:GetWide() or 0), TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+				end
+			end
+
+			surface.SetMaterial(Icon)
+			surface.DrawTexturedRect(IX, IY, IW, IH)
+
+			-- Paint text
+			draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 		end
-
-		-- Paint icon
-		local Icon
-		if Node:IsFolder() then
-			Icon = Node:Count() > 0 and ICON_FOLDER_CONTAINS or ICON_FOLDER_EMPTY
-		else
-			Icon = ICON_FILE
-		end
-
-		surface.SetMaterial(Icon)
-		surface.DrawTexturedRect(IX, IY, IW, IH)
-
-		-- Paint text
-		draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 	end
 
 	ImmediateState.BlockingAlpha = math.Clamp((ImmediateState.BlockingAlpha or 0) + (ImmediateState.DeltaTime * 4 * (ImmediateState.CanInput and -1 or 1)), 0, 1)
@@ -1304,12 +1386,24 @@ function BROWSER:Init()
 	self:SetBackgroundColor(self:GetSkin().text_bright)
 
 	self:SetViewType(VIEWTYPE_TREE)
+	self:SetSortType(SORTTYPE_NAME)
+	self:SetAscending(true)
 end
 
 -- Public facing API
 
 function BROWSER:SetViewType(ViewType)
 	self.TreeView.ViewType = ViewType or error("No viewtype provided")
+	self:MarkSortDirty()
+end
+
+function BROWSER:SetSortType(SortType)
+	self.TreeView.SortType = SortType or error("No sorttype provided")
+	self:MarkSortDirty()
+end
+
+function BROWSER:SetAscending(Ascending)
+	self.TreeView.Ascending = Ascending == true
 	self:MarkSortDirty()
 end
 
@@ -1997,8 +2091,8 @@ function PANEL:AddRightsideButton(Icon, Tooltip, Action)
 	return Button
 end
 
-local VIEWTYPETREE_SELECTED = color_white
-local VIEWTYPETREE_UNSELECTED = Color(143, 143, 143, 143)
+local COLOR_SELECTED = color_white
+local COLOR_UNSELECTED = Color(143, 143, 143, 143)
 
 function PANEL:Init()
 	AdvDupe2.FileBrowser = self
@@ -2022,15 +2116,32 @@ function PANEL:Init()
 			Root:Expand()
 		end
 	end)
-	self:AddLeftsideDivider()
-	self.SwitchToTree  = self:AddLeftsideButton("application_view_detail", "Tree view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
-	self.SwitchToList  = self:AddLeftsideButton("application_view_list", "List view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
-	self.SwitchToTiles = self:AddLeftsideButton("application_view_tile", "Tile view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+	do
+		self:AddLeftsideDivider()
+		self.SwitchToTree  = self:AddLeftsideButton("application_view_detail", "Tree view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+		self.SwitchToList  = self:AddLeftsideButton("application_view_list", "List view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
+		self.SwitchToTiles = self:AddLeftsideButton("application_view_tile", "Tile view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
 
-	self.SwitchToTree.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TREE and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
-	self.SwitchToList.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_LIST and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
-	self.SwitchToTiles.Think = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TILES and VIEWTYPETREE_SELECTED or VIEWTYPETREE_UNSELECTED) end
+		self.SwitchToTree.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TREE and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchToList.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_LIST and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchToTiles.Think = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TILES and COLOR_SELECTED or COLOR_UNSELECTED) end
+	end
+	do
+		self:AddLeftsideDivider()
+		self.SwitchToName  = self:AddLeftsideButton("text_replace", "Sort by Name", function() self.Browser:SetSortType(SORTTYPE_NAME) end)
+		self.SwitchToTime  = self:AddLeftsideButton("time", "Sort by Time", function() self.Browser:SetSortType(SORTTYPE_TIME) end)
 
+		self.SwitchAscending  = self:AddLeftsideButton("arrow_up", "Sort Ascending", function() self.Browser:SetAscending(true) end)
+		self.SwitchDescending  = self:AddLeftsideButton("arrow_down", "Sort Descending", function() self.Browser:SetAscending(false) end)
+
+		self.SwitchAscending.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.Ascending and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchDescending.Think  = function(b) b.m_Image:SetImageColor(not self.Browser.TreeView.Ascending and COLOR_SELECTED or COLOR_UNSELECTED) end
+
+		self.SwitchToName.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.SortType == SORTTYPE_NAME and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchToTime.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.SortType == SORTTYPE_TIME and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchAscending.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.Ascending and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchDescending.Think  = function(b) b.m_Image:SetImageColor(not self.Browser.TreeView.Ascending and COLOR_SELECTED or COLOR_UNSELECTED) end
+	end
 	self.Refresh = self:AddRightsideButton("arrow_refresh", "Refresh Files", function(button)
 		self.Browser:ClearAllUserPrompts()
 		self.Settings:SetImage("icon16/cog.png")
