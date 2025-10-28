@@ -760,7 +760,7 @@ do
 			end)
 		end)
 		-- Enqueue handler
-		Browser:AwaitingFile(DataPath .. ".txt", function(NewFilepath)
+		Browser:AwaitingFile(AdvDupe2.GetFilename(DataPath), function(NewFilepath)
 			if not NewFilepath then
 				Browser:HideSavePrompt()
 				return

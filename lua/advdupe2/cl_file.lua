@@ -75,7 +75,7 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 			end
 		end
 	else
-		Browser:IncomingFile(OriginalPath, path)
+		Browser:IncomingFile(path, path)
 	end
 
 	if not errored then
