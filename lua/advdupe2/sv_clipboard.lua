@@ -527,7 +527,10 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
+	-- Unfortunately we cannot distinguish here if this is a ropeconstraint or not
 	if Player and not Player:CheckLimit( "constraints" ) then return end
+	if Player and not Player:CheckLimit( "ropeconstraints" ) then return end
+
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
@@ -658,19 +661,27 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 	end
 
-	local ok, Ent = pcall(Factory.Func, unpack(Args, 1, #Factory.Args))
+	-- Pulley, Hydraulic can return up to 4 ents
+	local ok, Ent, Ent2, Ent3, Ent4 = pcall(Factory.Func, unpack(Args, 1, #Factory.Args))
 
 	if not ok or not Ent then
-		if (Player) then
+		if Player then
 			AdvDupe2.Notify(Player, "ERROR, Failed to create " .. Constraint.Type .. " Constraint!", NOTIFY_ERROR)
 		else
 			print("DUPLICATOR: ERROR, Failed to create " .. Constraint.Type .. " Constraint!")
 		end
+
 		return
 	end
 
 	if Player then
-		Player:AddCount( "constraints", Ent )
+		-- Hacky way to determine if the constraint is a rope one, since we have no better way
+		local function IsRopeConstraint(ent)
+			return ent and ent:GetClass() == "keyframe_rope"
+		end
+
+		local is_rope = IsRopeConstraint(Ent) or IsRopeConstraint(Ent2) or IsRopeConstraint(Ent3) or IsRopeConstraint(Ent4)
+		Player:AddCount(is_rope and "ropeconstraints" or "constraints", Ent)
 	end
 
 	Ent.BuildDupeInfo = table.Copy(buildInfo)
