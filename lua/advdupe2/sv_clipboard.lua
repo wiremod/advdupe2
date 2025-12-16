@@ -1435,14 +1435,17 @@ local function AdvDupe2_Spawn()
 			-- Remove the undo for stopping pasting
 			local undotxt = "AdvDupe2"..(Queue.Name and (": ("..tostring(Queue.Name)..")") or "")
 			local undos = undo.GetTable()[Queue.Player:UniqueID()]
-			for i = #undos, 1, -1 do
-				if (undos[i] and undos[i].Name == undotxt) then
-					undos[i] = nil
-					-- Undo module netmessage
-					net.Start("Undo_Undone")
-					net.WriteInt(i, 16)
-					net.Send(Queue.Player)
-					break
+
+			if undos then
+				for i = #undos, 1, -1 do
+					if (undos[i] and undos[i].Name == undotxt) then
+						undos[i] = nil
+						-- Undo module netmessage
+						net.Start("Undo_Undone")
+						net.WriteInt(i, 16)
+						net.Send(Queue.Player)
+						break
+					end
 				end
 			end
 
@@ -1573,15 +1576,18 @@ local function ErrorCatchSpawning()
 				AdvDupe2.Notify(Queue.Player, err)
 
 				local undos = undo.GetTable()[Queue.Player:UniqueID()]
-				local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
-				for i = #undos, 1, -1 do
-					if (undos[i] and undos[i].Name == undotxt) then
-						undos[i] = nil
-						-- Undo module netmessage
-						net.Start("Undo_Undone")
-						net.WriteInt(i, 16)
-						net.Send(Queue.Player)
-						break
+
+				if undos then
+					local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
+					for i = #undos, 1, -1 do
+						if (undos[i] and undos[i].Name == undotxt) then
+							undos[i] = nil
+							-- Undo module netmessage
+							net.Start("Undo_Undone")
+							net.WriteInt(i, 16)
+							net.Send(Queue.Player)
+							break
+						end
 					end
 				end
 			else
