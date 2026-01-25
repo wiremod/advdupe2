@@ -802,7 +802,7 @@ end
 local function DoGenericPhysics(entity, data, ply)
 	if not data.PhysicsObjects then return end
 
-	for bone, args in ipairs(data.PhysicsObjects) do
+	for bone, args in pairs(data.PhysicsObjects) do
 		local phys = entity:GetPhysicsObjectNum(bone)
 
 		if IsValid(phys) then
