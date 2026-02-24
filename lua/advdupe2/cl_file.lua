@@ -74,7 +74,7 @@ end)
 
 AdvDupe2.Uploading = false
 AdvDupe2.UploadAttempts = 0
-local function ClearUpload()
+function AdvDupe2.ClearFileUpload()
 	AdvDupe2.Uploading = nil
 	AdvDupe2.File = nil
 	AdvDupe2.UploadAttempts = 0
@@ -84,7 +84,7 @@ end
 function AdvDupe2.SendFile(name, data)
 	net.Start("AdvDupe2_ReceiveFile")
 	net.WriteString(name)
-	AdvDupe2.Uploading = net.WriteStream(data, ClearUpload)
+	AdvDupe2.Uploading = net.WriteStream(data, AdvDupe2.ClearFileUpload)
 	net.SendToServer()
 end
 
@@ -98,8 +98,8 @@ function AdvDupe2.UploadFile(ReadPath, ReadArea)
 			return
 		end
 		AdvDupe2.Notify("Restarting file opening...", NOTIFY_ERROR)
-		AdvDupe2.Uploading:Remove()
-		ClearUpload()
+		AdvDupe2.Uploading:Remove() -- kill upload netstream
+		AdvDupe2.ClearFileUpload()
 	end
 	if(ReadArea==0)then
 		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
