@@ -73,19 +73,34 @@ net.Receive("AdvDupe2_ReceiveFile", function()
 end)
 
 AdvDupe2.Uploading = false
+AdvDupe2.UploadAttempts = 0
+local function ClearUpload()
+	AdvDupe2.Uploading = nil
+	AdvDupe2.File = nil
+	AdvDupe2.UploadAttempts = 0
+	AdvDupe2.RemoveProgressBar()
+end
+
 function AdvDupe2.SendFile(name, data)
 	net.Start("AdvDupe2_ReceiveFile")
 	net.WriteString(name)
-	AdvDupe2.Uploading = net.WriteStream(data, function()
-		AdvDupe2.Uploading = nil
-		AdvDupe2.File = nil
-		AdvDupe2.RemoveProgressBar()
-	end)
+	AdvDupe2.Uploading = net.WriteStream(data, ClearUpload)
 	net.SendToServer()
 end
 
+local MAX_UPLOAD_ATTEMPTS = 3
 function AdvDupe2.UploadFile(ReadPath, ReadArea)
-	if AdvDupe2.Uploading then AdvDupe2.Notify("Already opening file, please wait.", NOTIFY_ERROR) return end
+	if AdvDupe2.Uploading then
+		AdvDupe2.UploadAttempts = AdvDupe2.UploadAttempts + 1
+		if AdvDupe2.UploadAttempts < MAX_UPLOAD_ATTEMPTS then
+			local remaining = MAX_UPLOAD_ATTEMPTS - AdvDupe2.UploadAttempts
+			AdvDupe2.Notify("Already opening file, retry " .. remaining .. "x to force restart", NOTIFY_ERROR)
+			return
+		end
+		AdvDupe2.Notify("Restarting file opening...", NOTIFY_ERROR)
+		AdvDupe2.Uploading:Remove()
+		ClearUpload()
+	end
 	if(ReadArea==0)then
 		ReadPath = AdvDupe2.DataFolder.."/"..ReadPath..".txt"
 	elseif(ReadArea==1)then
