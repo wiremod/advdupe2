@@ -75,8 +75,7 @@ end)
 AdvDupe2.Uploading = false
 AdvDupe2.UploadAttempts = 0
 function AdvDupe2.ClearFileUpload()
-	AdvDupe2.Uploading = nil
-	AdvDupe2.File = nil
+	AdvDupe2.Uploading = false
 	AdvDupe2.UploadAttempts = 0
 	AdvDupe2.RemoveProgressBar()
 end
