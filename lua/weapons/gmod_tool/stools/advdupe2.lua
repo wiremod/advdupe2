@@ -1781,7 +1781,7 @@ if(CLIENT) then
 					end
 				end
 			end
-			local B3 = Vector(TraceRes.HitPos); B3:Add(TraceEdge.ofcube)
+			local B3 = Vector(TraceEdge.ofcube); B3:Add(TraceRes.HitPos)
 			local Entities = FindInBox(B3, T3, LocalPlayer())
 			AdvDupe2.ColorEntities = Entities
 			AdvDupe2.EntityColors = {}
