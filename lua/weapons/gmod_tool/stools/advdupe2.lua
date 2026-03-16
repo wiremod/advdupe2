@@ -1765,7 +1765,7 @@ if(CLIENT) then
 			offset = Vector(0, 0, -2*i),
 			mask = MASK_NPCWORLDSTATIC
 		}
-		--Bottom Points
+		--Top Points
 		local T1 = Vector(-i,-i, i); T1:Add(TraceRes.HitPos)
 		local T2 = Vector(-i, i, i); T2:Add(TraceRes.HitPos)
 		local T3 = Vector( i, i, i); T3:Add(TraceRes.HitPos)
