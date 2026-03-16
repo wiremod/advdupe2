@@ -1755,21 +1755,21 @@ if(CLIENT) then
 	function AdvDupe2.DrawSelectionBox()
 
 		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
-		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
+		local s = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
 		-- Trace points
 		local TraceEdge = {
 			output = {},
 			start  = Vector(),
 			endpos = Vector(),
-			ofcube = Vector(-i,-i,-i),
-			offset = Vector(0, 0, -2*i),
+			ofcube = Vector(-s,-s,-s),
+			offset = Vector(0, 0, -2*s),
 			mask = MASK_NPCWORLDSTATIC
 		}
 		--Top Points
-		local T1 = Vector(-i,-i, i); T1:Add(TraceRes.HitPos)
-		local T2 = Vector(-i, i, i); T2:Add(TraceRes.HitPos)
-		local T3 = Vector( i, i, i); T3:Add(TraceRes.HitPos)
-		local T4 = Vector( i,-i, i); T4:Add(TraceRes.HitPos)
+		local T1 = Vector(-s,-s, s); T1:Add(TraceRes.HitPos)
+		local T2 = Vector(-s, s, s); T2:Add(TraceRes.HitPos)
+		local T3 = Vector( s, s, s); T3:Add(TraceRes.HitPos)
+		local T4 = Vector( s,-s, s); T4:Add(TraceRes.HitPos)
 
 		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate) then
 
