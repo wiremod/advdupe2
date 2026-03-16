@@ -1741,24 +1741,33 @@ if(CLIENT) then
 		return EntTable
 	end
 
+	local function GetCubeToScreen(pos, tracedata)
+		tracedata.start = Vector(pos)
+		tracedata.start:Add(tracedata.offset)
+		tracedata.endpos = Vector(pos)
+		util.TraceLine( tracedata )
+		local top = Vector(pos); top:Add(tracedata.offset)
+		local bot = tracedata.output.HitPos
+		return top:ToScreen(), bot:ToScreen()
+	end
 
 	local GreenSelected = Color(0, 255, 0, 255)
 	function AdvDupe2.DrawSelectionBox()
 
 		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
 		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
-
+		-- Trace points
+		local TraceEdge = {
+			output = {},
+			ofcube = Vector(i,i,i),
+			offset = Vector(0,0,i*2),
+			mask = MASK_NPCWORLDSTATIC
+		}
 		--Bottom Points
-		local B1 = (Vector(-i,-i,-i) + TraceRes.HitPos)
-		local B2 = (Vector(-i, i,-i) + TraceRes.HitPos)
-		local B3 = (Vector( i, i,-i) + TraceRes.HitPos)
-		local B4 = (Vector( i,-i,-i) + TraceRes.HitPos)
-
-		--Top Points
-		local T1 = (Vector(-i,-i, i) + TraceRes.HitPos):ToScreen()
-		local T2 = (Vector(-i, i, i) + TraceRes.HitPos):ToScreen()
-		local T3 = (Vector( i, i, i) + TraceRes.HitPos):ToScreen()
-		local T4 = (Vector( i,-i, i) + TraceRes.HitPos):ToScreen()
+		local B1 = Vector(-i,-i,-i); B1:Add(TraceRes.HitPos)
+		local B2 = Vector(-i, i,-i); B2:Add(TraceRes.HitPos)
+		local B3 = Vector( i, i,-i); B3:Add(TraceRes.HitPos)
+		local B4 = Vector( i,-i,-i); B4:Add(TraceRes.HitPos)
 
 		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate) then
 
@@ -1770,38 +1779,22 @@ if(CLIENT) then
 					end
 				end
 			end
-
-			local Entities = FindInBox(B1, (Vector(i,i,i)+TraceRes.HitPos), LocalPlayer())
+			local BoxMins = Vector(TraceRes.HitPos); BoxMins:Add(TraceEdge.ofcube)
+			local Entities = FindInBox(B1, BoxMins, LocalPlayer())
 			AdvDupe2.ColorEntities = Entities
 			AdvDupe2.EntityColors = {}
 			for k,v in pairs(Entities)do
 				AdvDupe2.EntityColors[k] = v:GetColor()
 				v:SetColor(GreenSelected)
 			end
-			AdvDupe2.LastUpdate = CurTime()+0.25
+			AdvDupe2.LastUpdate = CurTime() + 0.25
 
 		end
 
-		local tracedata = {}
-		tracedata.mask = MASK_NPCWORLDSTATIC
-		local WorldTrace
-
-		tracedata.start = B1+Vector(0,0,i*2)
-		tracedata.endpos = B1
-		WorldTrace = util.TraceLine( tracedata )
-		B1 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B2+Vector(0,0,i*2)
-		tracedata.endpos = B2
-		WorldTrace = util.TraceLine( tracedata )
-		B2 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B3+Vector(0,0,i*2)
-		tracedata.endpos = B3
-		WorldTrace = util.TraceLine( tracedata )
-		B3 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B4+Vector(0,0,i*2)
-		tracedata.endpos = B4
-		WorldTrace = util.TraceLine( tracedata )
-		B4 = WorldTrace.HitPos:ToScreen()
+		local T1, B1 = GetCubeToScreen(B1, TraceEdge)
+		local T2, B2 = GetCubeToScreen(B2, TraceEdge)
+		local T3, B3 = GetCubeToScreen(B3, TraceEdge)
+		local T4, B4 = GetCubeToScreen(B4, TraceEdge)
 
 		surface.SetDrawColor( 0, 255, 0, 255 )
 
