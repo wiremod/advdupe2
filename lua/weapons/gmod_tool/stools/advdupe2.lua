@@ -156,7 +156,8 @@ if(SERVER) then
 
 	--Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
-		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
+		local PPFlags = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner ~= nil)
+		local PPCheck = (PPFlags and PlayerCanDupeCPPI or PlayerCanDupeTool)
 		local EntTable = {}
 
 		for _, ent in ipairs(ents.FindInBox(min, max)) do
@@ -1743,36 +1744,42 @@ if(CLIENT) then
 
 	local function GetCubeToScreen(pos, tracedata)
 		tracedata.start:Set(pos)
-		tracedata.endpos:Set(pos)
-		tracedata.endpos:Add(tracedata.offset)
+		tracedata.endpos:Set(tracedata.offset)
+		tracedata.endpos:Mul(-2)
+		tracedata.endpos:Add(pos)
 		util.TraceLine( tracedata )
 		local top = tracedata.start
 		local bot = tracedata.output.HitPos
 		return top:ToScreen(), bot:ToScreen()
 	end
 
-	local GreenSelected = Color(0, 255, 0, 255)
+	-- Trace points
+	local TraceBoxEdge = {
+		output = {},
+		start  = Vector(),
+		endpos = Vector(),
+		corner = Vector(0, 0, 0),
+		offset = Vector(0, 0, 0),
+		mask   = MASK_NPCWORLDSTATIC,
+		baseco = Color(0, 255, 0, 255)
+	}
+
 	function AdvDupe2.DrawSelectionBox()
+		local User = LocalPlayer()
+		local TraceRes = User:GetEyeTrace()
+		local s = math.Clamp(User:GetInfoNum("advdupe2_area_copy_size", 50), 0, 30720)
+		TraceBoxEdge.corner:SetUnpacked(s, s, s)
+		TraceBoxEdge.offset:SetUnpacked(0, 0, s)
 
-		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
-		local s = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
-		-- Trace points
-		local TraceEdge = {
-			output = {},
-			start  = Vector(),
-			endpos = Vector(),
-			ofcube = Vector(-s,-s,-s),
-			offset = Vector(0, 0, -2*s),
-			mask = MASK_NPCWORLDSTATIC
-		}
 		--Top Points
-		local T1 = Vector(-s,-s, s); T1:Add(TraceRes.HitPos)
-		local T2 = Vector(-s, s, s); T2:Add(TraceRes.HitPos)
-		local T3 = Vector( s, s, s); T3:Add(TraceRes.HitPos)
-		local T4 = Vector( s,-s, s); T4:Add(TraceRes.HitPos)
+		local OO = Vector(TraceRes.HitPos)
+		local T1 = Vector(-s,-s, s); T1:Add(OO)
+		local T2 = Vector(-s, s, s); T2:Add(OO)
+		local T3 = Vector( s, s, s); T3:Add(OO)
+		local T4 = Vector( s,-s, s); T4:Add(OO)
 
-		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate) then
-
+		if(not AdvDupe2.LastUpdate or CurTime() >= AdvDupe2.LastUpdate) then
+			-- Revert the marked entities original color
 			if AdvDupe2.ColorEntities then
 				for k,v in pairs(AdvDupe2.EntityColors)do
 					local ent = AdvDupe2.ColorEntities[k]
@@ -1781,22 +1788,24 @@ if(CLIENT) then
 					end
 				end
 			end
-			local B3 = Vector(TraceEdge.ofcube); B3:Add(TraceRes.HitPos)
-			local Entities = FindInBox(B3, T3, LocalPlayer())
+			-- Paint all entities with the base color
+			local B3 = Vector(TraceBoxEdge.corner)
+						B3:Mul(-2); B3:Add(T3)
+			local Entities = FindInBox(B3, T3, User)
 			AdvDupe2.ColorEntities = Entities
 			AdvDupe2.EntityColors = {}
-			for k,v in pairs(Entities)do
+			for k, v in pairs(Entities)do
 				AdvDupe2.EntityColors[k] = v:GetColor()
-				v:SetColor(GreenSelected)
+				v:SetColor(TraceBoxEdge.baseco)
 			end
 			AdvDupe2.LastUpdate = CurTime() + 0.25
-
 		end
 
-		local T1, B1 = GetCubeToScreen(T1, TraceEdge)
-		local T2, B2 = GetCubeToScreen(T2, TraceEdge)
-		local T3, B3 = GetCubeToScreen(T3, TraceEdge)
-		local T4, B4 = GetCubeToScreen(T4, TraceEdge)
+		-- Calculate Cube to screen points
+		local T1, B1 = GetCubeToScreen(T1, TraceBoxEdge)
+		local T2, B2 = GetCubeToScreen(T2, TraceBoxEdge)
+		local T3, B3 = GetCubeToScreen(T3, TraceBoxEdge)
+		local T4, B4 = GetCubeToScreen(T4, TraceBoxEdge)
 
 		surface.SetDrawColor( 0, 255, 0, 255 )
 
