@@ -1758,8 +1758,8 @@ if(CLIENT) then
 		output = {},
 		start  = Vector(),
 		endpos = Vector(),
-		corner = Vector(0, 0, 0),
-		offset = Vector(0, 0, 0),
+		corner = Vector(),
+		offset = Vector(),
 		mask   = MASK_NPCWORLDSTATIC,
 		baseco = Color(0, 255, 0, 255)
 	}
