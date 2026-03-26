@@ -31,7 +31,7 @@ if(SERVER) then
 		WireMotor     = true,
 		WireHydraulic = true
 	}
-	--Orders constraints so that the dupe uses as little constraint systems as possible
+	--Orders constraints so that the dupe uses as few constraint systems as possible
 	local function GroupConstraintOrder( ply, constraints )
 		--First separate the nocollides, sorted, and unsorted constraints
 		local sorted, unsorted = {}, {}
