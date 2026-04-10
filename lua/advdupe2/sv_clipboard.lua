@@ -1003,7 +1003,13 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 
 		if IsAllowed(Player, EntTable.Class, EntityClass) then
+			hook.Add( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated", function( ent )
+				table.insert( CreatedEntities, ent )
+			end )
+
 			status, valid = pcall(GenericDuplicatorFunction, EntTable, Player)
+
+			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
