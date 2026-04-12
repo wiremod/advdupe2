@@ -397,6 +397,16 @@ do
 	function NODE:Collapse()       self:SetExpanded(false)             end
 	function NODE:ToggleExpanded() self:SetExpanded(not self.Expanded) end
 
+	function NODE:ExpandRecursive()
+		self:SetExpanded(true)
+		for _, Folder in ipairs(self.Folders) do Folder:ExpandRecursive() end
+	end
+
+	function NODE:CollapseRecursive()
+		self:SetExpanded(false)
+		for _, Folder in ipairs(self.Folders) do Folder:CollapseRecursive() end
+	end
+
 	function SetupDataFile(Node, Path, Name)
 		Node.Text = Name
 		Node.Path = Path
@@ -428,7 +438,6 @@ do
 			end
 		end
 	end
-
 
 	function NODE:LoadDataFolder(Path)
 		self:Clear()
@@ -1082,7 +1091,7 @@ function BROWSERTREE:StartSearch(TargetNode, LastSearch)
 	self.SortDirty = true
 	self.LastSearchIndex = 0
 
-	TargetNode:Expand()
+	TargetNode:ExpandRecursive()
 end
 
 function BROWSERTREE:UpdateSearchQuery(Text)
@@ -1091,7 +1100,6 @@ function BROWSERTREE:UpdateSearchQuery(Text)
 	self.LastSearchNode = nil
 	self.SortDirty = true
 	self.LastSearchIndex = 0
-	print(Text)
 	return Text
 end
 
@@ -2284,11 +2292,6 @@ function PANEL:OpenSettings()
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_toexpander", "Left -> Expander Padding (pixels)", 0, 256)
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_expandertoicon", "Expander -> Icon Padding (pixels)", 0, 256)
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_icontotext", "Icon -> Text Padding (pixels)", 0, 256)
-end
-
-function PANEL:Slide(expand)
-	-- Stub. Need to entirely remove this.
-	ErrorNoHalt("AdvDupe2:Slide is no longer implemented")
 end
 
 function PANEL:GetFullPath(node)
