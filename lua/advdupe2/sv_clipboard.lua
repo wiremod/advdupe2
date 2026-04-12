@@ -527,7 +527,10 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 	local Factory = duplicator.ConstraintType[Constraint.Type]
 	if not Factory then return end
 
+	-- Unfortunately we cannot distinguish here if this is a ropeconstraint or not
 	if Player and not Player:CheckLimit( "constraints" ) then return end
+	if Player and not Player:CheckLimit( "ropeconstraints" ) then return end
+
 	local first, firstindex -- Ent1 or Ent in the constraint's table
 	local second, secondindex -- Any other Ent that is not Ent1 or Ent
 	local Args = {} -- Build the argument list for the Constraint's spawn function
@@ -658,19 +661,27 @@ local function CreateConstraintFromTable(Constraint, EntityList, EntityTable, Pl
 		end
 	end
 
-	local ok, Ent = pcall(Factory.Func, unpack(Args, 1, #Factory.Args))
+	-- Pulley, Hydraulic can return up to 4 ents
+	local ok, Ent, Ent2, Ent3, Ent4 = pcall(Factory.Func, unpack(Args, 1, #Factory.Args))
 
 	if not ok or not Ent then
-		if (Player) then
+		if Player then
 			AdvDupe2.Notify(Player, "ERROR, Failed to create " .. Constraint.Type .. " Constraint!", NOTIFY_ERROR)
 		else
 			print("DUPLICATOR: ERROR, Failed to create " .. Constraint.Type .. " Constraint!")
 		end
+
 		return
 	end
 
 	if Player then
-		Player:AddCount( "constraints", Ent )
+		-- Hacky way to determine if the constraint is a rope one, since we have no better way
+		local function IsRopeConstraint(ent)
+			return ent and ent:GetClass() == "keyframe_rope"
+		end
+
+		local is_rope = IsRopeConstraint(Ent) or IsRopeConstraint(Ent2) or IsRopeConstraint(Ent3) or IsRopeConstraint(Ent4)
+		Player:AddCount(is_rope and "ropeconstraints" or "constraints", Ent)
 	end
 
 	Ent.BuildDupeInfo = table.Copy(buildInfo)
@@ -791,7 +802,7 @@ end
 local function DoGenericPhysics(entity, data, ply)
 	if not data.PhysicsObjects then return end
 
-	for bone, args in ipairs(data.PhysicsObjects) do
+	for bone, args in pairs(data.PhysicsObjects) do
 		local phys = entity:GetPhysicsObjectNum(bone)
 
 		if IsValid(phys) then
@@ -992,7 +1003,13 @@ local function CreateEntityFromTable(EntTable, Player)
 		end
 
 		if IsAllowed(Player, EntTable.Class, EntityClass) then
+			hook.Add( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated", function( ent )
+				table.insert( CreatedEntities, ent )
+			end )
+
 			status, valid = pcall(GenericDuplicatorFunction, EntTable, Player)
+
+			hook.Remove( "OnEntityCreated", "AdvDupe2_GetLastEntitiesCreated" )
 		else
 			print("Advanced Duplicator 2: ENTITY CLASS IS BLACKLISTED, CLASS NAME: " .. EntTable.Class)
 			return nil
@@ -1424,14 +1441,17 @@ local function AdvDupe2_Spawn()
 			-- Remove the undo for stopping pasting
 			local undotxt = "AdvDupe2"..(Queue.Name and (": ("..tostring(Queue.Name)..")") or "")
 			local undos = undo.GetTable()[Queue.Player:UniqueID()]
-			for i = #undos, 1, -1 do
-				if (undos[i] and undos[i].Name == undotxt) then
-					undos[i] = nil
-					-- Undo module netmessage
-					net.Start("Undo_Undone")
-					net.WriteInt(i, 16)
-					net.Send(Queue.Player)
-					break
+
+			if undos then
+				for i = #undos, 1, -1 do
+					if (undos[i] and undos[i].Name == undotxt) then
+						undos[i] = nil
+						-- Undo module netmessage
+						net.Start("Undo_Undone")
+						net.WriteInt(i, 16)
+						net.Send(Queue.Player)
+						break
+					end
 				end
 			end
 
@@ -1562,15 +1582,18 @@ local function ErrorCatchSpawning()
 				AdvDupe2.Notify(Queue.Player, err)
 
 				local undos = undo.GetTable()[Queue.Player:UniqueID()]
-				local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
-				for i = #undos, 1, -1 do
-					if (undos[i] and undos[i].Name == undotxt) then
-						undos[i] = nil
-						-- Undo module netmessage
-						net.Start("Undo_Undone")
-						net.WriteInt(i, 16)
-						net.Send(Queue.Player)
-						break
+
+				if undos then
+					local undotxt = Queue.Name and ("AdvDupe2 ("..Queue.Name..")") or "AdvDupe2"
+					for i = #undos, 1, -1 do
+						if (undos[i] and undos[i].Name == undotxt) then
+							undos[i] = nil
+							-- Undo module netmessage
+							net.Start("Undo_Undone")
+							net.WriteInt(i, 16)
+							net.Send(Queue.Player)
+							break
+						end
 					end
 				end
 			else

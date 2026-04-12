@@ -156,7 +156,8 @@ if(SERVER) then
 
 	--Find all the entities in a box, given the adjacent corners and the player
 	local function FindInBox(min, max, ply)
-		local PPCheck = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner~=nil) and PlayerCanDupeCPPI or PlayerCanDupeTool
+		local PPFlags = (tobool(ply:GetInfo("advdupe2_copy_only_mine")) and ply.CPPIGetOwner ~= nil)
+		local PPCheck = (PPFlags and PlayerCanDupeCPPI or PlayerCanDupeTool)
 		local EntTable = {}
 
 		for _, ent in ipairs(ents.FindInBox(min, max)) do
@@ -1785,27 +1786,44 @@ if(CLIENT) then
 		return EntTable
 	end
 
+	local function GetCubeToScreen(pos, tracedata)
+		tracedata.start:Set(pos)
+		tracedata.endpos:Set(tracedata.offset)
+		tracedata.endpos:Mul(-2)
+		tracedata.endpos:Add(pos)
+		util.TraceLine( tracedata )
+		local top = tracedata.start
+		local bot = tracedata.output.HitPos
+		return top:ToScreen(), bot:ToScreen()
+	end
 
-	local GreenSelected = Color(0, 255, 0, 255)
+	-- Trace points
+	local TraceBoxEdge = {
+		output = {},
+		start  = Vector(),
+		endpos = Vector(),
+		corner = Vector(),
+		offset = Vector(),
+		mask   = MASK_NPCWORLDSTATIC,
+		baseco = Color(0, 255, 0, 255)
+	}
+
 	function AdvDupe2.DrawSelectionBox()
-
-		local TraceRes = util.TraceLine(util.GetPlayerTrace(LocalPlayer()))
-		local i = math.Clamp(tonumber(LocalPlayer():GetInfo("advdupe2_area_copy_size")) or 50, 0, 30720)
-
-		--Bottom Points
-		local B1 = (Vector(-i,-i,-i) + TraceRes.HitPos)
-		local B2 = (Vector(-i, i,-i) + TraceRes.HitPos)
-		local B3 = (Vector( i, i,-i) + TraceRes.HitPos)
-		local B4 = (Vector( i,-i,-i) + TraceRes.HitPos)
+		local User = LocalPlayer()
+		local TraceRes = User:GetEyeTrace()
+		local s = math.Clamp(User:GetInfoNum("advdupe2_area_copy_size", 50), 0, 30720)
+		TraceBoxEdge.corner:SetUnpacked(s, s, s)
+		TraceBoxEdge.offset:SetUnpacked(0, 0, s)
 
 		--Top Points
-		local T1 = (Vector(-i,-i, i) + TraceRes.HitPos):ToScreen()
-		local T2 = (Vector(-i, i, i) + TraceRes.HitPos):ToScreen()
-		local T3 = (Vector( i, i, i) + TraceRes.HitPos):ToScreen()
-		local T4 = (Vector( i,-i, i) + TraceRes.HitPos):ToScreen()
+		local OO = Vector(TraceRes.HitPos)
+		local T1 = Vector(-s,-s, s); T1:Add(OO)
+		local T2 = Vector(-s, s, s); T2:Add(OO)
+		local T3 = Vector( s, s, s); T3:Add(OO)
+		local T4 = Vector( s,-s, s); T4:Add(OO)
 
-		if(not AdvDupe2.LastUpdate or CurTime()>=AdvDupe2.LastUpdate) then
-
+		if(not AdvDupe2.LastUpdate or CurTime() >= AdvDupe2.LastUpdate) then
+			-- Revert the marked entities original color
 			if AdvDupe2.ColorEntities then
 				for k,v in pairs(AdvDupe2.EntityColors)do
 					local ent = AdvDupe2.ColorEntities[k]
@@ -1814,38 +1832,24 @@ if(CLIENT) then
 					end
 				end
 			end
-
-			local Entities = FindInBox(B1, (Vector(i,i,i)+TraceRes.HitPos), LocalPlayer())
+			-- Paint all entities with the base color
+			local B3 = Vector(TraceBoxEdge.corner)
+						B3:Mul(-2); B3:Add(T3)
+			local Entities = FindInBox(B3, T3, User)
 			AdvDupe2.ColorEntities = Entities
 			AdvDupe2.EntityColors = {}
-			for k,v in pairs(Entities)do
+			for k, v in pairs(Entities)do
 				AdvDupe2.EntityColors[k] = v:GetColor()
-				v:SetColor(GreenSelected)
+				v:SetColor(TraceBoxEdge.baseco)
 			end
-			AdvDupe2.LastUpdate = CurTime()+0.25
-
+			AdvDupe2.LastUpdate = CurTime() + 0.25
 		end
 
-		local tracedata = {}
-		tracedata.mask = MASK_NPCWORLDSTATIC
-		local WorldTrace
-
-		tracedata.start = B1+Vector(0,0,i*2)
-		tracedata.endpos = B1
-		WorldTrace = util.TraceLine( tracedata )
-		B1 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B2+Vector(0,0,i*2)
-		tracedata.endpos = B2
-		WorldTrace = util.TraceLine( tracedata )
-		B2 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B3+Vector(0,0,i*2)
-		tracedata.endpos = B3
-		WorldTrace = util.TraceLine( tracedata )
-		B3 = WorldTrace.HitPos:ToScreen()
-		tracedata.start = B4+Vector(0,0,i*2)
-		tracedata.endpos = B4
-		WorldTrace = util.TraceLine( tracedata )
-		B4 = WorldTrace.HitPos:ToScreen()
+		-- Calculate Cube to screen points
+		local T1, B1 = GetCubeToScreen(T1, TraceBoxEdge)
+		local T2, B2 = GetCubeToScreen(T2, TraceBoxEdge)
+		local T3, B3 = GetCubeToScreen(T3, TraceBoxEdge)
+		local T4, B4 = GetCubeToScreen(T4, TraceBoxEdge)
 
 		surface.SetDrawColor( 0, 255, 0, 255 )
 
