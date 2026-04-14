@@ -5,9 +5,6 @@ surface.CreateFont("AdvDupe2_SmallFont", {
 })
 
 -- Enums
-local ADVDUPE2_AREA_ADVDUPE2   = AdvDupe2.AREA_ADVDUPE2
-local ADVDUPE2_AREA_PUBLIC     = AdvDupe2.AREA_PUBLIC
-local ADVDUPE2_AREA_ADVDUPE1   = AdvDupe2.AREA_ADVDUPE1
 -- These are internal really, so i don't think these need to be exposed?
 local NODETYPE_FOLDER          = 1
 local NODETYPE_FILE            = 2
@@ -674,9 +671,9 @@ local function OpenPreview(Node, Area)
 	local Path     = GetNodeDataPath(Node)
 	local ReadPath
 
-	if Area == ADVDUPE2_AREA_ADVDUPE2 then
+	if Area == AdvDupe2.AREA_ADVDUPE2 then
 		ReadPath = AdvDupe2.DataFolder .. "/" .. Path .. ".txt"
-	elseif Area == ADVDUPE2_AREA_PUBLIC then
+	elseif Area == AdvDupe2.AREA_PUBLIC then
 		ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
 	else
 		ReadPath = "adv_duplicator/" .. Path .. ".txt"
@@ -710,11 +707,11 @@ do
 	end
 
 	function AdvDupe1Folder:UserLoad(Browser, Node)
-		AdvDupe2.UploadFile(GetNodeDataPath(Node), ADVDUPE2_AREA_ADVDUPE1)
+		AdvDupe2.UploadFile(GetNodeDataPath(Node), AdvDupe2.AREA_ADVDUPE1)
 	end
 
 	function AdvDupe1Folder:UserPreview(Browser, Node)
-		OpenPreview(Node, ADVDUPE2_AREA_ADVDUPE1)
+		OpenPreview(Node, AdvDupe2.AREA_ADVDUPE1)
 	end
 
 
@@ -765,11 +762,11 @@ do
 	end
 
 	function AdvDupe2Folder:UserLoad(Browser, Node)
-		AdvDupe2.UploadFile(GetNodeDataPath(Node), ADVDUPE2_AREA_ADVDUPE2)
+		AdvDupe2.UploadFile(GetNodeDataPath(Node), AdvDupe2.AREA_ADVDUPE2)
 	end
 
 	function AdvDupe2Folder:UserPreview(Browser, Node)
-		OpenPreview(Node, ADVDUPE2_AREA_ADVDUPE2)
+		OpenPreview(Node, AdvDupe2.AREA_ADVDUPE2)
 	end
 
 	function AdvDupe2Folder:UserSave(Browser, Node, Filename, Description)
