@@ -1,10 +1,10 @@
 --[[
 	Title: Miscellaneous
-	
+
 	Desc: Contains miscellaneous (serverside) things AD2 needs to function that don't fit anywhere else.
-	
+
 	Author: TB
-	
+
 	Version: 1.0
 ]]
 
@@ -22,7 +22,7 @@ local function SavePositions( Constraint )
 		if Constraint.BuildDupeInfo then return end
 		local BuildDupeInfo = {}
 		Constraint.BuildDupeInfo = BuildDupeInfo
-			
+
 		local Ent1, Ent2
 		if IsValid(Constraint.Ent) then
 			if Constraint.Ent:GetPhysicsObjectCount()>1 then
@@ -73,7 +73,7 @@ local function SavePositions( Constraint )
 					BuildDupeInfo.Ent2Ang = Bone:GetAngles()
 				end
 			end
-				
+
 		end
 
 	end

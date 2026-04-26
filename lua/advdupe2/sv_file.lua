@@ -1,21 +1,21 @@
 --Save a file to the client
 local function SaveFile(ply, cmd, args)
 	if(not ply.AdvDupe2 or not ply.AdvDupe2.Entities or next(ply.AdvDupe2.Entities)==nil)then AdvDupe2.Notify(ply,"Duplicator is empty, nothing to save.", NOTIFY_ERROR) return end
-	if(not game.SinglePlayer() and CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then 
+	if(not game.SinglePlayer() and CurTime()-(ply.AdvDupe2.FileMod or 0) < 0)then
 		AdvDupe2.Notify(ply,"Cannot save at the moment. Please Wait...", NOTIFY_ERROR)
 		return
 	end
-	
+
 	if(ply.AdvDupe2.Pasting || ply.AdvDupe2.Downloading)then
 		AdvDupe2.Notify(ply,"Advanced Duplicator 2 is busy.",NOTIFY_ERROR)
-		return false 
+		return false
 	end
 
 	ply.AdvDupe2.FileMod = CurTime()+tonumber(GetConVarString("AdvDupe2_FileModificationDelay")+2)
-	
+
 	local name = string.Explode("/", args[1])
 	ply.AdvDupe2.Name = name[#name]
-	
+
 	net.Start("AdvDupe2_SetDupeInfo")
 		net.WriteString(ply.AdvDupe2.Name)
 		net.WriteString(ply:Nick())
@@ -26,7 +26,7 @@ local function SaveFile(ply, cmd, args)
 		net.WriteString(table.Count(ply.AdvDupe2.Entities))
 		net.WriteString(#ply.AdvDupe2.Constraints)
 	net.Send(ply)
-	
+
 	local Tab = {Entities = ply.AdvDupe2.Entities, Constraints = ply.AdvDupe2.Constraints, HeadEnt = ply.AdvDupe2.HeadEnt, Description=args[2]}
 
 	AdvDupe2.Encode( Tab, AdvDupe2.GenerateDupeStamp(ply), function(data)
@@ -55,12 +55,12 @@ end
 
 function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 	if(not IsValid(ply))then return end
-			
-	if not success then 
+
+	if not success then
 		AdvDupe2.Notify(ply,"Could not open "..dupe,NOTIFY_ERROR)
 		return
 	end
-			
+
 	if(not game.SinglePlayer())then
 		if(tonumber(GetConVarString("AdvDupe2_MaxConstraints"))~=0 and #dupe["Constraints"]>tonumber(GetConVarString("AdvDupe2_MaxConstraints")))then
 			AdvDupe2.Notify(ply,"Amount of constraints is greater than "..GetConVarString("AdvDupe2_MaxConstraints"),NOTIFY_ERROR)
@@ -86,7 +86,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 		for k,v in pairs(dupe["Entities"])do
 			Pos = nil
 			Ang = nil
-			if(v.SavedParentIdx)then 
+			if(v.SavedParentIdx)then
 				if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
 				v.BuildDupeInfo.DupeParentID = v.SavedParentIdx
 				Pos = v.LocalPos*1
@@ -98,7 +98,7 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 				p.Angle = Ang or (p.LocalAngle*1)
 				p.LocalPos = nil
 				p.LocalAngle = nil
-				p.Frozen = not p.Frozen -- adv dupe 2 does this wrong way 
+				p.Frozen = not p.Frozen -- adv dupe 2 does this wrong way
 			end
 			v.LocalPos = nil
 			v.LocalAngle = nil
@@ -106,8 +106,8 @@ function AdvDupe2.LoadDupe(ply,success,dupe,info,moreinfo)
 
 		ply.AdvDupe2.Entities = dupe["Entities"]
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
-		
-	else	
+
+	else
 		ply.AdvDupe2.Entities = dupe["Entities"]
 		ply.AdvDupe2.Constraints = dupe["Constraints"]
 		ply.AdvDupe2.HeadEnt = dupe["HeadEnt"]
