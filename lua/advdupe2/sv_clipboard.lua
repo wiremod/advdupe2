@@ -1672,7 +1672,7 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		table.insert(Queue.SortedEntities, k)
 	end
 
-	local dupename = Queue.Name and " Pasted File, " .. Queue.Name.Name .. " with, " or " Pasted, "
+	local dupename = Queue.Name and " Pasted File, " .. Queue.Name .. " with, " or " Pasted, "
 	print("[AdvDupe2NotifyPaste]\t Player: " .. Player:Nick() .. dupename .. #Queue.SortedEntities .. " Entities and " .. #Queue.ConstraintList .. " Constraints.")
 	hook.Run("AdvDupe_InitPastingQueue", Player, Queue)
 
