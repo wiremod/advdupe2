@@ -1672,14 +1672,9 @@ function AdvDupe2.InitPastingQueue(Player, PositionOffset, AngleOffset, OrigPos,
 		table.insert(Queue.SortedEntities, k)
 	end
 
-	if (Player.AdvDupe2.Name) then
-		print(
-			"[AdvDupe2NotifyPaste]\t Player: " .. Player:Nick() .. " Pasted File, " .. Player.AdvDupe2.Name .. " with, " ..
-				#Queue.SortedEntities .. " Entities and " .. #Player.AdvDupe2.Constraints .. " Constraints.")
-	else
-		print("[AdvDupe2NotifyPaste]\t Player: " .. Player:Nick() .. " Pasted, " .. #Queue.SortedEntities ..
-						" Entities and " .. #Player.AdvDupe2.Constraints .. " Constraints.")
-	end
+	local dupename = Queue.Name and " Pasted File, " .. Queue.Name .. " with, " or " Pasted, "
+	print("[AdvDupe2NotifyPaste]\t Player: " .. Player:Nick() .. dupename .. #Queue.SortedEntities .. " Entities and " .. #Queue.ConstraintList .. " Constraints.")
+	hook.Run("AdvDupe_InitPastingQueue", Player, Queue)
 
 	Queue.Plus = #Queue.SortedEntities
 	Queue.Percent = 1 / (#Queue.SortedEntities + #Queue.ConstraintList)
