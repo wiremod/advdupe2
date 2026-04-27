@@ -1,10 +1,10 @@
---[[	
+--[[
 	Title: Adv. Dupe 2 Contraption Spawner
-	
+
 	Desc: A mobile duplicator
-	
+
 	Author: TB
-	
+
 	Version: 1.0
 ]]
 
@@ -22,18 +22,18 @@ function ENT:Initialize()
 	self.Entity:PhysicsInit( SOLID_VPHYSICS )
 	self.Entity:SetCollisionGroup( COLLISION_GROUP_WORLD )
 	self.Entity:DrawShadow( false )
-	
+
 	local phys = self.Entity:GetPhysicsObject()
 	if phys:IsValid() then
 		phys:Wake()
 	end
-	
+
 	self.UndoList = {}
 	self.Ghosts = {}
 
 	self.SpawnLastValue = 0
 	self.UndoLastValue = 0
-	
+
 	self.LastSpawnTime = 0
 	self.DupeName = ""
 	self.CurrentPropCount = 0
@@ -45,8 +45,8 @@ function ENT:Initialize()
 end
 
 /*-----------------------------------------------------------------------*
- * Sets options for this spawner
- *-----------------------------------------------------------------------*/
+* Sets options for this spawner
+*-----------------------------------------------------------------------*/
 function ENT:SetOptions(ply, delay, undo_delay, key, undo_key, disgrav, disdrag, addvel, hideprops )
 
 	self.delay = delay
@@ -93,31 +93,31 @@ function ENT:AddGhosts()
 				v.BuildDupeInfo.PhysicsObjects = table.Copy(v.PhysicsObjects)
 				Phys = EntTable.PhysicsObjects[0]
 			end
-			
+
 			GhostEntity = nil
-			
+
 			if(EntTable.Model==nil || !util.IsValidModel(EntTable.Model)) then EntTable.Model="models/error.mdl" end
-			
+
 			if ( EntTable.Model:sub( 1, 1 ) == "*" ) then
 				GhostEntity = ents.Create( "func_physbox" )
 			else
 				GhostEntity = ents.Create( "gmod_ghost" )
 			end
-			
+
 			// If there are too many entities we might not spawn..
 			if ( !GhostEntity || GhostEntity == NULL ) then return end
-			
+
 			duplicator.DoGeneric( GhostEntity, EntTable )
-			
+
 			GhostEntity:Spawn()
-			
+
 			GhostEntity:DrawShadow( false )
 			GhostEntity:SetMoveType( MOVETYPE_NONE )
 			GhostEntity:SetSolid( SOLID_VPHYSICS );
 			GhostEntity:SetNotSolid( true )
 			GhostEntity:SetRenderMode( RENDERMODE_TRANSALPHA )
 			GhostEntity:SetColor( Color(255, 255, 255, 150) )
-	
+
 			GhostEntity:SetAngles(Phys.Angle)
 			GhostEntity:SetPos(self:GetPos() + Phys.Pos - self.Offset)
 			self:SetAngles(self.EntAngle)
@@ -169,7 +169,7 @@ function ENT:DoSpawn( ply )
 	AngleOffset2:RotateAroundAxis(self:GetRight(),AngleOffset.p)
 	AngleOffset2:RotateAroundAxis(self:GetForward(),AngleOffset.r)*/
 
-	local Ents, Constrs = AdvDupe2.duplicator.Paste(ply, self.EntityTable, self.ConstraintTable, nil, nil, Vector(0,0,0), true) 
+	local Ents, Constrs = AdvDupe2.duplicator.Paste(ply, self.EntityTable, self.ConstraintTable, nil, nil, Vector(0,0,0), true)
 	local i = #self.UndoList+1
 	self.UndoList[i] = Ents
 
@@ -179,15 +179,15 @@ function ENT:DoSpawn( ply )
 		local phys
 		for k,ent in pairs(Ents)do
 			phys = ent:GetPhysicsObject()
-			if IsValid(phys) then 
+			if IsValid(phys) then
 				phys:Wake()
 				if(self.DisableGravity==1)then phys:EnableGravity(false) end
 				if(self.DisableDrag==1)then phys:EnableDrag(false) end
 				phys:EnableMotion(true)
 				if(ent.SetForce)then ent.SetForce(ent, ent.force, ent.mul) end
-				if(self.AddVelocity==1)then 
-					phys:SetVelocity( self:GetVelocity() ) 
-					phys:AddAngleVelocity( self:GetPhysicsObject():GetAngleVelocity() ) 
+				if(self.AddVelocity==1)then
+					phys:SetVelocity( self:GetVelocity() )
+					phys:AddAngleVelocity( self:GetPhysicsObject():GetAngleVelocity() )
 				end
 			end
 
@@ -196,7 +196,7 @@ function ENT:DoSpawn( ply )
 
 		undo.SetPlayer(ply)
 	undo.Finish()
-	
+
 	if(self.undo_delay>0)then
 		timer.Simple(self.undo_delay, function()
 			if(self.UndoList && self.UndoList[i])then
@@ -205,13 +205,13 @@ function ENT:DoSpawn( ply )
 						ent:Remove()
 					end
 				end
-			end	
+			end
 		end)
 	end
 end
 
 function ENT:DoUndo( ply )
-	
+
 	if(!self.UndoList || #self.UndoList == 0)then return end
 
 	local entities = self.UndoList[	#self.UndoList ]
@@ -261,17 +261,17 @@ function ENT:ShowOutput()
 end
 
 /*-----------------------------------------------------------------------*
- * Handler for spawn keypad input
- *-----------------------------------------------------------------------*/
+* Handler for spawn keypad input
+*-----------------------------------------------------------------------*/
 function SpawnContrSpawner( ply, ent )
 
 	if (!ent || !ent:IsValid()) then return end
 
 	local delay = ent:GetTable():GetCreationDelay()
-	
-	if(delay == 0) then 
+
+	if(delay == 0) then
 		ent:DoSpawn( ply )
-		return 
+		return
 	end
 
 	if(CurTime() < ent.LastSpawnTime)then return end
@@ -280,8 +280,8 @@ function SpawnContrSpawner( ply, ent )
 end
 
 /*-----------------------------------------------------------------------*
- * Handler for undo keypad input
- *-----------------------------------------------------------------------*/
+* Handler for undo keypad input
+*-----------------------------------------------------------------------*/
 function UndoContrSpawner( ply, ent )
 	if (!ent || !ent:IsValid()) then return end
 	ent:DoUndo( ply, true )
