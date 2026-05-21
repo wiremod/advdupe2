@@ -31,32 +31,49 @@ end
 
 local function NarrowHistory(txt, last)
 	txt = string.lower(txt)
+
 	local temp = {}
+	local tempCount = 0
+
 	if (last <= #txt and last ~= 0 and #txt ~= 1) then
+		local targetChar = txt[last + 1]
+
 		for i = 1, #Narrow do
-			if (Narrow[i][last + 1] == txt[last + 1]) then
-				table.insert(temp, Narrow[i])
-			elseif (Narrow[i][last + 1] ~= '') then
+			local entry = Narrow[i]
+			local char = entry[last + 1]
+
+			if (char == targetChar) then
+				tempCount = tempCount + 1
+				temp[tempCount] = entry
+			elseif (char ~= "") then
 				break
 			end
 		end
 	else
 		local char1 = txt[1]
-		local char2
+
 		for i = 1, #History do
-			char2 = History[i][1]
+			local entry = History[i]
+			local char2 = entry[1]
+
 			if (char1 == char2) then
 				if (#txt > 1) then
+					local matched = true
+
 					for k = 2, #txt do
-						if (txt[k] ~= History[i][k]) then
+						if (txt[k] ~= entry[k]) then
+							matched = false
 							break
 						end
-						if (k == #txt) then
-							table.insert(temp, History[i])
-						end
+					end
+
+					if (matched) then
+						tempCount = tempCount + 1
+						temp[tempCount] = entry
 					end
 				else
-					table.insert(temp, History[i])
+					tempCount = tempCount + 1
+					temp[tempCount] = entry
 				end
 			elseif (char1 < char2) then
 				break
