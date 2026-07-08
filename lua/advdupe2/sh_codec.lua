@@ -374,7 +374,7 @@ function AdvDupe2.Encode(dupe, info, callback, ...)
 	callback(AD2FF:format(char(REVISION), makeInfo(info), encodedTable),...)
 end
 
---seperates the header and body and converts the header to a table
+--separates the header and body and converts the header to a table
 local function getInfo(str)
 	local last = str:find("\2")
 	if not last then
@@ -423,22 +423,26 @@ versions[5] = function(encodedDupe)
 end
 
 function AdvDupe2.CheckValidDupe(dupe, info)
-	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
-	if not dupe.Entities then return false, "Missing Entities table" end
-	if not dupe.Constraints then return false, "Missing Constraints table" end
+	if not istable(dupe) then return false, "Malformed dupe table" end
+	info = info or {}
+	if not istable(dupe.HeadEnt) then return false, "Missing HeadEnt table" end
+	if not istable(dupe.Entities) then return false, "Missing Entities table" end
+	if not istable(dupe.Constraints) then return false, "Missing Constraints table" end
 	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
 	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
 	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
-	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index ["..dupe.HeadEnt.Index.."] from Entities table" end
+	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index ["..tostring(dupe.HeadEnt.Index).."] from Entities table" end
 	for key, data in pairs(dupe.Entities) do
-		if not data.PhysicsObjects then return false, "Missing PhysicsObject table from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
-		if not data.PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+		if not istable(data) then return false, "Malformed Entity ["..tostring(key).."]" end
+		local label = "Entity ["..tostring(key).."]["..tostring(data.Class).."]["..tostring(data.Model).."]"
+		if not istable(data.PhysicsObjects) then return false, "Missing PhysicsObject table from "..label end
+		if not istable(data.PhysicsObjects[0]) then return false, "Missing PhysicsObject[0] table from "..label end
 		if info.ad1 then -- Advanced Duplicator 1
-			if not data.PhysicsObjects[0].LocalPos then return false, "Missing PhysicsObject[0].LocalPos from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
-			if not data.PhysicsObjects[0].LocalAngle then return false, "Missing PhysicsObject[0].LocalAngle from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].LocalPos then return false, "Missing PhysicsObject[0].LocalPos from "..label end
+			if not data.PhysicsObjects[0].LocalAngle then return false, "Missing PhysicsObject[0].LocalAngle from "..label end
 		else -- Advanced Duplicator 2
-			if not data.PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
-			if not data.PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not data.PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from "..label end
+			if not data.PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from "..label end
 		end
 	end
 	return true, dupe
@@ -451,6 +455,10 @@ end
 	Return:	runs callback(<boolean> success, <table/string> tbl, <table> info)
 ]]
 function AdvDupe2.Decode(encodedDupe)
+
+	if not isstring(encodedDupe) then
+		return false, "Malformed dupe!"
+	end
 
 	local sig, rev = encodedDupe:match("^(....)(.)")
 
@@ -533,6 +541,7 @@ if CLIENT then
 		local readData = readFile:Read(readFile:Size())
 		readFile:Close()
 		local ok, tbl = AdvDupe2.Decode(readData)
+		if not ok then print("File could not be decoded! ("..tostring(tbl)..")") return end
 		local writeFile = file.Open(writeFileName, "wb", "DATA")
 		if not writeFile then print("File could not be written! ("..writeFileName..")") return end
 		writeFile:Write(util.TableToJSON(tbl))
@@ -550,7 +559,10 @@ if CLIENT then
 		local readData = readFile:Read(readFile:Size())
 		readFile:Close()
 
-		AdvDupe2.Encode(util.JSONToTable(readData), {}, function(data)
+		local tbl = util.JSONToTable(readData)
+		if not istable(tbl) then print("File could not be decoded from JSON! ("..readFileName..")") return end
+
+		AdvDupe2.Encode(tbl, {}, function(data)
 			local writeFile = file.Open(writeFileName, "wb", "DATA")
 			if not writeFile then print("File could not be written! ("..writeFileName..")") return end
 			writeFile:Write(data)
