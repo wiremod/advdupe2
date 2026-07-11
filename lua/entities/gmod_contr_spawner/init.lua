@@ -187,7 +187,11 @@ function ENT:DoSpawn( ply )
 				if(ent.SetForce)then ent.SetForce(ent, ent.force, ent.mul) end
 				if(self.AddVelocity==1)then
 					phys:SetVelocity( self:GetVelocity() )
-					phys:AddAngleVelocity( self:GetPhysicsObject():GetAngleVelocity() )
+					local self_phys = self:GetPhysicsObject()
+
+					if IsValid( self_phys ) then
+						phys:AddAngleVelocity( self_phys:GetAngleVelocity() )
+					end
 				end
 			end
 
