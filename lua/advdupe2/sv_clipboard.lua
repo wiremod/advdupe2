@@ -906,6 +906,7 @@ local function MakeProp(ply, pos, ang, model, physicsobject, data)
 
 	if ply then prop:SetCreator(ply) end
 	prop:Spawn()
+	prop:Activate()
 
 	DoGenericPhysics(prop, data, ply)
 
