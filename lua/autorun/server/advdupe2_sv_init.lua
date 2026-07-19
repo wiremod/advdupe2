@@ -61,18 +61,19 @@ CreateConVar("AdvDupe2_MapFileName", "", {FCVAR_ARCHIVE})
 local function PasteMap()
 	if(GetConVarString("AdvDupe2_LoadMap")=="0")then return end
 	local filename = GetConVarString("AdvDupe2_MapFileName")
+	local mapname = game.GetMap()
 
 	if(not filename or filename == "")then
 		print("[AdvDupe2Notify]\tInvalid file name to loap map save.")
 		return
 	end
 
-	if(not file.Exists("advdupe2/"..filename..".txt", "DATA"))then
+	if(not file.Exists("advdupe2/maps/"..mapname.."/"..filename..".txt", "DATA"))then
 		print("[AdvDupe2Notify]\tFile does not exist for a map save.")
 		return
 	end
-
-	local map = file.Read("advdupe2/"..filename..".txt")
+	
+	local map = file.Read("advdupe2/maps/"..mapname.."/"..filename..".txt")
 	local success,dupe,info,moreinfo = AdvDupe2.Decode(map)
 	if not success then
 		print("[AdvDupe2Notify]\tCould not open map save "..dupe)
@@ -115,7 +116,7 @@ local function PasteMap()
 
 	print("[AdvDupe2Notify]\tMap save pasted.")
 end
-hook.Add("InitPostEntity", "AdvDupe2_PasteMap", PasteMap)
+hook.Add("InitPostEntity", "AdvDupe2_PasteMap", timer.Simple(5,PasteMap))
 hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
 hook.Add("PlayerInitialSpawn","AdvDupe2_AddPlayerTable",function(ply)
 	ply.AdvDupe2 = {}
