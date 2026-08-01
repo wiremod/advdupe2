@@ -116,7 +116,7 @@ local function PasteMap()
 
 	print("[AdvDupe2Notify]\tMap save pasted.")
 end
-hook.Add("InitPostEntity", "AdvDupe2_PasteMap", timer.Simple(5,PasteMap))
+hook.Add("InitPostEntity", "AdvDupe2_PasteMap", function() timer.Simple(5,PasteMap) end)
 hook.Add("PostCleanupMap", "AdvDupe2_PasteMap", PasteMap)
 hook.Add("PlayerInitialSpawn","AdvDupe2_AddPlayerTable",function(ply)
 	ply.AdvDupe2 = {}
