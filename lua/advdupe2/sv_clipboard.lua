@@ -735,10 +735,6 @@ end
 
 local function ApplyEntityModifiers(Player, Ent)
 	if not Ent.EntityMods then return end
-	if Ent.EntityMods.trail then
-		Ent.EntityMods.trail.EndSize = math.Clamp(tonumber(Ent.EntityMods.trail.EndSize) or 0, 0, 1024)
-		Ent.EntityMods.trail.StartSize = math.Clamp(tonumber(Ent.EntityMods.trail.StartSize) or 0, 0, 1024)
-	end
 
 	for Type, Data in SortedPairs(Ent.EntityMods) do
 		local ModFunction = duplicator.EntityModifiers[Type]
@@ -750,26 +746,6 @@ local function ApplyEntityModifiers(Player, Ent)
 				else
 					print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
 				end
-			end
-		end
-	end
-	if (Ent.EntityMods["mass"] and duplicator.EntityModifiers["mass"]) then
-		local ok, err = pcall(duplicator.EntityModifiers["mass"], Player, Ent, Ent.EntityMods["mass"])
-		if (not ok) then
-			if (Player) then
-				Player:ChatPrint('Error applying entity modifer, "mass". ERROR: ' .. err)
-			else
-				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
-			end
-		end
-	end
-	if(Ent.EntityMods["buoyancy"] and duplicator.EntityModifiers["buoyancy"]) then
-		local ok, err = pcall(duplicator.EntityModifiers["buoyancy"], Player, Ent, Ent.EntityMods["buoyancy"])
-		if (not ok) then
-			if (Player) then
-				Player:ChatPrint('Error applying entity modifer, "buoyancy". ERROR: ' .. err)
-			else
-				print('Error applying entity modifer, "' .. tostring(Type) .. '". ERROR: ' .. err)
 			end
 		end
 	end
