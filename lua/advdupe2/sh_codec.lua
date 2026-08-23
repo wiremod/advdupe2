@@ -224,7 +224,13 @@ do --Version 4
 		local start = buff:Tell()
 		local slen = 0
 
-		while buff:ReadByte() ~= 0 do
+		while true do
+			local byte = buff:ReadByte()
+
+			if byte == 0 or not byte then
+				break
+			end
+
 			slen = slen + 1
 		end
 
