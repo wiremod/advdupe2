@@ -425,7 +425,7 @@ end
 
 local function deserializeAD1(dupestring)
 
-	dupestring = dupestring:Replace("\r\n", "\n")
+	dupestring = dupestring:gsub("\r\n", "\n")
 	local header, extraHeader, dupeBlock, dictBlock = dupestring:match("%[Info%]\n(.+)\n%[More Information%]\n(.+)\n%[Save%]\n(.+)\n%[Dict%]\n(.+)")
 
 	if not header then
@@ -525,10 +525,10 @@ end
 local versions = {}
 
 versions[2] = function(encodedDupe)
-	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
-	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
-	encodedDupe = encodedDupe:Replace("\r\n", "\n")
-	encodedDupe = encodedDupe:Replace("\t\t\t\t", "\r\n\t\n")
+	encodedDupe = encodedDupe:gsub("\r\r\n\t\r\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:gsub("\r\n\t\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:gsub("\r\n", "\n")
+	encodedDupe = encodedDupe:gsub("\t\t\t\t", "\r\n\t\n")
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize_v2(
 				lzwDecode(
@@ -540,10 +540,10 @@ versions[2] = function(encodedDupe)
 end
 
 versions[1] = function(encodedDupe)
-	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
-	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
-	encodedDupe = encodedDupe:Replace("\r\n", "\n")
-	encodedDupe = encodedDupe:Replace("\t\t\t\t", "\r\n\t\n")
+	encodedDupe = encodedDupe:gsub("\r\r\n\t\r\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:gsub("\r\n\t\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:gsub("\r\n", "\n")
+	encodedDupe = encodedDupe:gsub("\t\t\t\t", "\r\n\t\n")
 	local info, dupestring = getInfo(encodedDupe:sub(7))
 	return deserialize_v1(
 				lzwDecode(

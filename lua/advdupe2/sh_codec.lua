@@ -411,10 +411,10 @@ versions[1] = AdvDupe2.LegacyDecoders[1]
 versions[2] = AdvDupe2.LegacyDecoders[2]
 
 versions[3] = function(encodedDupe)
-	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
-	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
-	encodedDupe = encodedDupe:Replace("\r\n", "\n")
-	encodedDupe = encodedDupe:Replace("\t\t\t\t", "\r\n\t\n")
+	encodedDupe = encodedDupe:gsub("\r\r\n\t\r\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:gsub("\r\n\t\n", "\t\t\t\t")
+	encodedDupe = encodedDupe:gsub("\r\n", "\n")
+	encodedDupe = encodedDupe:gsub("\t\t\t\t", "\r\n\t\n")
 	return versions[4](encodedDupe)
 end
 
@@ -566,5 +566,3 @@ if CLIENT then
 	end)
 
 end
-
-
