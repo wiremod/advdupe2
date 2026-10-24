@@ -49,7 +49,7 @@ function AdvDupe2.SendToClient(ply, data, autosave)
 	net.WriteBool(autosave)
 	net.WriteStream(data, function()
 		ply.AdvDupe2.Downloading = false
-	end)
+	end, nil, {ply})
 	net.Send(ply)
 end
 
