@@ -1,4 +1,4 @@
---[[
+/*
 	Title: Adv. Dupe 2 Contraption Spawner
 
 	Desc: A mobile duplicator
@@ -6,7 +6,7 @@
 	Author: TB
 
 	Version: 1.0
-]]
+*/
 
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
@@ -81,22 +81,23 @@ function ENT:AddGhosts()
 	local moveable = self:GetPhysicsObject():IsMoveable()
 	self:GetPhysicsObject():EnableMotion(false)
 	local EntTable, GhostEntity, Phys
-	local Offset = self.DupeAngle - self.EntAngle
+	-- Unused variable
+	-- local Offset = self.DupeAngle - self.EntAngle
 	for EntIndex,v in pairs(self.EntityTable)do
-		if(EntIndex!=self.HeadEnt)then
+		if(EntIndex ~= self.HeadEnt)then
 			if(self.EntityTable[EntIndex].Class=="gmod_contr_spawner")then self.EntityTable[EntIndex] = nil continue end
 			EntTable = table.Copy(self.EntityTable[EntIndex])
-			if(EntTable.BuildDupeInfo && EntTable.BuildDupeInfo.PhysicsObjects)then
+			if(EntTable.BuildDupeInfo and EntTable.BuildDupeInfo.PhysicsObjects)then
 				Phys = EntTable.BuildDupeInfo.PhysicsObjects[0]
 			else
-				if(!v.BuildDupeInfo)then v.BuildDupeInfo = {} end
+				if(not v.BuildDupeInfo)then v.BuildDupeInfo = {} end
 				v.BuildDupeInfo.PhysicsObjects = table.Copy(v.PhysicsObjects)
 				Phys = EntTable.PhysicsObjects[0]
 			end
 
 			GhostEntity = nil
 
-			if(EntTable.Model==nil || !util.IsValidModel(EntTable.Model)) then EntTable.Model="models/error.mdl" end
+			if(EntTable.Model==nil or not util.IsValidModel(EntTable.Model)) then EntTable.Model="models/error.mdl" end
 
 			if ( EntTable.Model:sub( 1, 1 ) == "*" ) then
 				GhostEntity = ents.Create( "func_physbox" )
@@ -104,8 +105,8 @@ function ENT:AddGhosts()
 				GhostEntity = ents.Create( "gmod_ghost" )
 			end
 
-			// If there are too many entities we might not spawn..
-			if ( !GhostEntity || GhostEntity == NULL ) then return end
+			-- If there are too many entities we might not spawn..
+			if ( not GhostEntity or GhostEntity == NULL ) then return end
 
 			duplicator.DoGeneric( GhostEntity, EntTable )
 
@@ -139,9 +140,9 @@ function ENT:SetDupeInfo( HeadEnt, EntityTable, ConstraintTable )
 	self.HeadEnt = HeadEnt
 	self.EntityTable = EntityTable
 	self.ConstraintTable = ConstraintTable
-	if(!self.DupeAngle)then self.DupeAngle = self:GetAngles() end
-	if(!self.EntAngle)then self.EntAngle = EntityTable[HeadEnt].PhysicsObjects[0].Angle end
-	if(!self.Offset)then self.Offset = self.EntityTable[HeadEnt].PhysicsObjects[0].Pos end
+	if(not self.DupeAngle)then self.DupeAngle = self:GetAngles() end
+	if(not self.EntAngle)then self.EntAngle = EntityTable[HeadEnt].PhysicsObjects[0].Angle end
+	if(not self.Offset)then self.Offset = self.EntityTable[HeadEnt].PhysicsObjects[0].Pos end
 
 	local headpos, headang = EntityTable[HeadEnt].PhysicsObjects[0].Pos, EntityTable[HeadEnt].PhysicsObjects[0].Angle
 	for k, v in pairs(EntityTable) do
@@ -164,14 +165,13 @@ function ENT:DoSpawn( ply )
 	/*local AngleOffset = self.EntAngle
 	AngleOffset = self:GetAngles() - AngleOffset
 	local AngleOffset2 = Angle(0,0,0)
-	//AngleOffset2.y = AngleOffset.y
+	-- AngleOffset2.y = AngleOffset.y
 	AngleOffset2:RotateAroundAxis(self:GetUp(), AngleOffset.y)
 	AngleOffset2:RotateAroundAxis(self:GetRight(),AngleOffset.p)
 	AngleOffset2:RotateAroundAxis(self:GetForward(),AngleOffset.r)*/
 
-	local Ents, Constrs = AdvDupe2.duplicator.Paste(ply, self.EntityTable, self.ConstraintTable, nil, nil, Vector(0,0,0), true)
-	local i = #self.UndoList+1
-	self.UndoList[i] = Ents
+	local Ents, _ = AdvDupe2.duplicator.Paste(ply, self.EntityTable, self.ConstraintTable, nil, nil, Vector(0,0,0), true)
+	self.UndoList[ #self.UndoList + 1 ] = Ents
 
 	local undotxt = "AdvDupe2: Contraption ("..tostring(self.DupeName)..")"
 
@@ -203,10 +203,17 @@ function ENT:DoSpawn( ply )
 
 	if(self.undo_delay>0)then
 		timer.Simple(self.undo_delay, function()
-			if(self.UndoList && self.UndoList[i])then
-				for k,ent in pairs(self.UndoList[i]) do
+			if(self.UndoList and Ents)then
+				for k,ent in pairs(Ents) do
 					if(IsValid(ent)) then
 						ent:Remove()
+					end
+				end
+
+				for i,ents in pairs(self.UndoList) do
+					if ents == Ents then
+						table.remove(self.UndoList, i)
+						break
 					end
 				end
 			end
@@ -216,10 +223,11 @@ end
 
 function ENT:DoUndo( ply )
 
-	if(!self.UndoList || #self.UndoList == 0)then return end
+	if(not self.UndoList or #self.UndoList == 0)then return end
 
 	local entities = self.UndoList[	#self.UndoList ]
 	self.UndoList[	#self.UndoList ] = nil
+
 	for _,ent in pairs(entities) do
 		if (IsValid(ent)) then
 			ent:Remove()
@@ -242,7 +250,7 @@ function ENT:TriggerInput(iname, value)
 			self.LastSpawnTime=CurTime()+delay
 		end
 	elseif (iname == "Undo") then
-		// Same here
+		-- Same here
 		if((value > 0) == self.UndoLastValue)then return end
 		self.UndoLastValue = (value > 0)
 
@@ -269,7 +277,7 @@ end
 *-----------------------------------------------------------------------*/
 function SpawnContrSpawner( ply, ent )
 
-	if (!ent || !ent:IsValid()) then return end
+	if (not ent or not ent:IsValid()) then return end
 
 	local delay = ent:GetTable():GetCreationDelay()
 
@@ -287,7 +295,7 @@ end
 * Handler for undo keypad input
 *-----------------------------------------------------------------------*/
 function UndoContrSpawner( ply, ent )
-	if (!ent || !ent:IsValid()) then return end
+	if (not ent or not ent:IsValid()) then return end
 	ent:DoUndo( ply, true )
 end
 
