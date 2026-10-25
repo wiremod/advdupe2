@@ -184,7 +184,18 @@ local function StopGhosting()
 	AdvDupe2.Ghosting = false
 	hook.Remove( "Tick", "AdvDupe2_SpawnGhosts" )
 
-	if not BusyBar then AdvDupe2.RemoveProgressBar() end
+	if not AdvDupe2.BusyBar then AdvDupe2.RemoveProgressBar() end
+end
+
+local function GetHeadGhostData()
+	local head = AdvDupe2.GhostToSpawn and AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt]
+	if not head or not head.PhysicsObjects or not head.PhysicsObjects[0] then
+		AdvDupe2.RemoveGhosts()
+		AdvDupe2.Notify("Invalid ghost parent!", NOTIFY_ERROR)
+		return
+	end
+
+	return head, head.PhysicsObjects[0]
 end
 
 local function SpawnGhosts()
@@ -196,7 +207,11 @@ local function SpawnGhosts()
 
 	for i = AdvDupe2.CurrentGhost, finalGhostInFrame do
 		local g = AdvDupe2.GhostToSpawn[i]
-		if g and i ~= AdvDupe2.HeadEnt then AdvDupe2.GhostEntities[i] = MakeGhostsFromTable( g ) end
+		if g and i ~= AdvDupe2.HeadEnt then
+			local ghost_entity = MakeGhostsFromTable( g )
+			if not IsValid(ghost_entity) then return end
+			AdvDupe2.GhostEntities[i] = ghost_entity
+		end
 	end
 	AdvDupe2.CurrentGhost = finalGhostInFrame + 1
 
@@ -240,9 +255,12 @@ net.Receive("AdvDupe2_SendGhosts", 	function(len, ply, len2)
 
 	AdvDupe2.CurrentGhost  = 1
 	AdvDupe2.GhostEntities = {}
-	AdvDupe2.HeadGhost     = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
-	AdvDupe2.HeadOffset    = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Pos
-	AdvDupe2.HeadAngle     = AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt].PhysicsObjects[0].Angle
+	local head, head_phys = GetHeadGhostData()
+	if not head then return end
+	AdvDupe2.HeadGhost     = MakeGhostsFromTable(head)
+	if not IsValid(AdvDupe2.HeadGhost) then return end
+	AdvDupe2.HeadOffset    = head_phys.Pos
+	AdvDupe2.HeadAngle     = head_phys.Angle
 	AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
 	AdvDupe2.TotalGhosts   = #AdvDupe2.GhostToSpawn
 
@@ -266,7 +284,10 @@ net.Receive("AdvDupe2_AddGhost", function(len, ply, len2)
 		ghost.PhysicsObjects[k] = {Angle = net.ReadAngle(), Pos = net.ReadVector()}
 	end
 
-	AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = MakeGhostsFromTable(ghost)
+	if not AdvDupe2.GhostEntities or not AdvDupe2.CurrentGhost then return end
+	local ghost_entity = MakeGhostsFromTable(ghost)
+	if not IsValid(ghost_entity) then return end
+	AdvDupe2.GhostEntities[AdvDupe2.CurrentGhost] = ghost_entity
 	AdvDupe2.CurrentGhost = AdvDupe2.CurrentGhost + 1
 end)
 
@@ -276,7 +297,10 @@ function AdvDupe2.StartGhosting()
 	AdvDupe2.CurrentGhost  = 1
 	AdvDupe2.GhostEntities = {}
 	AdvDupe2.Ghosting      = true
-	AdvDupe2.HeadGhost     = MakeGhostsFromTable(AdvDupe2.GhostToSpawn[AdvDupe2.HeadEnt])
+	local head = GetHeadGhostData()
+	if not head then return end
+	AdvDupe2.HeadGhost     = MakeGhostsFromTable(head)
+	if not IsValid(AdvDupe2.HeadGhost) then return end
 	AdvDupe2.GhostEntities[AdvDupe2.HeadEnt] = AdvDupe2.HeadGhost
 	AdvDupe2.TotalGhosts   = #AdvDupe2.GhostToSpawn
 
@@ -322,7 +346,8 @@ function AdvDupe2.UpdateGhosts(force)
 		local ay = math.Clamp(GetConVar("advdupe2_offset_yaw"  ):GetFloat() or 0, -180, 180)
 		local ar = math.Clamp(GetConVar("advdupe2_offset_roll" ):GetFloat() or 0, -180, 180)
 		originang = Angle(ap, ay, ar)
-		originpos = Vector(trace.HitPos); originpos.z = originpos.z + pz
+		originpos = Vector(trace.HitPos)
+		originpos.z = originpos.z + pz
 		headpos, headang = LocalToWorld(AdvDupe2.HeadOffset, hangle, originpos, originang)
 	end
 
@@ -339,8 +364,8 @@ function AdvDupe2.UpdateGhosts(force)
 		AdvDupe2.HeadGhost:SetPos(headpos)
 		AdvDupe2.HeadGhost:SetAngles(headang)
 
-		for k, ghost in ipairs(AdvDupe2.GhostEntities) do
-			local phys = ghost.Phys
+		for k, ghost in pairs(AdvDupe2.GhostEntities or {}) do
+			local phys = IsValid(ghost) and ghost.Phys
 
 			if phys then
 				local pos, ang = LocalToWorld(phys.Pos, phys.Angle, originpos, originang)
