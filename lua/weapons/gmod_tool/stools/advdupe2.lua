@@ -1069,10 +1069,25 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
 
-	local function BuildCPanel(CPanel)
+	local function AddSpacer(Panel)
+		local Spacer = vgui.Create("DPanel", Panel)
+		Spacer:SetSize(2, 1)
+		Spacer:DockMargin(32, 0, 32, 0)
+		Spacer.Paint = function(self, w, h) self:GetSkin():PaintMenuSpacer(self, w, h) end
+		Panel:AddItem(Spacer)
+	end
+
+	local BuildCPanel
+	function BuildCPanel(CPanel)
 		CPanel:ClearControls()
 
-		local FileBrowser = vgui.Create("advdupe2_browser")
+		local refresh = vgui.Create("DButton")
+		refresh:SetText("Hard-refresh")
+		refresh:Dock(TOP)
+		refresh.DoClick = function() CPanel:Clear() BuildCPanel(CPanel) end
+		CPanel:AddItem(refresh)
+
+		local FileBrowser = vgui.Create("advdupe2_browser", CPanel)
 		CPanel:AddItem(FileBrowser)
 		FileBrowser:SetSize(CPanel:GetWide(), 405)
 		AdvDupe2.FileBrowser = FileBrowser
@@ -1083,7 +1098,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_original_origin" )
 		Check:SetValue( 0 )
-		Check:SetToolTip("Paste at the position originally copied")
+		Check:SetTooltip("Paste at the position originally copied")
 		CPanel:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1091,7 +1106,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_constraints" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Paste with or without constraints")
+		Check:SetTooltip("Paste with or without constraints")
 		CPanel:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1099,42 +1114,64 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_parents" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Paste with or without parenting")
+		Check:SetTooltip("Paste with or without parenting")
 		CPanel:AddItem(Check)
+
+		AddSpacer(CPanel)
 
 		local Check_1 = vgui.Create("DCheckBoxLabel")
 		local Check_2 = vgui.Create("DCheckBoxLabel")
+		local Check_3 = vgui.Create("DCheckBoxLabel")
 
-		Check_1:SetText( "Unfreeze all after paste" )
+		Check_1:SetText( "Keep props frozen after paste" )
 		Check_1:SetDark(true)
-		Check_1:SetConVar( "advdupe2_paste_unfreeze" )
-		Check_1:SetValue( 0 )
+		Check_1:SetValue( 1 )
 		Check_1.OnChange = function()
-			if(Check_1:GetChecked() and Check_2:GetChecked()) then
-				Check_2:SetValue(0)
+			if Check_1:GetChecked() then
+				if Check_2:GetChecked() then Check_2:SetValue(0) end
+				if Check_3:GetChecked() then Check_3:SetValue(0) end
 			end
 		end
-		Check_1:SetToolTip("Unfreeze all props after pasting")
+		Check_1:SetTooltip("Keeps all props frozen after pasting")
+		Check_1.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
 		CPanel:AddItem(Check_1)
 
-		Check_2:SetText( "Preserve frozen state after paste" )
+		Check_2:SetText( "Unfreeze all after paste" )
 		Check_2:SetDark(true)
-		Check_2:SetConVar( "advdupe2_preserve_freeze" )
+		Check_2:SetConVar( "advdupe2_paste_unfreeze" )
 		Check_2:SetValue( 0 )
 		Check_2.OnChange = function()
-			if(Check_2:GetChecked() and Check_1:GetChecked()) then
-				Check_1:SetValue(0)
+			if Check_2:GetChecked() then
+				if Check_1:GetChecked() then Check_1:SetValue(0) end
+				if Check_3:GetChecked() then Check_3:SetValue(0) end
 			end
 		end
-		Check_2:SetToolTip("Makes props have the same frozen state as when they were copied")
+		Check_2:SetTooltip("Unfreeze all props after pasting")
+		Check_2.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
 		CPanel:AddItem(Check_2)
+
+		Check_3:SetText( "Preserve frozen state after paste" )
+		Check_3:SetDark(true)
+		Check_3:SetConVar( "advdupe2_preserve_freeze" )
+		Check_3:SetValue( 0 )
+		Check_3.OnChange = function()
+			if Check_3:GetChecked() then
+				if Check_1:GetChecked() then Check_1:SetValue(0) end
+				if Check_2:GetChecked() then Check_2:SetValue(0) end
+			end
+		end
+		Check_3:SetTooltip("Makes props have the same frozen state as when they were copied")
+		Check_3.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
+		CPanel:AddItem(Check_3)
+
+		AddSpacer(CPanel)
 
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Area copy constrained props outside of box" )
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_outside" )
 		Check:SetValue( 0 )
-		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
+		Check:SetTooltip("Copy entities outside of the area copy that are constrained to entities insde")
 		CPanel:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1142,16 +1179,20 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_copy_only_mine" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Copy entities outside of the area copy that are constrained to entities insde")
+		Check:SetTooltip("Copy entities outside of the area copy that are constrained to entities insde")
 		CPanel:AddItem(Check)
+
+		AddSpacer(CPanel)
 
 		Check = vgui.Create("DCheckBoxLabel")
 		Check:SetText( "Sort constraints by their connections" )
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_sort_constraints" )
 		Check:SetValue( GetConVarNumber("advdupe2_sort_constraints") )
-		Check:SetToolTip( "Orders constraints so that they build a rigid constraint system." )
+		Check:SetTooltip( "Orders constraints so that they build a rigid constraint system." )
 		CPanel:AddItem(Check)
+
+		AddSpacer(CPanel)
 
 		-- Ghost Percentage
 		local NumSlider = vgui.Create( "DNumSlider" )
@@ -1161,7 +1202,7 @@ if(CLIENT) then
 		NumSlider:SetMax( 100 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_limit_ghost" )
-		NumSlider:SetToolTip("Change the percent of ghosts to spawn")
+		NumSlider:SetTooltip("Change the percent of ghosts to spawn")
 		--If these funcs are not here, problems occur for each
 		local func = NumSlider.Slider.OnMouseReleased
 		NumSlider.Slider.OnMouseReleased = function(self, mcode) func(self, mcode) AdvDupe2.StartGhosting() end
@@ -1179,7 +1220,7 @@ if(CLIENT) then
 		NumSlider:SetMax( 50 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_ghost_rate" )
-		NumSlider:SetToolTip("Change how quickly the ghosts are generated")
+		NumSlider:SetTooltip("Change how quickly the ghosts are generated")
 		CPanel:AddItem(NumSlider)
 
 		-- Area Copy Size
@@ -1190,8 +1231,10 @@ if(CLIENT) then
 		NumSlider:SetMax( 30720 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_area_copy_size" )
-		NumSlider:SetToolTip("Change the size of the area copy")
+		NumSlider:SetTooltip("Change the size of the area copy")
 		CPanel:AddItem(NumSlider)
+
+		AddSpacer(CPanel)
 
 		local Category1 = vgui.Create("DCollapsibleCategory")
 		CPanel:AddItem(Category1)
@@ -1217,7 +1260,7 @@ if(CLIENT) then
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
 		NumSlider:SetConVar("advdupe2_offset_z")
-		NumSlider:SetToolTip("Changes the dupe Z offset")
+		NumSlider:SetTooltip("Changes the dupe Z offset")
 		CategoryContent1:AddItem(NumSlider)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1225,7 +1268,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_offset_world" )
 		Check:SetValue( 0 )
-		Check:SetToolTip("Use world angles for the offset instead of the main entity")
+		Check:SetTooltip("Use world angles for the offset instead of the main entity")
 		CategoryContent1:AddItem(Check)
 
 		NumSlider = vgui.Create( "DNumSlider" )
@@ -1235,7 +1278,7 @@ if(CLIENT) then
 		NumSlider:SetMax( 180 )
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
-		NumSlider:SetToolTip("Changes the dupe pitch offset")
+		NumSlider:SetTooltip("Changes the dupe pitch offset")
 		NumSlider:SetConVar("advdupe2_offset_pitch")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1246,7 +1289,7 @@ if(CLIENT) then
 		NumSlider:SetMax( 180 )
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
-		NumSlider:SetToolTip("Changes the dupe yaw offset")
+		NumSlider:SetTooltip("Changes the dupe yaw offset")
 		NumSlider:SetConVar("advdupe2_offset_yaw")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1257,7 +1300,7 @@ if(CLIENT) then
 		NumSlider:SetMax( 180 )
 		NumSlider:SetDefaultValue( 0 )
 		NumSlider:SetDecimals( 3 )
-		NumSlider:SetToolTip("Changes the dupe roll offset")
+		NumSlider:SetTooltip("Changes the dupe roll offset")
 		NumSlider:SetConVar("advdupe2_offset_roll")
 		CategoryContent1:AddItem(NumSlider)
 
@@ -1442,7 +1485,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_auto_save_contraption" )
 		Check:SetValue( 0 )
-		Check:SetToolTip("Only copy a contraption instead of an area")
+		Check:SetTooltip("Only copy a contraption instead of an area")
 		CategoryContent4:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1450,7 +1493,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_auto_save_overwrite" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Overwrite the file instead of creating a new one everytime")
+		Check:SetTooltip("Overwrite the file instead of creating a new one everytime")
 		CategoryContent4:AddItem(Check)
 
 		NumSlider = vgui.Create( "DNumSlider" )
@@ -1460,7 +1503,7 @@ if(CLIENT) then
 		NumSlider:SetMax( 30 )
 		NumSlider:SetDecimals( 0 )
 		NumSlider:SetConVar( "advdupe2_auto_save_time" )
-		NumSlider:SetToolTip("Interval time to save in minutes")
+		NumSlider:SetTooltip("Interval time to save in minutes")
 		CategoryContent4:AddItem(NumSlider)
 
 		local pnl = vgui.Create("Panel")
@@ -1489,7 +1532,7 @@ if(CLIENT) then
 		btn:SetPos(x + txtbox:GetWide() + 5, 7)
 		btn:SetMaterial("icon16/folder_explore.png")
 		btn:SizeToContents()
-		btn:SetToolTip("Browse")
+		btn:SetTooltip("Browse")
 		btn.DoClick = function()
 			local ScrollBar = parent.VBar
 			ScrollBar:AnimateTo(0, 1, 0, 0.2)
@@ -1527,7 +1570,7 @@ if(CLIENT) then
 				FileBrowser.AutoSaveNode = FileBrowser.Browser.pnlCanvas.m_pSelectedItem
 				txtbox:SetValue(FileBrowser:GetFullPath(FileBrowser.Browser.pnlCanvas.m_pSelectedItem)..name)
 				AdvDupe2.AutoSavePath = txtbox:GetValue()
-				txtbox:SetToolTip(txtbox:GetValue())
+				txtbox:SetTooltip(txtbox:GetValue())
 				AdvDupe2.AutoSaveDesc = desc
 
 				FileBrowser:Slide(false)
@@ -1597,7 +1640,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_paste_protectoveride" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Check this if you things don't look right after pasting.")
+		Check:SetTooltip("Check this if you things don't look right after pasting.")
 		CategoryContent5:AddItem(Check)
 
 		Check = vgui.Create("DCheckBoxLabel")
@@ -1605,7 +1648,7 @@ if(CLIENT) then
 		Check:SetDark(true)
 		Check:SetConVar( "advdupe2_debug_openfile" )
 		Check:SetValue( 1 )
-		Check:SetToolTip("Check this if you want your files to be opened after saving them.")
+		Check:SetTooltip("Check this if you want your files to be opened after saving them.")
 		CategoryContent5:AddItem(Check)
 
 		--[[Save Map]]--
@@ -1646,8 +1689,9 @@ if(CLIENT) then
 			btn2:SetPos(x + txtbox2:GetWide() + 5, 7)
 			btn2:SetMaterial("icon16/disk.png")
 			btn2:SizeToContents()
-			btn2:SetToolTip("Save Map")
+			btn2:SetTooltip("Save Map")
 			btn2.DoClick = 	function()
+				if(txtbox2:GetValue()=="") then return end
 				RunConsoleCommand("AdvDupe2_SaveMap", txtbox2:GetValue())
 			end
 			txtbox2.OnEnter = function()
@@ -1857,12 +1901,17 @@ if(CLIENT) then
 		AdvDupe2.ProgressBar.Percent = 0
 		AdvDupe2.BusyBar = true
 	end
+
 	net.Receive("AdvDupe2_InitProgressBar", function()
-		AdvDupe2.InitProgressBar(net.ReadString())
+		local Label = net.ReadString()
+		AdvDupe2.InitProgressBar(Label)
+		hook.Run("AdvDupe2_InitProgressBar", Label)
 	end)
 
 	net.Receive("AdvDupe2_UpdateProgressBar", function()
-		AdvDupe2.ProgressBar.Percent = net.ReadFloat()
+		local Percent = net.ReadFloat()
+		AdvDupe2.ProgressBar.Percent = Percent
+		hook.Run("AdvDupe2_UpdateProgressBar", Percent)
 	end)
 
 	function AdvDupe2.RemoveProgressBar()
@@ -1876,6 +1925,7 @@ if(CLIENT) then
 	end
 	net.Receive("AdvDupe2_RemoveProgressBar", function()
 		AdvDupe2.RemoveProgressBar()
+		hook.Run("AdvDupe2_RemoveProgressBar")
 	end)
 
 	net.Receive("AdvDupe2_ResetOffsets", function()

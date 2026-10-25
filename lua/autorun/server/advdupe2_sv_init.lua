@@ -126,3 +126,7 @@ include( "advdupe2/sh_codec.lua" )
 include( "advdupe2/sv_misc.lua" )
 include( "advdupe2/sv_file.lua" )
 include( "advdupe2/sv_ghost.lua" )
+
+AdvDupe2.AREA_ADVDUPE2   = 0
+AdvDupe2.AREA_PUBLIC     = 1
+AdvDupe2.AREA_ADVDUPE1   = 2
