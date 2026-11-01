@@ -11,6 +11,10 @@
 local REVISION = 5
 AdvDupe2.CodecRevision = REVISION
 AdvDupe2.MaxDupeSize = 32e6 -- 32 MB
+AdvDupe2.MaxInfoSize = 64 * 1024 -- bytes, size of the info block at the start of an AD2 file
+AdvDupe2.MaxDecodeTime = 1 -- seconds, wall-clock time one dupe may take to decode
+AdvDupe2.MaxDecodeOps = 10e6 -- values / chunks / copied entries one dupe may contain
+AdvDupe2.MaxDecodeDepth = 128 -- how deeply tables may be nested inside a dupe
 
 include( "sh_codec_legacy.lua" )
 AddCSLuaFile( "sh_codec_legacy.lua" )
@@ -24,6 +28,11 @@ local char = string.char
 local concat = table.concat
 local compress = util.Compress
 local decompress = util.Decompress
+local find = string.find
+local sub = string.sub
+local pcall = pcall
+local tostring = tostring
+local SysTime = SysTime
 
 --[[
 	Name:	GenerateDupeStamp
@@ -153,6 +162,37 @@ local function error_nodeserializer()
 	error(format("Couldn't find deserializer for type {typeid:%d}!", buff:ReadByte()))
 end
 
+local depth = 0
+local deadline, ops_left, check_in = 0, 0, 0
+
+local function start_budget()
+	depth = 0
+	deadline = SysTime() + AdvDupe2.MaxDecodeTime
+	ops_left = AdvDupe2.MaxDecodeOps
+	check_in = 4096
+end
+
+local function check_time()
+	if SysTime() > deadline then
+		error("Dupe took too long to decode (time limit reached)", 0)
+	end
+end
+
+local function tick(num)
+	ops_left = ops_left - num
+
+	if ops_left < 0 then
+		error("Dupe is too large or too complex to decode (work limit reached)", 0)
+	end
+
+	check_in = check_in - num
+
+	if check_in <= 0 then
+		check_in = 4096
+		check_time()
+	end
+end
+
 local reference = 0
 local read4, read5
 
@@ -168,7 +208,14 @@ do --Version 4
 		if tt == 0 then
 			return nil
 		end
-		return dec[tt]()
+		tick(1)
+		depth = depth + 1
+		if depth > AdvDupe2.MaxDecodeDepth then
+			error("Dupe tables are nested too deeply", 0)
+		end
+		local value = dec[tt]()
+		depth = depth - 1
+		return value
 	end
 	read4 = read
 
@@ -232,6 +279,9 @@ do --Version 4
 			end
 
 			slen = slen + 1
+			if slen % 65536 == 0 then
+				check_time()
+			end
 		end
 
 		buff:Seek(start)
@@ -259,7 +309,14 @@ do --Version 5
 		if not tt then
 			error("Expected value, got EOF!")
 		end
-		return dec[tt]()
+		tick(1)
+		depth = depth + 1
+		if depth > AdvDupe2.MaxDecodeDepth then
+			error("Dupe tables are nested too deeply", 0)
+		end
+		local value = dec[tt]()
+		depth = depth - 1
+		return value
 	end
 	read5 = read
 
@@ -346,6 +403,8 @@ local function deserialize(str, read)
 		return {}
 	end
 
+	start_budget()
+
 	tables = {}
 	reference = 0
 	buff = file.Open("ad2temp.txt","wb","DATA")
@@ -358,6 +417,7 @@ local function deserialize(str, read)
 	if not buff then error("Failed to open file data/ad2temp.txt for reading!") end
 	local success, tbl = pcall(read)
 	buff:Close()
+	tables = nil -- the reference table would keep every decoded table alive until the next decode
 
 	if success then
 		return tbl
@@ -382,14 +442,25 @@ end
 
 --seperates the header and body and converts the header to a table
 local function getInfo(str)
-	local last = str:find("\2")
+	local last = find(str, "\2", 1, true)
 	if not last then
 		error("Attempt to read AD2 file with malformed info block!")
 	end
+	if last > (AdvDupe2.MaxInfoSize or 65536) then
+		error("Attempt to read AD2 file with an oversized info block!")
+	end
 	local info = {}
-	local ss = str:sub(1, last - 1)
-	for k, v in ss:gmatch("(.-)\1(.-)\1") do
-		info[k] = v
+	local ss = sub(str, 1, last - 1)
+	-- key \1 value \1 key \1 value \1 ...  Same result as ss:gmatch("(.-)\1(.-)\1"), but that pattern
+	-- re-scans the whole header from every start position, O(n^2), when the header contains no \1 at all.
+	local p = 1
+	while true do
+		local e1 = find(ss, "\1", p, true)
+		if not e1 then break end
+		local e2 = find(ss, "\1", e1 + 1, true)
+		if not e2 then break end
+		info[sub(ss, p, e1 - 1)] = sub(ss, e1 + 1, e2 - 1)
+		p = e2 + 1
 	end
 
 	if info.check ~= "\r\n\t\n" then
@@ -419,34 +490,48 @@ versions[3] = function(encodedDupe)
 end
 
 versions[4] = function(encodedDupe)
-	local info, dupestring = getInfo(encodedDupe:sub(7))
+	local info, dupestring = getInfo(sub(encodedDupe, 7))
 	return deserialize(decompress(dupestring, AdvDupe2.MaxDupeSize), read4), info
 end
 
 versions[5] = function(encodedDupe)
-	local info, dupestring = getInfo(encodedDupe:sub(7))
+	local info, dupestring = getInfo(sub(encodedDupe, 7))
 	return deserialize(decompress(dupestring, AdvDupe2.MaxDupeSize), read5), info
 end
 
+-- Short description of an entity for error messages
+local function ent_desc(key, data)
+	return "[".. sub(tostring(key), 1, 40) .. "][" .. sub(tostring(data.Class), 1, 40) .. "][" .. sub(tostring(data.Model), 1, 80) .. "]"
+end
+
 function AdvDupe2.CheckValidDupe(dupe, info)
-	if not dupe.HeadEnt then return false, "Missing HeadEnt table" end
-	if not dupe.Entities then return false, "Missing Entities table" end
-	if not dupe.Constraints then return false, "Missing Constraints table" end
-	if not dupe.HeadEnt.Z then return false, "Missing HeadEnt.Z" end
-	if not dupe.HeadEnt.Pos then return false, "Missing HeadEnt.Pos" end
-	if not dupe.HeadEnt.Index then return false, "Missing HeadEnt.Index" end
-	if not dupe.Entities[dupe.HeadEnt.Index] then return false, "Missing HeadEnt index ["..dupe.HeadEnt.Index.."] from Entities table" end
+	local head = dupe.HeadEnt
+	if not istable(head) then return false, "Missing HeadEnt table" end
+	if not istable(dupe.Entities) then return false, "Missing Entities table" end
+	if not istable(dupe.Constraints) then return false, "Missing Constraints table" end
+	if not head.Z then return false, "Missing HeadEnt.Z" end
+	if not head.Pos then return false, "Missing HeadEnt.Pos" end
+	if not head.Index then return false, "Missing HeadEnt.Index" end
+	if not dupe.Entities[head.Index] then return false, "Missing HeadEnt index [" .. sub(tostring(head.Index), 1, 40) .. "] from Entities table" end
+
 	for key, data in pairs(dupe.Entities) do
-		if not data.PhysicsObjects then return false, "Missing PhysicsObject table from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
-		if not data.PhysicsObjects[0] then return false, "Missing PhysicsObject[0] table from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+		if not istable(data) then return false, "Entity [".. sub(tostring(key), 1, 40) .."] is not a table" end
+
+		local physobjs = data.PhysicsObjects
+		if not istable(physobjs) then return false, "Missing PhysicsObject table from Entity ".. ent_desc(key, data) end
+
+		local phys0 = physobjs[0]
+		if not istable(phys0) then return false, "Missing PhysicsObject[0] table from Entity ".. ent_desc(key, data) end
+
 		if info.ad1 then -- Advanced Duplicator 1
-			if not data.PhysicsObjects[0].LocalPos then return false, "Missing PhysicsObject[0].LocalPos from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
-			if not data.PhysicsObjects[0].LocalAngle then return false, "Missing PhysicsObject[0].LocalAngle from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not phys0.LocalPos then return false, "Missing PhysicsObject[0].LocalPos from Entity ".. ent_desc(key, data) end
+			if not phys0.LocalAngle then return false, "Missing PhysicsObject[0].LocalAngle from Entity ".. ent_desc(key, data) end
 		else -- Advanced Duplicator 2
-			if not data.PhysicsObjects[0].Pos then return false, "Missing PhysicsObject[0].Pos from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
-			if not data.PhysicsObjects[0].Angle then return false, "Missing PhysicsObject[0].Angle from Entity ["..key.."]["..data.Class.."]["..data.Model.."]" end
+			if not phys0.Pos then return false, "Missing PhysicsObject[0].Pos from Entity ".. ent_desc(key, data) end
+			if not phys0.Angle then return false, "Missing PhysicsObject[0].Angle from Entity ".. ent_desc(key, data) end
 		end
 	end
+
 	return true, dupe
 end
 
@@ -457,11 +542,18 @@ end
 	Return:	runs callback(<boolean> success, <table/string> tbl, <table> info)
 ]]
 function AdvDupe2.Decode(encodedDupe)
+	if not isstring(encodedDupe) then
+		return false, "Malformed dupe! (decompression failed)"
+	end
+
+	if #encodedDupe > AdvDupe2.MaxDupeSize then
+		return false, "Dupe is too large!"
+	end
 
 	local sig, rev = encodedDupe:match("^(....)(.)")
 
 	if not rev then
-		return false, "Malformed dupe (wtf <5 chars long)!"
+		return false, "Malformed dupe! (<5 chars long)"
 	end
 
 	rev = rev:byte()
@@ -496,7 +588,7 @@ function AdvDupe2.Decode(encodedDupe)
 					Z = z
 				}
 			else
-				ErrorNoHalt(tbl)
+				print(tbl)
 			end
 
 			if success then
@@ -566,5 +658,3 @@ if CLIENT then
 	end)
 
 end
-
-
