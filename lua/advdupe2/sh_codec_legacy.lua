@@ -578,7 +578,6 @@ local function deserializeAD1(dupestring)
 		moreinfo[k] = v
 	end
 
-	-- was: dictBlock:gmatch('(.-):"(.-)"\n')   (key:"value"\n)
 	dictionary = {}
 	local dp = 1
 	while true do
@@ -612,7 +611,6 @@ local function deserializeAD1(dupestring)
 			for kv in gmatch(chunk,'[^;]+') do
 				tick(1)
 
-				-- was: match(kv,'(.-)=(.+)')
 				local k,v
 				local eq = find(kv, "=", 1, true)
 				if eq and eq < #kv then
