@@ -477,7 +477,7 @@ local function getInfo(str)
 	if not last then
 		error("Attempt to read AD2 file with malformed info block!")
 	end
-	if last > (AdvDupe2.MaxInfoSize or 65536) then
+	if last > AdvDupe2.MaxInfoSize then
 		error("Attempt to read AD2 file with an oversized info block!")
 	end
 	local info = {}
