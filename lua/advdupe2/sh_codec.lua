@@ -162,14 +162,15 @@ local function error_nodeserializer()
 	error(format("Couldn't find deserializer for type {typeid:%d}!", buff:ReadByte()))
 end
 
+local chunk = 4096
 local depth = 0
-local deadline, ops_left, check_in = 0, 0, 0
+local deadline, ops_left, budget = 0, 0, 0
 
 local function start_budget()
 	depth = 0
 	deadline = SysTime() + AdvDupe2.MaxDecodeTime
 	ops_left = AdvDupe2.MaxDecodeOps
-	check_in = 4096
+	budget = chunk
 end
 
 local function check_time()
@@ -178,19 +179,15 @@ local function check_time()
 	end
 end
 
-local function tick(num)
-	ops_left = ops_left - num
+local function check_budget()
+	ops_left = ops_left - (chunk - budget)
 
 	if ops_left < 0 then
 		error("Dupe is too large or too complex to decode (work limit reached)", 0)
 	end
 
-	check_in = check_in - num
-
-	if check_in <= 0 then
-		check_in = 4096
-		check_time()
-	end
+	budget = chunk
+	check_time()
 end
 
 local reference = 0
@@ -208,14 +205,13 @@ do --Version 4
 		if tt == 0 then
 			return nil
 		end
-		tick(1)
-		depth = depth + 1
-		if depth > AdvDupe2.MaxDecodeDepth then
-			error("Dupe tables are nested too deeply", 0)
+
+		budget = budget - 1
+		if budget <= 0 then
+			check_budget()
 		end
-		local value = dec[tt]()
-		depth = depth - 1
-		return value
+
+		return dec[tt]()
 	end
 	read4 = read
 
@@ -224,12 +220,19 @@ do --Version 4
 		local k
 		reference = reference + 1
 		local ref = reference
+		depth = depth + 1
+
+		if depth > AdvDupe2.MaxDecodeDepth then
+			error("Dupe tables are nested too deeply", 0)
+		end
+
 		repeat
 			k = read()
 			if k ~= nil then
 				t[k] = read()
 			end
 		until (k == nil)
+		depth = depth - 1
 		tables[ref] = t
 		return t
 	end
@@ -240,6 +243,13 @@ do --Version 4
 		local v
 		reference = reference + 1
 		local ref = reference
+
+		depth = depth + 1
+
+		if depth > AdvDupe2.MaxDecodeDepth then
+			error("Dupe tables are nested too deeply", 0)
+		end
+
 		repeat
 			k = k + 1
 			v = read()
@@ -248,7 +258,10 @@ do --Version 4
 			end
 
 		until (v == nil)
+
+		depth = depth - 1
 		tables[ref] = t
+
 		return t
 	end
 
@@ -306,17 +319,18 @@ do --Version 5
 
 	local function read()
 		local tt = buff:ReadByte()
+
 		if not tt then
 			error("Expected value, got EOF!")
 		end
-		tick(1)
-		depth = depth + 1
-		if depth > AdvDupe2.MaxDecodeDepth then
-			error("Dupe tables are nested too deeply", 0)
+
+		budget = budget - 1
+
+		if budget <= 0 then
+			check_budget()
 		end
-		local value = dec[tt]()
-		depth = depth - 1
-		return value
+
+		return dec[tt]()
 	end
 	read5 = read
 
@@ -325,9 +339,17 @@ do --Version 5
 		reference = reference + 1
 		tables[reference] = t
 
+		depth = depth + 1
+
+		if depth > AdvDupe2.MaxDecodeDepth then
+			error("Dupe tables are nested too deeply", 0)
+		end
+
 		for k in read do
 			t[k] = read()
 		end
+
+		depth = depth - 1
 
 		return t
 	end
@@ -337,11 +359,20 @@ do --Version 5
 		reference = reference + 1
 		tables[reference] = t
 
+		depth = depth + 1
+
+		if depth > AdvDupe2.MaxDecodeDepth then
+			error("Dupe tables are nested too deeply", 0)
+		end
+
 		local k = 1
+
 		for v in read do
 			t[k] = v
 			k = k + 1
 		end
+
+		depth = depth - 1
 
 		return t
 	end

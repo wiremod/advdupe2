@@ -26,14 +26,15 @@ local pcall = pcall
 local tostring = tostring
 local SysTime = SysTime
 
+local chunk = 4096
 local depth = 0
-local deadline, ops_left, check_in = 0, 0, 0
+local deadline, ops_left, budget = 0, 0, 0
 
 local function start_budget()
 	depth = 0
 	deadline = SysTime() + AdvDupe2.MaxDecodeTime
 	ops_left = AdvDupe2.MaxDecodeOps
-	check_in = 4096
+	budget = chunk
 end
 
 local function check_time()
@@ -42,18 +43,22 @@ local function check_time()
 	end
 end
 
-local function tick(num)
-	ops_left = ops_left - num
+local function check_budget()
+	ops_left = ops_left - (chunk - budget)
 
 	if ops_left < 0 then
 		error("Dupe is too large or too complex to decode (work limit reached)", 0)
 	end
 
-	check_in = check_in - num
+	budget = chunk
+	check_time()
+end
 
-	if check_in <= 0 then
-		check_in = 4096
-		check_time()
+local function tick(num)
+	budget = budget - num
+
+	if budget <= 0 then
+		check_budget()
 	end
 end
 
@@ -360,10 +365,6 @@ local function lzwDecode(encoded)
 			index = 0
 			firstbyte = 256 - firstbyte
 
-			if pos+firstbyte > encoded_length then
-				error("expected index got EOF")
-			end
-
 			for i = pos+firstbyte, pos+1, -1 do
 				index = bit.bor(bit.lshift(index, 8), byte(encoded,i))
 			end
@@ -372,12 +373,7 @@ local function lzwDecode(encoded)
 			index = firstbyte
 			pos = pos + 1
 		end
-		entry = dictionary[index]
-		if not entry then
-			-- the only legal code that is not in the dictionary yet is the one about to be added
-			if index ~= dictionary_length then error("invalid LZW code") end
-			entry = word..sub(word,1,1)
-		end
+		entry = dictionary[index] or (word..sub(word,1,1))
 		total = total + #entry
 		if total > AdvDupe2.MaxDupeSize then
 			error("Dupe is too large to decode (decompressed size limit)", 0)
@@ -458,10 +454,25 @@ local function invEscapeSub(str)
 	local nl = find(str, "\n", 1, true)
 	if not nl then error("invalid input") end
 
-	local escseq, body = sub(str, 1, nl-1), sub(str, nl+1)
-	if #escseq == 0 or #escseq > 64 then error("invalid input") end
+	local escseq = sub(str, 1, nl - 1)
+	if #escseq == 0 or #escseq > 256 then error("invalid input") end
 
-	return gsub(body, (gsub(escseq, "%W", "%%%0")), "\26")
+	local pieces, n, p = {}, 0, nl + 1
+
+	while true do
+		local s, e = find(str, escseq, p, true)
+		if not s then break end
+
+		n = n + 1
+		pieces[n] = sub(str, p, s - 1)
+		p = e + 1
+		tick(1)
+	end
+
+	if n == 0 then return sub(str, nl + 1) end
+	pieces[n + 1] = sub(str, p)
+
+	return concat(pieces, "\26")
 end
 
 local dictionary
