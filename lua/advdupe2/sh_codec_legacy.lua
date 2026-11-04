@@ -591,9 +591,9 @@ local function deserializeAD1(dupestring)
 	dictionary = {}
 	local dp = 1
 	while true do
-		local ke = find(dictBlock, ':"', dp, true)
+		local ke = find(dictBlock, ":\"", dp, true)
 		if not ke then break end
-		local ve = find(dictBlock, '"\n', ke + 2, true)
+		local ve = find(dictBlock, "\"\n", ke + 2, true)
 		if not ve then break end
 		dictionary[sub(dictBlock, dp, ke - 1)] = sub(dictBlock, ke + 2, ve - 1)
 		dp = ve + 2
@@ -618,7 +618,7 @@ local function deserializeAD1(dupestring)
 
 			tables[id] = {}
 
-			for kv in gmatch(chunk,'[^;]+') do
+			for kv in gmatch(chunk,"[^;]+") do
 				tick(1)
 
 				local k,v
