@@ -482,8 +482,7 @@ local function getInfo(str)
 	end
 	local info = {}
 	local ss = sub(str, 1, last - 1)
-	-- key \1 value \1 key \1 value \1 ...  Same result as ss:gmatch("(.-)\1(.-)\1"), but that pattern
-	-- re-scans the whole header from every start position, O(n^2), when the header contains no \1 at all.
+
 	local p = 1
 	while true do
 		local e1 = find(ss, "\1", p, true)
@@ -530,7 +529,6 @@ versions[5] = function(encodedDupe)
 	return deserialize(decompress(dupestring, AdvDupe2.MaxDupeSize), read5), info
 end
 
--- Short description of an entity for error messages
 local function ent_desc(key, data)
 	return "[".. sub(tostring(key), 1, 40) .. "][" .. sub(tostring(data.Class), 1, 40) .. "][" .. sub(tostring(data.Model), 1, 80) .. "]"
 end
