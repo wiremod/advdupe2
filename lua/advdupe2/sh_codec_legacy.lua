@@ -321,7 +321,7 @@ local function deserialize_v1(data)
 	depth = 0
 	tables = {}
 	local ok, result = pcall(read_v1)
-	str, tables = nil, nil -- don't keep a (possibly huge) dupe alive until the next decode
+	str, tables = nil, nil
 	if not ok then error(result, 0) end
 	return result
 end
@@ -353,7 +353,7 @@ local function lzwDecode(encoded)
 	if not word then error("invalid input") end
 
 	decompressed[decompressed_length] = word
-	local total = 1 -- bytes produced so far: LZW can turn a tiny input into gigabytes
+	local total = 1
 
 	local entry
 	local encoded_length = #encoded
@@ -436,9 +436,9 @@ local function huffmanDecode(encoded)
 				end
 			end
 		else
-			local nextbyte = byte(encoded, pos)
-			if not nextbyte then error("malformed code") end
-			buffer = bit.bor(buffer, bit.lshift(nextbyte, buffer_length))
+			local next_byte = byte(encoded, pos)
+			if not next_byte then error("malformed code") end
+			buffer = bit.bor(buffer, bit.lshift(next_byte, buffer_length))
 			buffer_length = buffer_length + 8
 			pos = pos + 1
 			if pos > encoded_length then
@@ -508,11 +508,11 @@ local function deserializeChunk(chunk)
 
 end
 
-local function isAlnum(c) -- same as %w in the C locale
+local function is_alnum(c)
 	return c and ((c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122))
 end
 
-local function splitAD1Sections(s)
+local function split_ad1_sections(s)
 	if sub(s, 1, 7) ~= "[Info]\n" then return end
 
 	local p1 = 8
@@ -533,7 +533,7 @@ local function splitAD1Sections(s)
 	return sub(s, p1, a1 - 1), sub(s, p2, b1 - 1), sub(s, p3, c1 - 1), sub(s, p4)
 end
 
-local function keyValueLines(text)
+local function key_value_lines(text)
 	local p, len = 1, #text
 	return function()
 		while p <= len do
@@ -547,25 +547,24 @@ local function keyValueLines(text)
 	end
 end
 
-local function blockChunks(block)
+local function block_chunks(block)
 	local p = 1
 	return function()
 		while true do
 			local open = find(block, "{", p, true)
 			if not open then return end
 
-			-- the id is the run of alphanumerics directly in front of the "{"
 			local s = open
-			while s > p and isAlnum(byte(block, s - 1)) do s = s - 1 end
+			while s > p and is_alnum(byte(block, s - 1)) do s = s - 1 end
 
 			if s < open then
 				local close = find(block, "}", open + 1, true)
-				if not close then return end -- no "}" left anywhere, so no more chunks
+				if not close then return end
 				p = close + 1
 				return sub(block, s, open - 1), sub(block, open + 1, close - 1)
 			end
 
-			p = open + 1 -- a "{" without an id in front of it: skip it
+			p = open + 1
 		end
 	end
 end
@@ -573,19 +572,19 @@ end
 local function deserializeAD1(dupestring)
 	start_budget()
 	dupestring = dupestring:Replace("\r\n", "\n")
-	local header, extraHeader, dupeBlock, dictBlock = splitAD1Sections(dupestring)
+	local header, extraHeader, dupeBlock, dictBlock = split_ad1_sections(dupestring)
 
 	if not header then
 		error("unknown duplication format")
 	end
 
 	local info = {}
-	for k,v in keyValueLines(header) do
+	for k,v in key_value_lines(header) do
 		info[k] = v
 	end
 
 	local moreinfo = {}
-	for k,v in keyValueLines(extraHeader) do
+	for k,v in key_value_lines(extraHeader) do
 		moreinfo[k] = v
 	end
 
@@ -602,13 +601,13 @@ local function deserializeAD1(dupestring)
 	end
 
 	local dupe = {}
-	for key,block in keyValueLines(dupeBlock) do
+	for key,block in key_value_lines(dupeBlock) do
 
 		local tables = {}
 		subtables = {}
 		local head
 
-		for id,chunk in blockChunks(block) do
+		for id,chunk in block_chunks(block) do
 			tick(1)
 
 			--check if this table is the trunk
@@ -645,8 +644,6 @@ local function deserializeAD1(dupestring)
 		for id,tbls in pairs( subtables ) do
 			for _,tbl in pairs( tbls ) do
 				if not tables[id] then error("attempt to reference a nonexistent table") end
-				-- every reference copies the whole table, so a few thousand references to a table with a few
-				-- thousand entries is millions of copies: charge for them
 				local copied = 0
 				for k,v in pairs(tables[id]) do
 					tbl[k] = v
@@ -676,7 +673,6 @@ local function getInfo(str)
 	end
 	local info = {}
 	local ss = sub(str, 1, last-1)
-	-- key \1 value \1 key \1 value \1 ...
 	local p = 1
 	while true do
 		local e1 = find(ss, "\1", p, true)

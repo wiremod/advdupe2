@@ -448,7 +448,7 @@ local function deserialize(str, read)
 	if not buff then error("Failed to open file data/ad2temp.txt for reading!") end
 	local success, tbl = pcall(read)
 	buff:Close()
-	tables = nil -- the reference table would keep every decoded table alive until the next decode
+	tables = nil
 
 	if success then
 		return tbl
