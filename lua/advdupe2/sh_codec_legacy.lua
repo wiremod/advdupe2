@@ -9,7 +9,6 @@
 ]]
 
 local pairs = pairs
-local type = type
 local tonumber = tonumber
 local error = error
 local Vector = Vector
@@ -23,6 +22,45 @@ local find = string.find
 local gmatch = string.gmatch
 local match = string.match
 local concat = table.concat
+local pcall = pcall
+local tostring = tostring
+local SysTime = SysTime
+
+local chunk = 4096
+local depth = 0
+local deadline, ops_left, budget = 0, 0, 0
+
+local function start_budget()
+	depth = 0
+	deadline = SysTime() + AdvDupe2.MaxDecodeTime
+	ops_left = AdvDupe2.MaxDecodeOps
+	budget = chunk
+end
+
+local function check_time()
+	if SysTime() > deadline then
+		error("Dupe took too long to decode (time limit reached)", 0)
+	end
+end
+
+local function check_budget()
+	ops_left = ops_left - (chunk - budget)
+
+	if ops_left < 0 then
+		error("Dupe is too large or too complex to decode (work limit reached)", 0)
+	end
+
+	budget = chunk
+	check_time()
+end
+
+local function tick(num)
+	budget = budget - num
+
+	if budget <= 0 then
+		check_budget()
+	end
+end
 
 --[[
 	Name:	GenerateDupeStamp
@@ -40,8 +78,6 @@ function AdvDupe2.GenerateDupeStamp(ply)
 	return stamp
 end
 
-local AD2FF = "AD2F%s\n%s\n%s"
-
 local decode_types_v1, decode_types_v2
 local tables = 0
 local str,pos
@@ -53,7 +89,14 @@ local function read_v2()
 		local dt = decode_types_v2[t]
 		if dt then
 			pos = pos + 1
-			return dt()
+			tick(1)
+			depth = depth + 1
+			if depth > AdvDupe2.MaxDecodeDepth then
+				error("Dupe tables are nested too deeply", 0)
+			end
+			local value = dt()
+			depth = depth - 1
+			return value
 		else
 			error(format("encountered invalid data type (%u)\n",t))
 		end
@@ -139,20 +182,18 @@ decode_types_v2 = {
 		end
 	end,
 	[8	] = function() -- Vector
-		m,n = find(str,".-\1.-\1.-\1", pos)
-		if m then
-			a,b,c = match(str,"^(.-)\1(.-)\1(.-)\1",pos+1)
-			pos = n
+		a,b,c,n = match(str,"^([^\1]*)\1([^\1]*)\1([^\1]*)\1()",pos+1)
+		if n then
+			pos = n - 1
 			return Vector(tonumber(a), tonumber(b), tonumber(c))
 		else
 			error("expected vector, got EOF\n")
 		end
 	end,
 	[9	] = function() -- Angle
-		m,n = find(str, ".-\1.-\1.-\1", pos)
-		if m then
-			a,b,c = match(str, "^(.-)\1(.-)\1(.-)\1",pos+1)
-			pos = n
+		a,b,c,n = match(str,"^([^\1]*)\1([^\1]*)\1([^\1]*)\1()",pos+1)
+		if n then
+			pos = n - 1
 			return Angle(tonumber(a), tonumber(b), tonumber(c))
 		else
 			error("expected angle, got EOF\n")
@@ -171,7 +212,7 @@ decode_types_v2 = {
 		if tblref then
 			return tblref
 		else
-			error(format("table identifier %s points to nil\n", w))
+			error(format("table identifier %s points to nil\n", sub(w, 1, 40)))
 		end
 
 	end
@@ -180,12 +221,19 @@ decode_types_v2 = {
 
 
 local function read_v1()
-	local t = byte(str,pos+1)
+	local t = byte(str, pos+1)
 	if t then
 		local dt = decode_types_v1[t]
 		if dt then
 			pos = pos + 1
-			return dt()
+			tick(1)
+			depth = depth + 1
+			if depth > AdvDupe2.MaxDecodeDepth then
+				error("Dupe tables are nested too deeply", 0)
+			end
+			local value = dt()
+			depth = depth - 1
+			return value
 		else
 			error(format("encountered invalid data type (%u)\n",t))
 		end
@@ -248,20 +296,18 @@ decode_types_v1 = {
 		end
 	end,
 	[8	] = function() -- Vector
-		m,n = find(str,".-\1.-\1.-\1",pos)
-		if m then
-			a,b,c = match(str,"^(.-)\1(.-)\1(.-)\1",pos+1)
-			pos = n
+		a,b,c,n = match(str,"^([^\1]*)\1([^\1]*)\1([^\1]*)\1()",pos+1)
+		if n then
+			pos = n - 1
 			return Vector(tonumber(a), tonumber(b), tonumber(c))
 		else
 			error("expected vector, got EOF\n")
 		end
 	end,
 	[9	] = function() -- Angle
-		m,n = find(str,".-\1.-\1.-\1",pos)
-		if m then
-			a,b,c = match(str,"^(.-)\1(.-)\1(.-)\1",pos+1)
-			pos = n
+		a,b,c,n = match(str,"^([^\1]*)\1([^\1]*)\1([^\1]*)\1()",pos+1)
+		if n then
+			pos = n - 1
 			return Angle(tonumber(a), tonumber(b), tonumber(c))
 		else
 			error("expected angle, got EOF\n")
@@ -272,15 +318,23 @@ decode_types_v1 = {
 local function deserialize_v1(data)
 	str = data
 	pos = 0
+	depth = 0
 	tables = {}
-	return read_v1()
+	local ok, result = pcall(read_v1)
+	str, tables = nil, nil
+	if not ok then error(result, 0) end
+	return result
 end
 
 local function deserialize_v2(data)
 	str = data
 	pos = 0
+	depth = 0
 	tables = {}
-	return read_v2()
+	local ok, result = pcall(read_v2)
+	str, tables = nil, nil
+	if not ok then error(result, 0) end
+	return result
 end
 
 local function lzwDecode(encoded)
@@ -295,22 +349,21 @@ local function lzwDecode(encoded)
 	local decompressed_length = 1
 
 	local index = byte(encoded)
-	local word = dictionary[index]
+	local word = index and dictionary[index]
+	if not word then error("invalid input") end
 
-	decompressed[decompressed_length] = dictionary[index]
+	decompressed[decompressed_length] = word
+	local total = 1
 
 	local entry
 	local encoded_length = #encoded
 	local firstbyte --of an index
 	while pos <= encoded_length do
+		tick(1)
 		firstbyte = byte(encoded,pos)
 		if firstbyte > 252 then --now we know it's a length indicator for a multibyte index
 			index = 0
 			firstbyte = 256 - firstbyte
-
-			--[[if pos+firstbyte > encoded_length then	--will test for performance impact
-				error("expected index got EOF")
-			end]]
 
 			for i = pos+firstbyte, pos+1, -1 do
 				index = bit.bor(bit.lshift(index, 8), byte(encoded,i))
@@ -321,6 +374,10 @@ local function lzwDecode(encoded)
 			pos = pos + 1
 		end
 		entry = dictionary[index] or (word..sub(word,1,1))
+		total = total + #entry
+		if total > AdvDupe2.MaxDupeSize then
+			error("Dupe is too large to decode (decompressed size limit)", 0)
+		end
 		decompressed_length = decompressed_length + 1
 		decompressed[decompressed_length] = entry
 		dictionary[dictionary_length] = word..sub(entry,1,1)
@@ -343,6 +400,9 @@ local function huffmanDecode(encoded)
 	end
 
 	local original_length = bit.bor(bit.lshift(h3,16), bit.lshift(h2,8), h1)
+	if original_length > AdvDupe2.MaxDupeSize then
+		error("Dupe is too large to decode (decompressed size limit)", 0)
+	end
 	local encoded_length = #encoded+1
 	local decoded = {}
 	local decoded_length = 0
@@ -352,8 +412,14 @@ local function huffmanDecode(encoded)
 	local code_len = 2
 	local temp
 	local pos = 4
+	local steps = 0
 
 	while decoded_length < original_length do
+		steps = steps + 1
+		if steps > 65536 then
+			steps = 0
+			check_time()
+		end
 		if code_len <= buffer_length then
 			temp = invcodes[code_len]
 			code = bit.band(buffer, bit.lshift(1, code_len)-1)
@@ -370,7 +436,9 @@ local function huffmanDecode(encoded)
 				end
 			end
 		else
-			buffer = bit.bor(buffer, bit.lshift(byte(encoded, pos), buffer_length))
+			local next_byte = byte(encoded, pos)
+			if not next_byte then error("malformed code") end
+			buffer = bit.bor(buffer, bit.lshift(next_byte, buffer_length))
 			buffer_length = buffer_length + 8
 			pos = pos + 1
 			if pos > encoded_length then
@@ -383,11 +451,28 @@ local function huffmanDecode(encoded)
 end
 
 local function invEscapeSub(str)
-	local escseq,body = match(str,"^(.-)\n(.-)$")
+	local nl = find(str, "\n", 1, true)
+	if not nl then error("invalid input") end
 
-	if not escseq then error("invalid input") end
+	local escseq = sub(str, 1, nl - 1)
+	if #escseq == 0 or #escseq > 256 then error("invalid input") end
 
-	return gsub(body,escseq,"\26")
+	local pieces, n, p = {}, 0, nl + 1
+
+	while true do
+		local s, e = find(str, escseq, p, true)
+		if not s then break end
+
+		n = n + 1
+		pieces[n] = sub(str, p, s - 1)
+		p = e + 1
+		tick(1)
+	end
+
+	if n == 0 then return sub(str, nl + 1) end
+	pieces[n + 1] = sub(str, p)
+
+	return concat(pieces, "\26")
 end
 
 local dictionary
@@ -419,42 +504,111 @@ local function deserializeChunk(chunk)
 	elseif ctype == 80 then return 1
 	end
 
-	error(format("AD1 deserialization failed: invalid chunk (%u:%s)",ctype,val))
+	error(format("AD1 deserialization failed: invalid chunk (%s:%s)", tostring(ctype), sub(tostring(val), 1, 40)), 0)
 
 end
 
-local function deserializeAD1(dupestring)
+local function is_alnum(c)
+	return c and ((c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122))
+end
 
+local function split_ad1_sections(s)
+	if sub(s, 1, 7) ~= "[Info]\n" then return end
+
+	local p1 = 8
+	local a1, a2 = find(s, "\n[More Information]\n", p1, true)
+	if not a1 or a1 <= p1 then return end
+
+	local p2 = a2 + 1
+	local b1, b2 = find(s, "\n[Save]\n", p2, true)
+	if not b1 or b1 <= p2 then return end
+
+	local p3 = b2 + 1
+	local c1, c2 = find(s, "\n[Dict]\n", p3, true)
+	if not c1 or c1 <= p3 then return end
+
+	local p4 = c2 + 1
+	if p4 > #s then return end
+
+	return sub(s, p1, a1 - 1), sub(s, p2, b1 - 1), sub(s, p3, c1 - 1), sub(s, p4)
+end
+
+local function key_value_lines(text)
+	local p, len = 1, #text
+	return function()
+		while p <= len do
+			local eol = find(text, "\n", p, true) or (len + 1)
+			local line = sub(text, p, eol - 1)
+			p = eol + 1
+			tick(1)
+			local k, v = match(line, "^([^:]+):(.+)$")
+			if k then return k, v end
+		end
+	end
+end
+
+local function block_chunks(block)
+	local p = 1
+	return function()
+		while true do
+			local open = find(block, "{", p, true)
+			if not open then return end
+
+			local s = open
+			while s > p and is_alnum(byte(block, s - 1)) do s = s - 1 end
+
+			if s < open then
+				local close = find(block, "}", open + 1, true)
+				if not close then return end
+				p = close + 1
+				return sub(block, s, open - 1), sub(block, open + 1, close - 1)
+			end
+
+			p = open + 1
+		end
+	end
+end
+
+local function deserializeAD1(dupestring)
+	start_budget()
 	dupestring = dupestring:Replace("\r\n", "\n")
-	local header, extraHeader, dupeBlock, dictBlock = dupestring:match("%[Info%]\n(.+)\n%[More Information%]\n(.+)\n%[Save%]\n(.+)\n%[Dict%]\n(.+)")
+	local header, extraHeader, dupeBlock, dictBlock = split_ad1_sections(dupestring)
 
 	if not header then
 		error("unknown duplication format")
 	end
 
 	local info = {}
-	for k,v in header:gmatch("([^\n:]+):([^\n]+)") do
+	for k,v in key_value_lines(header) do
 		info[k] = v
 	end
 
 	local moreinfo = {}
-	for k,v in extraHeader:gmatch("([^\n:]+):([^\n]+)") do
+	for k,v in key_value_lines(extraHeader) do
 		moreinfo[k] = v
 	end
 
 	dictionary = {}
-	for k,v in dictBlock:gmatch("(.-):\"(.-)\"\n") do
-		dictionary[k] = v
+	local dp = 1
+	while true do
+		local ke = find(dictBlock, ":\"", dp, true)
+		if not ke then break end
+		local ve = find(dictBlock, "\"\n", ke + 2, true)
+		if not ve then break end
+		dictionary[sub(dictBlock, dp, ke - 1)] = sub(dictBlock, ke + 2, ve - 1)
+		dp = ve + 2
+		tick(1)
 	end
 
 	local dupe = {}
-	for key,block in dupeBlock:gmatch("([^\n:]+):([^\n]+)") do
+	for key,block in key_value_lines(dupeBlock) do
 
 		local tables = {}
 		subtables = {}
 		local head
 
-		for id,chunk in block:gmatch('(%w+){(.-)}') do
+		for id,chunk in block_chunks(block) do
+			tick(1)
 
 			--check if this table is the trunk
 			if byte(id) == 72 then
@@ -464,9 +618,14 @@ local function deserializeAD1(dupestring)
 
 			tables[id] = {}
 
-			for kv in gmatch(chunk,'[^;]+') do
+			for kv in gmatch(chunk,"[^;]+") do
+				tick(1)
 
-				local k,v = match(kv,'(.-)=(.+)')
+				local k,v
+				local eq = find(kv, "=", 1, true)
+				if eq and eq < #kv then
+					k, v = sub(kv, 1, eq - 1), sub(kv, eq + 1)
+				end
 
 				if k then
 					k = deserializeChunk( k )
@@ -478,7 +637,6 @@ local function deserializeAD1(dupestring)
 					local tid = tables[id]
 					tid[#tid+1]=v
 				end
-
 			end
 		end
 
@@ -486,9 +644,12 @@ local function deserializeAD1(dupestring)
 		for id,tbls in pairs( subtables ) do
 			for _,tbl in pairs( tbls ) do
 				if not tables[id] then error("attempt to reference a nonexistent table") end
+				local copied = 0
 				for k,v in pairs(tables[id]) do
 					tbl[k] = v
+					copied = copied + 1
 				end
+				tick(copied + 1)
 			end
 		end
 
@@ -496,20 +657,30 @@ local function deserializeAD1(dupestring)
 
 	end
 
+	dictionary, subtables = nil, nil
 	return dupe, info, moreinfo
 
 end
 
 --seperates the header and body and converts the header to a table
 local function getInfo(str)
-	local last = str:find("\2")
+	local last = find(str, "\2", 1, true)
 	if not last then
 		error("attempt to read AD2 file with malformed info block error 1")
 	end
+	if last > AdvDupe2.MaxInfoSize then
+		error("attempt to read AD2 file with an oversized info block")
+	end
 	local info = {}
-	local ss = str:sub(1,last-1)
-	for k,v in ss:gmatch("(.-)\1(.-)\1") do
-		info[k] = v
+	local ss = sub(str, 1, last-1)
+	local p = 1
+	while true do
+		local e1 = find(ss, "\1", p, true)
+		if not e1 then break end
+		local e2 = find(ss, "\1", e1 + 1, true)
+		if not e2 then break end
+		info[sub(ss, p, e1 - 1)] = sub(ss, e1 + 1, e2 - 1)
+		p = e2 + 1
 	end
 	if info.check ~= "\r\n\t\n" then
 		if info.check == "\10\9\10" then
@@ -525,6 +696,7 @@ end
 local versions = {}
 
 versions[2] = function(encodedDupe)
+	start_budget()
 	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
 	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
 	encodedDupe = encodedDupe:Replace("\r\n", "\n")
@@ -540,6 +712,7 @@ versions[2] = function(encodedDupe)
 end
 
 versions[1] = function(encodedDupe)
+	start_budget()
 	encodedDupe = encodedDupe:Replace("\r\r\n\t\r\n", "\t\t\t\t")
 	encodedDupe = encodedDupe:Replace("\r\n\t\n", "\t\t\t\t")
 	encodedDupe = encodedDupe:Replace("\r\n", "\n")
