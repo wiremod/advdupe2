@@ -9,6 +9,7 @@ local VIEWTYPE_TILES = 2
 
 local SORTTYPE_NAME = 0
 local SORTTYPE_TIME = 1
+local SORTTYPE_SIZE = 2
 
 -- This lets us rip this stuff out if we need to.
 local TargetRootTable            = AdvDupe2
@@ -20,9 +21,10 @@ local LowercaseFileBrowserPrefix = string.lower(FileBrowserPrefix)
 local MaxTimeToDoubleClick, NodeTall, NodePadding, TallOfOneNode, NodeDepthWidth, NodeFont, NodeFontSmall
 local ExpanderSize,  IconSize, LeftmostToExpanderPadding, ExpanderToIconPadding, IconToTextPadding
 local DrawTimeAlways, DateFormat
+local TileIconSize, TileWidth, TileHeight
 
 local ExpanderXOffset, IconXOffset, TextXOffset
-local TimeToOpenPrompts_cv, TimeToClosePrompts_cv
+local TimeToOpenPrompts_cv, TimeToClosePrompts_cv, ViewType_cv
 
 local ICON_FOLDER_EMPTY
 local ICON_FOLDER_CONTAINS
@@ -38,6 +40,8 @@ do
 														"The time it takes for a user-prompt to fully open, in seconds.", 0, 1000000)
 	TimeToClosePrompts_cv  =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_promptclosetime", "0.3", true, false,
 														"The time it takes for a user-prompt to fully close, in seconds.", 0, 1000000)
+	ViewType_cv            =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_viewtype", "0", true, false,
+														"The file browser view. 0 = tree, 1 = list, 2 = tiles.", 0, 2)
 
 
 	local MaxTimeToDoubleClick_cv   =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_maxtimetodoubleclick", "0.25", true, false,
@@ -70,6 +74,8 @@ do
 														"When 0: the time is only drawn when sorting by time.\nWhen 1: the time will always draw\nWhen -1: the time will never draw.")
 	local DateFormat_cv              =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_dateformat", "%Y/%m/%d %H:%M", true, false,
 														"The format passed into os.date.")
+	local TileIconSize_cv            =   CreateClientConVar(LowercaseFileBrowserPrefix .. "_menu_tileiconsize", "32", true, false,
+														"The size, in pixels, of a folder or file icon in tile view.", 8, 256)
 
 	local function CreateNodeTextRepresentation(Label, Offset)
 		return table.concat{
@@ -125,6 +131,10 @@ do
 		DrawTimeAlways = DrawTimeAlways_cv:GetInt()
 		DateFormat     = DateFormat_cv:GetString()
 
+		TileIconSize = math.Clamp(TileIconSize_cv:GetFloat(), 8, 256)
+		TileWidth    = math.max(TileIconSize + 48, 72)
+		TileHeight   = TileIconSize + 36
+
 		ICON_FOLDER_EMPTY    = UpdateMaterial(ICON_FOLDER_EMPTY,    IconFolderEmpty,    NodeIconFolderEmpty_cv)
 		ICON_FOLDER_CONTAINS = UpdateMaterial(ICON_FOLDER_CONTAINS, IconFolderContains, NodeIconFolderContains_cv)
 		ICON_FILE            = UpdateMaterial(ICON_FILE,            IconFile,           NodeIconFile_cv)
@@ -154,6 +164,52 @@ end
 
 local function GetTextPosition(X, Y, W, H, Depth)
 	return (Depth * NodeDepthWidth) + X + TextXOffset, Y + (H / 2)
+end
+
+local ListTimeWidth, ListSizeWidth = 116, 72
+local ListHeaderTall, NavBarTall   = 20, 24
+
+local function GetListColumns(Width)
+	local SizeRight = Width - 6
+	local TimeRight = SizeRight - ListSizeWidth
+	local NameRight = TimeRight - ListTimeWidth
+	return NameRight, TimeRight, SizeRight
+end
+
+local function GetListTextX()
+	return LeftmostToExpanderPadding + IconSize + IconToTextPadding
+end
+
+local TruncatedText, TruncatedCount = {}, 0
+local function TruncateText(Text, Font, MaxWidth)
+	local Key    = Font .. "\0" .. math.floor(MaxWidth) .. "\0" .. Text
+	local Cached = TruncatedText[Key]
+	if Cached then return Cached end
+
+	surface.SetFont(Font)
+	local Result = Text
+	if surface.GetTextSize(Text) > MaxWidth then
+		local Starts = {}
+		for Position in string.gmatch(Text, "()" .. utf8.charpattern) do
+			Starts[#Starts + 1] = Position
+		end
+
+		Result = "..."
+		for Count = #Starts - 1, 1, -1 do
+			local Candidate = string.sub(Text, 1, Starts[Count + 1] - 1) .. "..."
+			if surface.GetTextSize(Candidate) <= MaxWidth then
+				Result = Candidate
+				break
+			end
+		end
+	end
+
+	if TruncatedCount > 4096 then
+		TruncatedText, TruncatedCount = {}, 0
+	end
+	TruncatedText[Key] = Result
+	TruncatedCount = TruncatedCount + 1
+	return Result
 end
 
 -- Defines GetNumericalFilename
@@ -323,6 +379,22 @@ do
 		return TimeStr
 	end
 
+	function NODE:GetSize()
+		if not self.Path or self:IsFolder() then return 0 end
+		if self.Size then return self.Size end
+
+		self.Size = file.Size(self.Path, "DATA") or 0
+		return self.Size
+	end
+
+	function NODE:GetSizeString()
+		if self:IsFolder() then return "" end
+		if self.SizeStr then return self.SizeStr end
+
+		self.SizeStr = string.NiceSize(self:GetSize())
+		return self.SizeStr
+	end
+
 	function NODE:AddFolder(Text)
 		local Node = NODE(NODETYPE_FOLDER, self.Browser)
 		Node.Text = Text
@@ -406,6 +478,8 @@ do
 		self.Text    = self:IsFile() and string.StripExtension(Name) or Name
 		self.Time    = nil
 		self.TimeStr = nil
+		self.Size    = nil
+		self.SizeStr = nil
 	end
 
 	function NODE:AddDataFile(Path)
@@ -852,6 +926,9 @@ function BROWSERTREE:Init()
 	self.KeepOrder         = true
 	self.SortDirty         = true
 	self.ExpandedNodeArray = {}
+	self.CurrentFolder     = self
+	self.BackHistory       = {}
+	self.ForwardHistory    = {}
 
 	self.LastClick = UserInterfaceTimeFunc()
 	self.VBar.OldPaint = self.VBar.Paint
@@ -864,7 +941,11 @@ end
 function BROWSERTREE:DoNodeLeftClick(Node)
 	if self.m_pSelectedItem == Node and UserInterfaceTimeFunc() - self.LastClick <= MaxTimeToDoubleClick then -- Check for double click
 		if Node:IsFolder() then
-			Node:ToggleExpanded()
+			if self.ViewType == VIEWTYPE_TREE then
+				Node:ToggleExpanded()
+			else
+				self.Browser:NavigateTo(Node)
+			end
 		else
 			local RootImpl = Node.Root.RootImpl
 			RootImpl:UserLoad(self.Browser, Node)
@@ -903,11 +984,13 @@ function BROWSERTREE:DoNodeRightClick(Node)
 	else
 		RootImpl:UserMenu(self.Browser, Node, Menu)
 
-		Menu:AddSpacer()
-		Menu:AddOption("Collapse Folder", function()
-			if Node.ParentNode ~= self then Node.ParentNode:CollapseRecursive() end
-		end, "icon16/arrow_in.png")
-		Menu:AddOption("Collapse Root", function() Node.Root:CollapseRecursive() end, "icon16/arrow_up.png")
+		if self.ViewType == VIEWTYPE_TREE then
+			Menu:AddSpacer()
+			Menu:AddOption("Collapse Folder", function()
+				if Node.ParentNode ~= self then Node.ParentNode:CollapseRecursive() end
+			end, "icon16/arrow_in.png")
+			Menu:AddOption("Collapse Root", function() Node.Root:CollapseRecursive() end, "icon16/arrow_up.png")
+		end
 	end
 
 	Menu:SetAlpha(0)
@@ -972,6 +1055,24 @@ local function SortNodesByTime(A, B)
 	end
 end
 
+local function SortNodesBySize(A, B)
+	local IsFileA, IsFileB = A:IsFile(), B:IsFile()
+
+	if not IsFileA and IsFileB then return true end
+	if IsFileA and not IsFileB then return false end
+
+	local SA, SB = A:GetSize(), B:GetSize()
+	if SA ~= SB then
+		if AscendingSwitch then
+			return SA < SB
+		else
+			return SA > SB
+		end
+	end
+
+	return SortNodesByName(A, B)
+end
+
 local DoRecursiveVistesting function DoRecursiveVistesting(Parent, ExpandedNodeArray, Depth, SortFunction)
 	Depth = Depth or 0
 	for _, Child in Parent:GetSortedChildNodes(SortFunction) do
@@ -990,9 +1091,21 @@ function BROWSERTREE:GetSortFunction()
 		return SortNodesByName
 	elseif SortType == SORTTYPE_TIME then
 		return SortNodesByTime
+	elseif SortType == SORTTYPE_SIZE then
+		return SortNodesBySize
 	else
 		return SortNodesByName
 	end
+end
+
+local function IsAttached(Tree, Node)
+	while Node ~= Tree do
+		local Parent = Node and Node.ParentNode
+		if not Parent or not table.HasValue(Parent.Folders, Node) then return false end
+		Node = Parent
+	end
+
+	return true
 end
 
 -- This function collapses the current node state into a single sequential array
@@ -1009,13 +1122,21 @@ function BROWSERTREE:SortRecheck()
 			Node.Depth = 0
 			self.ExpandedNodeArray[#self.ExpandedNodeArray + 1] = Node
 		end
-	else
+	elseif self.ViewType == VIEWTYPE_TREE then
 		DoRecursiveVistesting(self, self.ExpandedNodeArray, nil, SortFunction)
+	else
+		while not IsAttached(self, self.CurrentFolder) do
+			self.CurrentFolder = self.CurrentFolder.ParentNode or self
+		end
+
+		for _, Child in self.CurrentFolder:GetSortedChildNodes(SortFunction) do
+			Child.Depth = 0
+			self.ExpandedNodeArray[#self.ExpandedNodeArray + 1] = Child
+		end
 	end
 
 	-- This is how tall we are
-	local Tall = #self.ExpandedNodeArray * TallOfOneNode
-	self:SetTall(Tall)
+	self:SetTall(math.max(self:GetContentHeight(), self:GetParent():GetTall()))
 
 	self.SortDirty = false
 end
@@ -1055,6 +1176,52 @@ function BROWSERTREE:GetNodeIndex(Node)
 	for Index, ENode in ipairs(self.ExpandedNodeArray) do
 		if ENode == Node then return Index end
 	end
+end
+
+function BROWSERTREE:GetTileColumns()
+	return math.max(1, math.floor((self:GetWide() - self.VBar:GetWide()) / TileWidth))
+end
+
+function BROWSERTREE:GetContentHeight()
+	local Count = #self.ExpandedNodeArray
+
+	if self.ViewType == VIEWTYPE_TILES then
+		return math.ceil(Count / self:GetTileColumns()) * TileHeight
+	end
+
+	return Count * TallOfOneNode
+end
+
+function BROWSERTREE:GetIndexBounds(Index, Scroll, Width, Depth)
+	if self.ViewType == VIEWTYPE_TILES then
+		local Columns   = self:GetTileColumns()
+		local CellWidth = (Width - self.VBar:GetWide()) / Columns
+		local Column    = (Index - 1) % Columns
+		local Row       = math.floor((Index - 1) / Columns)
+
+		return Column * CellWidth, (Row * TileHeight) - Scroll, CellWidth, TileHeight
+	end
+
+	return GetNodeBounds(Scroll, Index, Width, Depth)
+end
+
+function BROWSERTREE:GetVisibleRange(Scroll, ViewHeight)
+	local Count = #self.ExpandedNodeArray
+
+	if self.ViewType == VIEWTYPE_TILES then
+		local Columns  = self:GetTileColumns()
+		local FirstRow = math.floor(Scroll / TileHeight)
+		local LastRow  = math.floor((Scroll + ViewHeight) / TileHeight)
+
+		return (FirstRow * Columns) + 1, math.min((LastRow + 1) * Columns, Count)
+	end
+
+	return math.max(math.floor(Scroll / TallOfOneNode) + 1, 1), math.min(math.floor((Scroll + ViewHeight) / TallOfOneNode) + 1, Count)
+end
+
+function BROWSERTREE:GetIndexY(Index)
+	local _, Y = self:GetIndexBounds(Index, 0, self:GetWide(), 0)
+	return Y
 end
 
 function BROWSERTREE:IsSearching()
@@ -1154,22 +1321,24 @@ function BROWSERTREE:FlushImmediateState()
 	ImmediateState.PanelHovered = self:IsHovered()
 
 	-- The starting and end indices into self.ExpandedNodeArray
-	ImmediateState.StartIndex        = math.max(math.floor( Scroll                               / TallOfOneNode) + 1, 1)
-	ImmediateState.EndIndex          = math.min(math.floor((Scroll + self:GetParent():GetTall()) / TallOfOneNode) + 1, #self.ExpandedNodeArray)
+	ImmediateState.StartIndex, ImmediateState.EndIndex = self:GetVisibleRange(Scroll, self:GetParent():GetTall())
 
 	-- Vis testing parameters
 	ImmediateState.TotalVisibleNodes = (ImmediateState.EndIndex - ImmediateState.StartIndex)
 	-- We test against this array subspan for mouse events
 	local BreakInputTesting = not CanInput -- if can't input, never even do input testing
+	local IsTree            = self.ViewType == VIEWTYPE_TREE and not self:IsSearching()
+	ImmediateState.Hovered           = false
+	ImmediateState.IsExpanderHovered = false
 	for AbsIndex = ImmediateState.StartIndex, ImmediateState.EndIndex do
 		local Node = self.ExpandedNodeArray[AbsIndex]
 
 		if not BreakInputTesting then
-			local X, Y, W, H  = GetNodeBounds(ImmediateState.Scroll, AbsIndex, ImmediateState.Width, Node.Depth)
+			local X, Y, W, H  = self:GetIndexBounds(AbsIndex, ImmediateState.Scroll, ImmediateState.Width, Node.Depth)
 			local MouseInRect = ImmediateState:IsMouseInRect(X, Y, W, H) and ImmediateState.PanelHovered
 			if MouseInRect then
 				ImmediateState.Hovered           = Node
-				ImmediateState.IsExpanderHovered = Node:IsFolder() and ImmediateState:IsMouseInRect(GetExpanderBounds(X, Y, W, H, nil, Node.Depth))
+				ImmediateState.IsExpanderHovered = IsTree and Node:IsFolder() and ImmediateState:IsMouseInRect(GetExpanderBounds(X, Y, W, H, nil, Node.Depth))
 
 				if ImmediateState.Mouse.Clicked then
 					ImmediateState.Depressed           = Node
@@ -1182,12 +1351,11 @@ function BROWSERTREE:FlushImmediateState()
 				end
 
 				BreakInputTesting = true
-			else
-				ImmediateState.Hovered           = false
-				ImmediateState.IsExpanderHovered = false
 			end
 		end
 	end
+
+	ImmediateState.EmptyClicked = CanInput and ImmediateState.PanelHovered and not ImmediateState.Hovered and ImmediateState.Mouse.Clicked or nil
 
 	if ImmediateState.Mouse.Released or not ImmediateState.Mouse.Down then
 		ImmediateState.Depressed     = nil
@@ -1220,6 +1388,16 @@ function BROWSERTREE:ConsiderCurrentState()
 		end
 	end
 
+	local EmptyClicked = ImmediateState.EmptyClicked
+	if EmptyClicked and self.ViewType ~= VIEWTYPE_TREE and not self:IsSearching() then
+		local Folder = self.CurrentFolder ~= self and self.CurrentFolder or nil
+		if EmptyClicked == MOUSE_LEFT then
+			self:SetSelected(Folder)
+		elseif EmptyClicked == MOUSE_RIGHT and Folder then
+			self:DoNodeRightClick(Folder)
+		end
+	end
+
 	if Released then
 		local Node               = ImmediateState.ReleasedNode
 		local ExpanderReleased   = ImmediateState.IsExpanderReleased
@@ -1232,67 +1410,101 @@ function BROWSERTREE:ConsiderCurrentState()
 	self:SetCursor(ImmediateState.Mouse.Cursor)
 end
 
+local function GetNodeIcon(Node)
+	if Node:IsFolder() then
+		return Node:Count() > 0 and ICON_FOLDER_CONTAINS or ICON_FOLDER_EMPTY
+	end
+
+	return ICON_FILE
+end
+
+function BROWSERTREE:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, X, Y, W, H, Always)
+	if IsDepressed then
+		SkinTex.Panels.Dark(X, Y, W, H, color_white)
+	elseif Node.Selected and self.FolderPick and self.FolderPick(Node) then
+		SkinTex.Panels.Highlight(X, Y, W, H, color_white)
+	elseif Node.Selected or IsHovered then
+		SkinTex.Panels.Bright(X, Y, W, H, color_white)
+	elseif Always then
+		SkinTex.Panels.Normal(X, Y, W, H, color_white)
+	end
+end
+
 -- This function paints the current immediate state to the DPanel.
 function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 	local Skin           = self:GetSkin()
 	local SkinTex        = Skin.tex
+	local TextColor      = Skin.colTextEntryText or color_black
 
 	local ImmediateState = self.ImmediateState
 	local ScrollOffset   = ImmediateState.Scroll
 	local Width          = ImmediateState.Width
 
+	local ViewType       = self.ViewType
+	local ContentWidth   = PanelWidth - (self.VBar:IsVisible() and self.VBar:GetWide() or 0)
+	local NameRight, TimeRight, SizeRight = GetListColumns(ContentWidth)
+
 	for AbsIndex = ImmediateState.StartIndex, ImmediateState.EndIndex do
 		local Node = self.ExpandedNodeArray[AbsIndex]
 		if Node then
-			local IsHovered           = ImmediateState.Hovered   == Node
-			local IsDepressed         = ImmediateState.Depressed == Node
-			local IsExpanderHovered   = IsHovered and ImmediateState.IsExpanderHovered
-			local IsExpanderDepressed = IsDepressed and ImmediateState.IsExpanderDepressed
+			local IsHovered      = ImmediateState.Hovered   == Node
+			local IsDepressed    = ImmediateState.Depressed == Node
+			local NX, NY, NW, NH = self:GetIndexBounds(AbsIndex, ScrollOffset, Width, Node.Depth)
 
-			local NX, NY, NW, NH      = GetNodeBounds(ScrollOffset, AbsIndex, Width, Node.Depth)
-			local IX, IY, IW, IH      = GetIconBounds(NX, NY, NW, NH, nil, Node.Depth)
-			local EX, EY, EW, EH      = GetExpanderBounds(NX, NY, NW, NH, IsExpanderDepressed and -2 or IsExpanderHovered and 2 or 0, Node.Depth)
-			local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
+			if ViewType == VIEWTYPE_TILES then
+				self:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, NX + 2, NY + 2, NW - 4, NH - 4)
 
-			-- Paint background
-			if IsDepressed then
-				SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
-			elseif Node.Selected and self.FolderPick and self.FolderPick(Node) then
-				SkinTex.Panels.Highlight(NX, NY, NW, NH, color_white)
-			elseif Node.Selected or IsHovered then
-				SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
+				surface.SetDrawColor(255, 255, 255, 255)
+				surface.SetMaterial(GetNodeIcon(Node))
+				surface.DrawTexturedRect(NX + ((NW - TileIconSize) / 2), NY + 8, TileIconSize, TileIconSize)
+
+				draw.SimpleText(TruncateText(Node.Text or "", NodeFont, NW - 8), NodeFont, NX + (NW / 2), NY + 14 + TileIconSize, TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
+			elseif ViewType == VIEWTYPE_LIST then
+				self:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, NX, NY, NW, NH, true)
+
+				local TextY = NY + (NH / 2)
+				surface.SetDrawColor(255, 255, 255, 255)
+				surface.SetMaterial(GetNodeIcon(Node))
+				surface.DrawTexturedRect(NX + LeftmostToExpanderPadding, TextY - (IconSize / 2), IconSize, IconSize)
+
+				local TextX = NX + GetListTextX()
+				draw.SimpleText(TruncateText(Node.Text or "", NodeFont, NameRight - TextX - 8), NodeFont, TextX, TextY, TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
+				draw.SimpleText(Node:GetTimeString(), NodeFont, TimeRight, TextY, TextColor, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+				draw.SimpleText(Node:GetSizeString(), NodeFont, SizeRight, TextY, TextColor, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
 			else
-				SkinTex.Panels.Normal(NX, NY, NW, NH, color_white)
-			end
+				local IsExpanderHovered   = IsHovered and ImmediateState.IsExpanderHovered
+				local IsExpanderDepressed = IsDepressed and ImmediateState.IsExpanderDepressed
 
-			-- Paint expander
-			if Node:IsFolder() and Node:Count() > 0 then
-				if not Node.Expanded then
-					SkinTex.TreePlus(EX, EY, EW, EH)
-				else
-					SkinTex.TreeMinus(EX, EY, EW, EH)
+				local IX, IY, IW, IH      = GetIconBounds(NX, NY, NW, NH, nil, Node.Depth)
+				local EX, EY, EW, EH      = GetExpanderBounds(NX, NY, NW, NH, IsExpanderDepressed and -2 or IsExpanderHovered and 2 or 0, Node.Depth)
+				local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
+
+				-- Paint background
+				self:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, NX, NY, NW, NH, true)
+
+				-- Paint expander
+				if Node:IsFolder() and Node:Count() > 0 then
+					if not Node.Expanded then
+						SkinTex.TreePlus(EX, EY, EW, EH)
+					else
+						SkinTex.TreeMinus(EX, EY, EW, EH)
+					end
 				end
-			end
 
-			-- Paint icon
-			local Icon
-			if Node:IsFolder() then
-				Icon = Node:Count() > 0 and ICON_FOLDER_CONTAINS or ICON_FOLDER_EMPTY
-			else
-				Icon = ICON_FILE
-			end
-
-			if DrawTimeAlways ~= -1 then
-				if DrawTimeAlways == 1 or self.SortType == SORTTYPE_TIME then
-					draw.SimpleText(Node:GetTimeString(), NodeFontSmall, PanelWidth - 4 - (self.VBar:IsVisible() and self.VBar:GetWide() or 0), TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+				if DrawTimeAlways ~= -1 then
+					if DrawTimeAlways == 1 or self.SortType == SORTTYPE_TIME then
+						draw.SimpleText(Node:GetTimeString(), NodeFontSmall, ContentWidth - 4, TextY, TextColor, TEXT_ALIGN_RIGHT, TEXT_ALIGN_CENTER)
+					end
 				end
+
+				-- Paint icon
+				surface.SetDrawColor(255, 255, 255, 255)
+				surface.SetMaterial(GetNodeIcon(Node))
+				surface.DrawTexturedRect(IX, IY, IW, IH)
+
+				-- Paint text
+				draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, TextColor, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 			end
-
-			surface.SetMaterial(Icon)
-			surface.DrawTexturedRect(IX, IY, IW, IH)
-
-			-- Paint text
-			draw.SimpleText(Node.Text or "<nil value>", NodeFont, TextX, TextY, Skin.colTextEntryText or color_black, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER)
 		end
 	end
 
@@ -1308,6 +1520,10 @@ end
 
 function BROWSERTREE:Think()
 	FlushConvars()
+	if self.LastTileHeight ~= TileHeight or self.LastNodeHeight ~= TallOfOneNode then
+		self.LastTileHeight, self.LastNodeHeight = TileHeight, TallOfOneNode
+		self.SortDirty = true
+	end
 	-- Perform a sort recheck ...
 	self:SortRecheck()
 	-- ... then flush the current state ...
@@ -1338,6 +1554,7 @@ local function SetBrowserPnlSize(self, x, y)
 	setbrowserpnlsize(self, x, y)
 	self.TreeView:SetWide(x)
 	self.TreeView.VBar:SetUp(y, self.TreeView:GetTall())
+	self:MarkSortDirty()
 end
 
 function BROWSER:Init()
@@ -1350,7 +1567,7 @@ function BROWSER:Init()
 	self:SetPaintBorderEnabled(false)
 	self:SetBackgroundColor(self:GetSkin().text_bright)
 
-	self:SetViewType(VIEWTYPE_TREE)
+	self:SetViewType(math.Clamp(ViewType_cv:GetInt(), VIEWTYPE_TREE, VIEWTYPE_TILES))
 	self:SetSortType(SORTTYPE_NAME)
 	self:SetAscending(true)
 end
@@ -1358,8 +1575,125 @@ end
 -- Public facing API
 
 function BROWSER:SetViewType(ViewType)
-	self.TreeView.ViewType = ViewType or error("No viewtype provided")
+	ViewType = ViewType or error("No viewtype provided")
+
+	local Tree     = self.TreeView
+	local Previous = Tree.ViewType
+	if Previous == ViewType then return end
+
+	Tree.ViewType = ViewType
+	ViewType_cv:SetInt(ViewType)
 	self:MarkSortDirty()
+
+	if ViewType ~= VIEWTYPE_TREE and (Previous == nil or Previous == VIEWTYPE_TREE) then
+		local Selected = Tree:GetSelectedItem()
+		self:ResetNavigation(Selected and Selected.ParentNode)
+	end
+
+	local Selected = Tree:GetSelectedItem()
+	if Selected and TallOfOneNode then
+		self:ScrollTo(Selected)
+	else
+		Tree.VBar:SetScroll(0)
+	end
+end
+
+function BROWSER:GetViewType()
+	return self.TreeView.ViewType
+end
+
+local function FindFolderByPath(Node, Path)
+	for _, Folder in ipairs(Node.Folders) do
+		if Folder.Path == Path then return Folder end
+
+		if Folder.Path and string.StartsWith(Path, Folder.Path .. "/") then
+			if Folder.FirstObserved then
+				Folder:FirstObserved()
+				Folder.FirstObserved = nil
+			end
+
+			return FindFolderByPath(Folder, Path)
+		end
+	end
+end
+
+function BROWSER:FindFolderByPath(Path)
+	return FindFolderByPath(self.TreeView, Path)
+end
+
+function BROWSER:GetCurrentFolder()
+	return self.TreeView.CurrentFolder
+end
+
+function BROWSER:ResetNavigation(Folder)
+	local Tree = self.TreeView
+	table.Empty(Tree.BackHistory)
+	table.Empty(Tree.ForwardHistory)
+
+	if not Folder or not Folder:IsFolder() then
+		Folder = #Tree.Folders == 1 and Tree.Folders[1] or Tree
+	end
+
+	Tree.CurrentFolder = Folder
+	self:MarkSortDirty()
+end
+
+function BROWSER:NavigateTo(Folder, KeepHistory)
+	local Tree = self.TreeView
+	Folder = Folder or Tree
+	if not Folder:IsFolder() or Folder == Tree.CurrentFolder then return end
+
+	self:EndSearch()
+
+	if Folder.FirstObserved then
+		Folder:FirstObserved()
+		Folder.FirstObserved = nil
+	end
+
+	if not KeepHistory then
+		Tree.BackHistory[#Tree.BackHistory + 1] = Tree.CurrentFolder
+		table.Empty(Tree.ForwardHistory)
+	end
+
+	Tree.CurrentFolder = Folder
+	self:MarkSortDirty()
+	Tree.VBar:SetScroll(0)
+end
+
+local function PopAttached(Tree, Stack)
+	while #Stack > 0 do
+		local Folder = table.remove(Stack)
+		if IsAttached(Tree, Folder) then return Folder end
+	end
+end
+
+function BROWSER:CanNavigateBack()    return #self.TreeView.BackHistory > 0    end
+function BROWSER:CanNavigateForward() return #self.TreeView.ForwardHistory > 0 end
+function BROWSER:CanNavigateUp()      return self.TreeView.CurrentFolder ~= self.TreeView end
+
+function BROWSER:NavigateBack()
+	local Tree   = self.TreeView
+	local Folder = PopAttached(Tree, Tree.BackHistory)
+	if not Folder then return end
+
+	Tree.ForwardHistory[#Tree.ForwardHistory + 1] = Tree.CurrentFolder
+	self:NavigateTo(Folder, true)
+end
+
+function BROWSER:NavigateForward()
+	local Tree   = self.TreeView
+	local Folder = PopAttached(Tree, Tree.ForwardHistory)
+	if not Folder then return end
+
+	Tree.BackHistory[#Tree.BackHistory + 1] = Tree.CurrentFolder
+	self:NavigateTo(Folder, true)
+end
+
+function BROWSER:NavigateUp()
+	local Tree = self.TreeView
+	if Tree.CurrentFolder == Tree then return end
+
+	self:NavigateTo(Tree.CurrentFolder.ParentNode)
 end
 
 function BROWSER:KeepSelectedInPlace(Change)
@@ -1377,7 +1711,7 @@ function BROWSER:KeepSelectedInPlace(Change)
 	local NewIndex = Tree:GetNodeIndex(Selected)
 	if not NewIndex then return end
 
-	Tree.VBar:SetScroll(Tree.VBar:GetScroll() + ((NewIndex - OldIndex) * TallOfOneNode))
+	Tree.VBar:SetScroll(Tree.VBar:GetScroll() + (Tree:GetIndexY(NewIndex) - Tree:GetIndexY(OldIndex)))
 end
 
 function BROWSER:SetSortType(SortType)
@@ -2198,7 +2532,7 @@ function BROWSER:ScrollTo(Node)
 	local Index = self.TreeView:GetNodeIndex(Node)
 	if not Index then return end
 
-	local ScrollPos = math.Max(0, (Index * TallOfOneNode) - (self:GetTall() / 2))
+	local ScrollPos = math.Max(0, self.TreeView:GetIndexY(Index) - (self:GetTall() / 2))
 	self.TreeView.VBar:SetScroll(ScrollPos)
 end
 
@@ -2216,10 +2550,27 @@ Derma_Hook(PANEL, "Paint", "Paint", "Panel")
 Derma_Hook(PANEL, "PerformLayout", "Layout", "Panel")
 
 function PANEL:PerformLayout(w, h)
-	if (self:GetWide() == self.LastX) then return end
-	local x = self:GetWide()
+	local ViewType = self.Browser:GetViewType()
+	local Top      = 24
 
-	self.Browser:SetWide(x)
+	local ShowNavBar = ViewType ~= VIEWTYPE_TREE
+	self.NavBar:SetVisible(ShowNavBar)
+	if ShowNavBar then
+		self.NavBar:SetPos(0, Top)
+		self.NavBar:SetSize(w, NavBarTall)
+		Top = Top + NavBarTall
+	end
+
+	local ShowHeader = ViewType == VIEWTYPE_LIST
+	self.ListHeader:SetVisible(ShowHeader)
+	if ShowHeader then
+		self.ListHeader:SetPos(0, Top)
+		self.ListHeader:SetSize(w, ListHeaderTall)
+		Top = Top + ListHeaderTall
+	end
+
+	self.Browser:SetPos(0, Top)
+	self.Browser:SetSize(w, math.max(h - Top, 0))
 
 	local BtnX
 	local BtnPad = 6
@@ -2238,31 +2589,19 @@ function PANEL:PerformLayout(w, h)
 			Button:SetPos(BtnX, 4)
 		end
 	end
-
-	self.LastX = x
-end
-
-local pnlorigsetsize
-local function PanelSetSize(self, x, y)
-	if (not self.LaidOut) then
-		pnlorigsetsize(self, x, y)
-
-		self.Browser:SetSize(x, y - 24)
-		self.Browser:SetPos(0, 24)
-
-		self.LaidOut = true
-	else
-		pnlorigsetsize(self, x, y)
-	end
-
 end
 
 local function UpdateClientFiles(Browser)
+	local Tree     = Browser.TreeView
+	local OpenPath = Tree.CurrentFolder ~= Tree and Tree.CurrentFolder.Path or nil
+
 	Browser:EndSearch()
-	Browser.TreeView:Clear()
-	Browser.TreeView:Expand()
+	Tree:Clear()
+	Tree:Expand()
 
 	hook.Run(FileBrowserPrefix .. "_PostMenuFolders", Browser)
+
+	Browser:ResetNavigation(OpenPath and Browser:FindFolderByPath(OpenPath))
 end
 
 function PANEL:AddLeftsideDivider()
@@ -2296,7 +2635,6 @@ function PANEL:AddLeftsideButton(Icon, Tooltip, Action, Index)
 	Button.DoClick = Action
 
 	table.insert(self.LeftsideButtons, Index or #self.LeftsideButtons + 1, Button)
-	self.LastX = nil
 	self:InvalidateLayout()
 
 	return Button
@@ -2313,7 +2651,6 @@ function PANEL:AddRightsideButton(Icon, Tooltip, Action, Index)
 	Button.DoClick = Action
 
 	table.insert(self.RightsideButtons, Index or #self.RightsideButtons + 1, Button)
-	self.LastX = nil
 	self:InvalidateLayout()
 
 	return Button
@@ -2322,21 +2659,265 @@ end
 local COLOR_SELECTED = color_white
 local COLOR_UNSELECTED = Color(143, 143, 143, 143)
 
+local ICON_SORT_UP   = Material("icon16/bullet_arrow_up.png")
+local ICON_SORT_DOWN = Material("icon16/bullet_arrow_down.png")
+
+function PANEL:CreateNavBar()
+	local Browser = self.Browser
+	local Tree    = Browser.TreeView
+
+	local Bar = self:Add("Panel")
+	self.NavBar = Bar
+
+	local function AddNavButton(Icon, Tooltip, Action, IsEnabled)
+		local Button = Bar:Add("DImageButton")
+		Button:SetImage("icon16/" .. Icon .. ".png")
+		Button:SetStretchToFit(false)
+		Button:SetSize(20, 20)
+		Button:SetTooltip(Tooltip)
+		Button:SetTooltipDelay(0)
+		Button.DoClick = Action
+		Button.Think = function(b) b.m_Image:SetImageColor(IsEnabled() and COLOR_SELECTED or COLOR_UNSELECTED) end
+		return Button
+	end
+
+	Bar.Buttons = {
+		AddNavButton("arrow_left",  "Back",    function() Browser:NavigateBack()    end, function() return Browser:CanNavigateBack()    end),
+		AddNavButton("arrow_right", "Forward", function() Browser:NavigateForward() end, function() return Browser:CanNavigateForward() end),
+		AddNavButton("arrow_up",    "Up",      function() Browser:NavigateUp()      end, function() return Browser:CanNavigateUp()      end),
+	}
+
+	local Path = Bar:Add("Panel")
+	Bar.Path   = Path
+	Path.Items = {}
+
+	function Path:Paint(w, h)
+		self:GetSkin().tex.Panels.Normal(0, 0, w, h, color_white)
+	end
+
+	local function PaintSegment(Segment, w, h)
+		if Segment:IsHovered() then
+			Segment:GetSkin().tex.Panels.Bright(0, 0, w, h, color_white)
+		end
+	end
+
+	local function AddLabel(Text)
+		local Label = Path:Add("DLabel")
+		Label:SetFont(NodeFont)
+		Label:SetText(Text)
+		Label:SetDark(true)
+		Label:SetContentAlignment(5)
+		Label:SizeToContentsX(12)
+		return Label
+	end
+
+	Path.Ellipsis = AddLabel("...")
+
+	local function AddSegment(Node)
+		local Segment
+		if Node == Tree then
+			Segment = Path:Add("DImageButton")
+			Segment:SetImage("icon16/house.png")
+			Segment:SetStretchToFit(false)
+			Segment:SetWide(24)
+			Segment:SetTooltip("All folders")
+			Segment:SetTooltipDelay(0)
+		else
+			Segment = AddLabel(Node.Text or "")
+			Segment:SetMouseInputEnabled(true)
+		end
+
+		Segment.Paint   = PaintSegment
+		Segment.DoClick = function() Browser:NavigateTo(Node) end
+		Path.Items[#Path.Items + 1] = Segment
+	end
+
+	function Path:Rebuild(Current)
+		for _, Item in ipairs(self.Items) do Item:Remove() end
+		table.Empty(self.Items)
+
+		local Chain = {}
+		local Node  = Current
+		while Node and Node ~= Tree do
+			table.insert(Chain, 1, Node)
+			Node = Node.ParentNode
+		end
+
+		AddSegment(Tree)
+		for _, Folder in ipairs(Chain) do
+			Path.Items[#Path.Items + 1] = AddLabel(">")
+			AddSegment(Folder)
+		end
+
+		self.CurrentFolder = Current
+		self:InvalidateLayout()
+	end
+
+	function Path:Think()
+		if self.CurrentFolder ~= Tree.CurrentFolder then
+			self:Rebuild(Tree.CurrentFolder)
+		end
+	end
+
+	function Path:PerformLayout(w, h)
+		local Items = self.Items
+		if #Items == 0 then return end
+
+		local Total = 0
+		for _, Item in ipairs(Items) do Total = Total + Item:GetWide() end
+
+		local First = 2
+		if Total > w then
+			local Used = Items[1]:GetWide() + self.Ellipsis:GetWide()
+			First = #Items + 1
+			while First > 2 and Used + Items[First - 1]:GetWide() <= w do
+				First = First - 1
+				Used  = Used + Items[First]:GetWide()
+			end
+		end
+
+		local X = 0
+		local function Place(Item)
+			Item:SetVisible(true)
+			Item:SetPos(X, 0)
+			Item:SetTall(h)
+			X = X + Item:GetWide()
+		end
+
+		Place(Items[1])
+		self.Ellipsis:SetVisible(First > 2)
+		if First > 2 then Place(self.Ellipsis) end
+
+		for I = 2, #Items do
+			if I >= First then
+				Place(Items[I])
+			else
+				Items[I]:SetVisible(false)
+			end
+		end
+	end
+
+	function Bar:PerformLayout(w, h)
+		local X = 4
+		for _, Button in ipairs(self.Buttons) do
+			Button:SetPos(X, (h - 20) / 2)
+			X = X + 22
+		end
+
+		self.Path:SetPos(X + 2, 2)
+		self.Path:SetSize(math.max(w - X - 8, 0), h - 4)
+	end
+end
+
+function PANEL:CreateListHeader()
+	local Browser = self.Browser
+	local Tree    = Browser.TreeView
+
+	local Header = self:Add("Panel")
+	Header:SetMouseInputEnabled(true)
+	self.ListHeader = Header
+
+	local Columns = {
+		{Text = "Name",     SortType = SORTTYPE_NAME, Align = TEXT_ALIGN_LEFT},
+		{Text = "Modified", SortType = SORTTYPE_TIME, Align = TEXT_ALIGN_RIGHT},
+		{Text = "Size",     SortType = SORTTYPE_SIZE, Align = TEXT_ALIGN_RIGHT},
+	}
+
+	local function UpdateColumnBounds()
+		local Width = Header:GetWide() - (Tree.VBar:IsVisible() and Tree.VBar:GetWide() or 0)
+		local NameRight, TimeRight, SizeRight = GetListColumns(Width)
+
+		Columns[1].Left, Columns[1].Right, Columns[1].TextX = 0,         NameRight, GetListTextX()
+		Columns[2].Left, Columns[2].Right, Columns[2].TextX = NameRight, TimeRight, TimeRight
+		Columns[3].Left, Columns[3].Right, Columns[3].TextX = TimeRight, Width,     SizeRight
+	end
+
+	local function GetHoveredColumn()
+		if not Header:IsHovered() then return end
+
+		local MouseX = Header:CursorPos()
+		for _, Column in ipairs(Columns) do
+			if MouseX >= Column.Left and MouseX < Column.Right then return Column end
+		end
+	end
+
+	function Header:Paint(w, h)
+		local Skin      = self:GetSkin()
+		local TextColor = Skin.colTextEntryText or color_black
+
+		UpdateColumnBounds()
+		Skin.tex.Panels.Normal(0, 0, w, h, color_white)
+
+		local Hovered = GetHoveredColumn()
+		for _, Column in ipairs(Columns) do
+			if Column == Hovered then
+				Skin.tex.Panels.Bright(Column.Left, 0, Column.Right - Column.Left, h, color_white)
+			end
+
+			draw.SimpleText(Column.Text, NodeFont, Column.TextX, h / 2, TextColor, Column.Align, TEXT_ALIGN_CENTER)
+
+			if Tree.SortType == Column.SortType then
+				local TextWidth = surface.GetTextSize(Column.Text)
+				local ArrowX    = Column.Align == TEXT_ALIGN_LEFT and (Column.TextX + TextWidth + 2) or (Column.TextX - TextWidth - 18)
+
+				surface.SetDrawColor(255, 255, 255, 255)
+				surface.SetMaterial(Tree.Ascending and ICON_SORT_UP or ICON_SORT_DOWN)
+				surface.DrawTexturedRect(ArrowX, (h / 2) - 8, 16, 16)
+			end
+		end
+
+		surface.SetDrawColor(0, 0, 0, 50)
+		surface.DrawRect(0, h - 1, w, 1)
+	end
+
+	function Header:OnMousePressed(Code)
+		if Code ~= MOUSE_LEFT then return end
+
+		UpdateColumnBounds()
+		local Column = GetHoveredColumn()
+		if not Column then return end
+
+		if Tree.SortType == Column.SortType then
+			Browser:SetAscending(not Tree.Ascending)
+		else
+			Browser:SetSortType(Column.SortType)
+		end
+	end
+end
+
+function PANEL:Think()
+	local ViewType = self.Browser:GetViewType()
+	if ViewType ~= self.LastViewType then
+		self.LastViewType = ViewType
+		self:InvalidateLayout()
+	end
+end
+
 function PANEL:Init()
-	self.LastX = 0
-	pnlorigsetsize = self.SetSize
-	self.SetSize = PanelSetSize
+	FlushConvars()
 
 	self:SetPaintBackground(true)
 	self:SetPaintBackgroundEnabled(false)
 	self:SetBackgroundColor(self:GetSkin().bg_color_bright)
 
 	self.Browser = self:Add(LowercaseFileBrowserPrefix .. "_browser_panel")
+	self:CreateNavBar()
+	self:CreateListHeader()
 	UpdateClientFiles(self.Browser)
 
 	self.SearchAll     = self:AddLeftsideButton("folder_magnify", "Search all root folders", function()
 		self.Browser:StartSearch(self.Browser.TreeView)
 	end)
+	do
+		self:AddLeftsideDivider()
+		self.SwitchToTree  = self:AddLeftsideButton("application_side_tree", "Tree view", function() self.Browser:SetViewType(VIEWTYPE_TREE) end)
+		self.SwitchToList  = self:AddLeftsideButton("application_view_detail", "List view", function() self.Browser:SetViewType(VIEWTYPE_LIST) end)
+		self.SwitchToTiles = self:AddLeftsideButton("application_view_tile", "Tile view", function() self.Browser:SetViewType(VIEWTYPE_TILES) end)
+
+		self.SwitchToTree.Think  = function(b) b.m_Image:SetImageColor(self.Browser:GetViewType() == VIEWTYPE_TREE and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchToList.Think  = function(b) b.m_Image:SetImageColor(self.Browser:GetViewType() == VIEWTYPE_LIST and COLOR_SELECTED or COLOR_UNSELECTED) end
+		self.SwitchToTiles.Think = function(b) b.m_Image:SetImageColor(self.Browser:GetViewType() == VIEWTYPE_TILES and COLOR_SELECTED or COLOR_UNSELECTED) end
+	end
 	do
 		self:AddLeftsideDivider()
 		self.SwitchToName  = self:AddLeftsideButton("text_replace", "Sort by Name", function() self.Browser:SetSortType(SORTTYPE_NAME) end)
@@ -2480,6 +3061,8 @@ function PANEL:OpenSettings()
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_toexpander", "Left -> Expander Padding (pixels)", 0, 256)
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_expandertoicon", "Expander -> Icon Padding (pixels)", 0, 256)
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_icontotext", "Icon -> Text Padding (pixels)", 0, 256)
+	CreateDivider()
+	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_tileiconsize", "Tile Icon Size (pixels)", 8, 128)
 end
 
 vgui.Register(LowercaseFileBrowserPrefix .. "_browser", PANEL, "Panel")
