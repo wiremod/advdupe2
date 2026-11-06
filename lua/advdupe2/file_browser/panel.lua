@@ -9,6 +9,10 @@ return function(FileBrowser)
 	local NavBarTall     = FileBrowser.NavBarTall
 	local GetListColumns = FileBrowser.GetListColumns
 	local GetListTextX   = FileBrowser.GetListTextX
+	local GetSkinTextColor = FileBrowser.GetSkinTextColor
+	local DrawSkinPanel    = FileBrowser.DrawSkinPanel
+	local DrawSkinState    = FileBrowser.DrawSkinState
+	local GetStateTextColor = FileBrowser.GetStateTextColor
 
 	local PANEL = {}
 	AccessorFunc(PANEL, "m_bBackground", "PaintBackground", FORCE_BOOL)
@@ -80,7 +84,7 @@ return function(FileBrowser)
 
 		local Panel = self:Add "DPanel"
 		Panel:SetSize(2, 16)
-		Panel.Paint = function(_, w, h) surface.SetDrawColor(0, 0, 0, 50) surface.DrawRect(0, 0, w, h) end
+		Panel.Paint = function(Divider, w, h) surface.SetDrawColor(GetSkinTextColor(Divider:GetSkin(), 50)) surface.DrawRect(0, 0, w, h) end
 
 		self.LeftsideButtons[#self.LeftsideButtons + 1] = Panel
 	end
@@ -90,7 +94,7 @@ return function(FileBrowser)
 
 		local Panel = self:Add "DPanel"
 		Panel:SetSize(2, 16)
-		Panel.Paint = function(_, w, h) surface.SetDrawColor(0, 0, 0, 50) surface.DrawRect(0, 0, w, h) end
+		Panel.Paint = function(Divider, w, h) surface.SetDrawColor(GetSkinTextColor(Divider:GetSkin(), 50)) surface.DrawRect(0, 0, w, h) end
 
 		self.RightsideButtons[#self.RightsideButtons + 1] = Panel
 	end
@@ -164,12 +168,20 @@ return function(FileBrowser)
 		Path.Items = {}
 
 		function Path:Paint(w, h)
-			self:GetSkin().tex.Panels.Normal(0, 0, w, h, color_white)
+			local Skin = self:GetSkin()
+			DrawSkinPanel(Skin, "Normal", 0, 0, w, h)
+
+			local TextColor = GetStateTextColor(Skin, "Normal")
+			for _, Item in ipairs(self.Items) do
+				if Item.ClassName == "DLabel" and not Item:IsHovered() then Item:SetTextColor(TextColor) end
+			end
+			self.Ellipsis:SetTextColor(TextColor)
 		end
 
 		local function PaintSegment(Segment, w, h)
 			if Segment:IsHovered() then
-				Segment:GetSkin().tex.Panels.Bright(0, 0, w, h, color_white)
+				local TextColor = DrawSkinState(Segment:GetSkin(), "Hovered", 0, 0, w, h)
+				if Segment.ClassName == "DLabel" then Segment:SetTextColor(TextColor) end
 			end
 		end
 
@@ -315,16 +327,16 @@ return function(FileBrowser)
 		end
 
 		function Header:Paint(w, h)
-			local Skin      = self:GetSkin()
-			local TextColor = Skin.colTextEntryText or color_black
+			local Skin = self:GetSkin()
 
 			UpdateColumnBounds()
-			Skin.tex.Panels.Normal(0, 0, w, h, color_white)
+			DrawSkinPanel(Skin, "Normal", 0, 0, w, h)
 
 			local Hovered = GetHoveredColumn()
 			for _, Column in ipairs(Columns) do
+				local TextColor = GetStateTextColor(Skin, "Normal")
 				if Column == Hovered then
-					Skin.tex.Panels.Bright(Column.Left, 0, Column.Right - Column.Left, h, color_white)
+					TextColor = DrawSkinState(Skin, "Hovered", Column.Left, 0, Column.Right - Column.Left, h)
 				end
 
 				draw.SimpleText(Column.Text, Settings.NodeFont, Column.TextX, h / 2, TextColor, Column.Align, TEXT_ALIGN_CENTER)
@@ -339,7 +351,7 @@ return function(FileBrowser)
 				end
 			end
 
-			surface.SetDrawColor(0, 0, 0, 50)
+			surface.SetDrawColor(GetSkinTextColor(Skin, 50))
 			surface.DrawRect(0, h - 1, w, 1)
 		end
 
@@ -447,7 +459,7 @@ return function(FileBrowser)
 			Div:Dock(TOP)
 			Div:DockMargin(16, 4, 16, 4)
 			Div:SetSize(0, 2)
-			Div.Paint = function(_, w, h) surface.SetDrawColor(0, 0, 0, 90) surface.DrawRect(0, 0, w, h) end
+			Div.Paint = function(Divider, w, h) surface.SetDrawColor(GetSkinTextColor(Divider:GetSkin(), 90)) surface.DrawRect(0, 0, w, h) end
 		end
 		local function CreateConvarSlider(ConVar, CName, Min, Max)
 			local CV = GetConVar(ConVar)

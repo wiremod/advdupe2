@@ -1,5 +1,6 @@
 local Files = {
 	"util.lua",
+	"skin.lua",
 	"settings.lua",
 	"node.lua",
 	"rootfolder.lua",

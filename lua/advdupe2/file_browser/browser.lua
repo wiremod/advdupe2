@@ -5,6 +5,7 @@ return function(FileBrowser)
 	local IRootFolder           = FileBrowser.IRootFolder
 	local USERPROMPT            = FileBrowser.USERPROMPT
 	local IsAttached            = FileBrowser.IsAttached
+	local GetSkinTextColor      = FileBrowser.GetSkinTextColor
 
 	local BROWSER = {}
 	AccessorFunc(BROWSER, "m_bBackground", "PaintBackground", FORCE_BOOL)
@@ -291,7 +292,15 @@ return function(FileBrowser)
 		table.sort(History)
 	end
 
+	local function UseSkinPlaceholderColor(Entry)
+		function Entry:GetPlaceholderColor()
+			return GetSkinTextColor(self:GetSkin(), 120)
+		end
+	end
+
 	local function SetupNameEntry(Entry, NameFilter)
+		UseSkinPlaceholderColor(Entry)
+
 		local MenuKey      = string.lower(input.LookupBinding("menu") or "q")
 		local PreviousText = Entry:GetText()
 		local FirstChange  = true
@@ -425,6 +434,7 @@ return function(FileBrowser)
 				Save:SetImage("icon16/" .. Icon .. ".png")
 
 			Desc = DescParent:Add("DTextEntry")
+			UseSkinPlaceholderColor(Desc)
 				Desc:SetAllowNonAsciiCharacters(true)
 				Desc:SetTabbingDisabled(false)
 				Desc:Dock(FILL)

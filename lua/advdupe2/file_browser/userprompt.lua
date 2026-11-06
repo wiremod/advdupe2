@@ -1,5 +1,15 @@
 return function(FileBrowser)
 	local UserInterfaceTimeFunc = FileBrowser.UserInterfaceTimeFunc
+	local GetSkinSample         = FileBrowser.GetSkinSample
+	local DrawSkinPanel         = FileBrowser.DrawSkinPanel
+	local GetStateTextColor     = FileBrowser.GetStateTextColor
+
+	local function ColorLabels(Panel, TextColor)
+		for _, Child in ipairs(Panel:GetChildren()) do
+			if Child.ClassName == "DLabel" then Child:SetTextColor(TextColor) end
+			ColorLabels(Child, TextColor)
+		end
+	end
 
 	-- This is a user prompt class, see Browser's UserPrompt stack methods
 
@@ -16,12 +26,17 @@ return function(FileBrowser)
 			self.WillOpenAt = self.StartOpen + Settings.PromptOpenTime
 
 			self.Panel = Browser:Add("DScrollPanel")
-			local PanelColor = Color(255, 255, 255, 213)
 			self.Panel.Paint = function(panel, w, h)
 				local Skin = panel:GetSkin()
-				local SkinTex = Skin.tex
 
-				SkinTex.Panels.Normal(0, 0, w, h, PanelColor)
+				local Sample = GetSkinSample(Skin)
+				if Sample then
+					surface.SetDrawColor(Sample.Normal)
+					surface.DrawRect(0, 0, w, h)
+				end
+
+				DrawSkinPanel(Skin, "Normal", 0, 0, w, h)
+				ColorLabels(panel, GetStateTextColor(Skin, "Normal"))
 			end
 		end
 

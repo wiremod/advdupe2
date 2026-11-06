@@ -15,6 +15,9 @@ return function(FileBrowser)
 	local TruncateText          = FileBrowser.TruncateText
 	local GetNumericalFilename  = FileBrowser.GetNumericalFilename
 	local NODE                  = FileBrowser.NODE
+	local DrawSkinExpander      = FileBrowser.DrawSkinExpander
+	local DrawSkinState         = FileBrowser.DrawSkinState
+	local GetStateTextColor     = FileBrowser.GetStateTextColor
 
 	-- This is the base browser panel. Most VGUI interactions happen here
 
@@ -538,24 +541,29 @@ return function(FileBrowser)
 		return Settings.IconFile
 	end
 
-	function BROWSERTREE:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, X, Y, W, H, Always)
+	function BROWSERTREE:PaintNodeBackground(Skin, Node, IsHovered, IsDepressed, X, Y, W, H, Always)
+		local State = "Normal"
 		if IsDepressed then
-			SkinTex.Panels.Dark(X, Y, W, H, color_white)
+			State = "Dark"
 		elseif Node.Selected and self.FolderPick and self.FolderPick(Node) then
-			SkinTex.Panels.Highlight(X, Y, W, H, color_white)
-		elseif Node.Selected or IsHovered then
-			SkinTex.Panels.Bright(X, Y, W, H, color_white)
-		elseif Always then
-			SkinTex.Panels.Normal(X, Y, W, H, color_white)
+			State = "Target"
+		elseif Node.Selected then
+			State = "Selected"
+		elseif IsHovered then
+			State = "Hovered"
 		end
+
+		if State == "Normal" and not Always then
+			return GetStateTextColor(Skin, State)
+		end
+
+		return DrawSkinState(Skin, State, X, Y, W, H)
 	end
 
 	-- This function paints the current immediate state to the DPanel.
 	function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 		local Settings = self.Settings
 		local Skin           = self:GetSkin()
-		local SkinTex        = Skin.tex
-		local TextColor      = Skin.colTextEntryText or color_black
 
 		local ImmediateState = self.ImmediateState
 		local ScrollOffset   = ImmediateState.Scroll
@@ -573,7 +581,7 @@ return function(FileBrowser)
 				local NX, NY, NW, NH = self:GetIndexBounds(AbsIndex, ScrollOffset, Width, Node.Depth)
 
 				if ViewType == VIEWTYPE_TILES then
-					self:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, NX + 2, NY + 2, NW - 4, NH - 4)
+					local TextColor = self:PaintNodeBackground(Skin, Node, IsHovered, IsDepressed, NX + 2, NY + 2, NW - 4, NH - 4)
 
 					surface.SetDrawColor(255, 255, 255, 255)
 					surface.SetMaterial(GetNodeIcon(Settings, Node))
@@ -581,7 +589,7 @@ return function(FileBrowser)
 
 					draw.SimpleText(TruncateText(Node.Text or "", Settings.NodeFont, NW - 8), Settings.NodeFont, NX + (NW / 2), NY + 14 + Settings.TileIconSize, TextColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_TOP)
 				elseif ViewType == VIEWTYPE_LIST then
-					self:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, NX, NY, NW, NH, true)
+					local TextColor = self:PaintNodeBackground(Skin, Node, IsHovered, IsDepressed, NX, NY, NW, NH, true)
 
 					local TextY = NY + (NH / 2)
 					surface.SetDrawColor(255, 255, 255, 255)
@@ -601,15 +609,11 @@ return function(FileBrowser)
 					local TextX, TextY        = GetTextPosition(Settings, NX, NY, NW, NH, Node.Depth)
 
 					-- Paint background
-					self:PaintNodeBackground(SkinTex, Node, IsHovered, IsDepressed, NX, NY, NW, NH, true)
+					local TextColor = self:PaintNodeBackground(Skin, Node, IsHovered, IsDepressed, NX, NY, NW, NH, true)
 
 					-- Paint expander
 					if Node:IsFolder() and Node:Count() > 0 then
-						if not Node.Expanded then
-							SkinTex.TreePlus(EX, EY, EW, EH)
-						else
-							SkinTex.TreeMinus(EX, EY, EW, EH)
-						end
+						DrawSkinExpander(Skin, Node.Expanded, EX, EY, EW, EH)
 					end
 
 					if Settings.DrawTimeAlways ~= -1 then
