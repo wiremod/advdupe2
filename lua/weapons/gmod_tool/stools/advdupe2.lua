@@ -971,7 +971,7 @@ if(CLIENT) then
 			end
 		else
 			if(X ~= 0) then
-				VY = tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0
+				local VY = tonumber(ply:GetInfo("advdupe2_offset_yaw")) or 0
 				if(ru) then
 					YawTo = YawTo + X -- Integrate the mouse on the X value from the mouse
 					RunConsoleCommand("advdupe2_offset_yaw", math.SnapTo(math.NormalizeAngle(YawTo), 45))

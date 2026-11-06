@@ -2,7 +2,7 @@ function AdvDupe2.LoadGhosts(dupe, info, moreinfo, name, preview)
 	AdvDupe2.RemoveGhosts()
 	AdvDupe2.Ghosting = true
 	AdvDupe2.GhostToSpawn = {}
-	local count = 0
+	local count = 1
 	local time, desc, date, creator
 
 	if(info.ad1) then
