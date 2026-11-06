@@ -1069,6 +1069,115 @@ if(CLIENT) then
 	CreateClientConVar("advdupe2_paste_protectoveride", 1, false, true)
 	CreateClientConVar("advdupe2_debug_openfile", 1, false, true)
 
+	local RadioColors   = setmetatable({}, {__mode = "k"})
+	local PendingSkins  = {}
+	local CirclePolys   = {}
+	local RadioSampleSize = 32
+	local RadioSampleTarget
+
+	local function GetCirclePoly(X, Y, Radius)
+		local Key  = X .. ":" .. Y .. ":" .. Radius
+		local Poly = CirclePolys[Key]
+		if Poly then return Poly end
+
+		Poly = {}
+		local Segments = math.Clamp(math.ceil(Radius * 4), 12, 48)
+		for I = 0, Segments - 1 do
+			local Angle = math.rad((I / Segments) * -360)
+			Poly[#Poly + 1] = {x = X + (math.sin(Angle) * Radius), y = Y + (math.cos(Angle) * Radius)}
+		end
+
+		CirclePolys[Key] = Poly
+		return Poly
+	end
+
+	local function CaptureCheckBox(Skin, Checked)
+		local Proxy = {
+			GetChecked  = function() return Checked end,
+			GetDisabled = function() return false end,
+		}
+
+		render.PushRenderTarget(RadioSampleTarget)
+		render.Clear(0, 0, 0, 255, true, true)
+		cam.Start2D()
+			Skin:PaintCheckBox(Proxy, RadioSampleSize, RadioSampleSize)
+		cam.End2D()
+		render.CapturePixels()
+	end
+
+	local function ReadColor(X, Y)
+		local R, G, B = render.ReadPixel(X, Y)
+		return Color(R, G, B)
+	end
+
+	local function SampleCheckBox(Skin)
+		RadioSampleTarget = RadioSampleTarget or GetRenderTarget("AdvDupe2_RadioSample", RadioSampleSize, RadioSampleSize)
+		local Half = RadioSampleSize / 2
+
+		CaptureCheckBox(Skin, false)
+		local Border = ReadColor(1, Half)
+		local Fill   = ReadColor(Half, Half)
+		render.PopRenderTarget()
+
+		CaptureCheckBox(Skin, true)
+		local Check, BestDistance = Fill, 0
+		for X = 4, RadioSampleSize - 5 do
+			for Y = 4, RadioSampleSize - 5 do
+				local R, G, B = render.ReadPixel(X, Y)
+				local Distance = math.abs(R - Fill.r) + math.abs(G - Fill.g) + math.abs(B - Fill.b)
+				if Distance > BestDistance then
+					Check, BestDistance = Color(R, G, B), Distance
+				end
+			end
+		end
+		render.PopRenderTarget()
+
+		return {Border = Border, Fill = Fill, Check = Check}
+	end
+
+	local function SamplePendingSkins()
+		for Skin in pairs(PendingSkins) do
+			local Ok, Colors = pcall(SampleCheckBox, Skin)
+			RadioColors[Skin] = Ok and Colors or false
+			PendingSkins[Skin] = nil
+		end
+
+		hook.Remove("PostRenderVGUI", "AdvDupe2_SampleRadioButtons")
+	end
+
+	local function PaintRadioButton(self, w, h)
+		local Skin = self:GetSkin()
+
+		if Skin.tex and Skin.tex.RadioButton and Skin.tex.RadioButton_Checked then
+			return Skin:PaintRadioButton(self, w, h)
+		end
+
+		local Colors = RadioColors[Skin]
+		if not Colors then
+			if Colors == nil and not PendingSkins[Skin] then
+				PendingSkins[Skin] = true
+				hook.Add("PostRenderVGUI", "AdvDupe2_SampleRadioButtons", SamplePendingSkins)
+			end
+
+			return Skin:PaintCheckBox(self, w, h)
+		end
+
+		local Alpha  = self:GetDisabled() and 120 or 255
+		local Radius = math.floor(math.min(w, h) / 2)
+		local X, Y   = w / 2, h / 2
+
+		draw.NoTexture()
+		surface.SetDrawColor(Colors.Border.r, Colors.Border.g, Colors.Border.b, Alpha)
+		surface.DrawPoly(GetCirclePoly(X, Y, Radius))
+		surface.SetDrawColor(Colors.Fill.r, Colors.Fill.g, Colors.Fill.b, Alpha)
+		surface.DrawPoly(GetCirclePoly(X, Y, Radius - 1))
+
+		if self:GetChecked() then
+			surface.SetDrawColor(Colors.Check.r, Colors.Check.g, Colors.Check.b, Alpha)
+			surface.DrawPoly(GetCirclePoly(X, Y, math.max(Radius * 0.45, 2)))
+		end
+	end
+
 	local function AddSpacer(Panel)
 		local Spacer = vgui.Create("DPanel", Panel)
 		Spacer:SetSize(2, 1)
@@ -1126,7 +1235,7 @@ if(CLIENT) then
 			end
 		end
 		Check_1:SetTooltip("Keeps all props frozen after pasting")
-		Check_1.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
+		Check_1.Button.Paint = PaintRadioButton
 		CPanel:AddItem(Check_1)
 
 		Check_2:SetText( "Unfreeze all after paste" )
@@ -1140,7 +1249,7 @@ if(CLIENT) then
 			end
 		end
 		Check_2:SetTooltip("Unfreeze all props after pasting")
-		Check_2.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
+		Check_2.Button.Paint = PaintRadioButton
 		CPanel:AddItem(Check_2)
 
 		Check_3:SetText( "Preserve frozen state after paste" )
@@ -1154,7 +1263,7 @@ if(CLIENT) then
 			end
 		end
 		Check_3:SetTooltip("Makes props have the same frozen state as when they were copied")
-		Check_3.Button.Paint = function(self, w, h) self:GetSkin():PaintRadioButton(self, w, h) end
+		Check_3.Button.Paint = PaintRadioButton
 		CPanel:AddItem(Check_3)
 
 		AddSpacer(CPanel)
