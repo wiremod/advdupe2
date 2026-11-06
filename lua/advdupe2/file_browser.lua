@@ -1,9 +1,3 @@
-surface.CreateFont("AdvDupe2_SmallFont", {
-	font = "Tahoma",
-	size = 11,
-	antialias = false
-})
-
 -- Enums
 -- These are internal really, so i don't think these need to be exposed?
 local NODETYPE_FOLDER          = 1
@@ -17,6 +11,7 @@ local SORTTYPE_NAME = 0
 local SORTTYPE_TIME = 1
 
 -- This lets us rip this stuff out if we need to.
+local TargetRootTable            = AdvDupe2
 local FileBrowserPrefix          = "AdvDupe2"
 local LowercaseFileBrowserPrefix = string.lower(FileBrowserPrefix)
 
@@ -279,10 +274,11 @@ do
 	end
 end
 
-local SetupDataFile, SetupDataSubfolder
 local NODE_MT = {}
 local NODE    = setmetatable({}, NODE_MT)
 do
+	local LoadDataFolderInternal
+
 	function NODE:Init(Type, Browser)
 		self.Type      = Type
 		self.Browser   = Browser
@@ -404,35 +400,47 @@ do
 		for _, Folder in ipairs(self.Folders) do Folder:CollapseRecursive() end
 	end
 
-	function SetupDataFile(Node, Path, Name)
-		Node.Text = Name
-		Node.Path = Path
+	function NODE:SetDataPath(Path)
+		self.Path    = Path
+		self.Text    = string.GetFileFromFilename(Path)
+		self.Time    = nil
+		self.TimeStr = nil
 	end
 
-	function SetupDataSubfolder(Node, Path, Name)
-		Node.Text = Name
-		Node.Path = Path
+	function NODE:AddDataFile(Path)
+		local Node = self:AddFile()
+		Node:SetDataPath(Path)
+
+		return Node
+	end
+
+	function NODE:AddDataFolder(Path)
+		local Node = self:AddFolder()
+		Node:SetDataPath(Path)
+		Node.FirstObserved = function(DirNode) -- note FirstObserved will be destroyed after first call
+			LoadDataFolderInternal(DirNode, Path .. "/")
+		end
+
+		return Node
+	end
+
+	function NODE:FindFileByPath(Path)
+		for _, File in ipairs(self.Files) do
+			if File.Path == Path then return File end
+		end
 	end
 
 	-- Expects a directory path ending in a forward slash.
-	local LoadDataFolderInternal
 	function LoadDataFolderInternal(Node, Path)
 		local Files, Directories = file.Find(Path .. "*", "DATA", "nameasc")
 		if not Files or not Directories then return end
 
 		for _, File in ipairs(Files) do
-			local FilePath = Path .. File
-			local FileNode = Node:AddFile(FilePath)
-			SetupDataFile(FileNode, FilePath, File)
+			Node:AddDataFile(Path .. File)
 		end
 
 		for _, Directory in ipairs(Directories) do
-			local DirectoryPath = Path .. Directory
-			local DirectoryNode = Node:AddFolder(DirectoryPath)
-			SetupDataSubfolder(DirectoryNode, DirectoryPath, Directory)
-			DirectoryNode.FirstObserved = function(DirNode) -- note FirstObserved will be destroyed after first call
-				LoadDataFolderInternal(DirNode, DirectoryPath .. "/")
-			end
+			Node:AddDataFolder(Path .. Directory)
 		end
 	end
 
@@ -461,7 +469,9 @@ do
 		end
 
 		-- Perform actual resort
-		table.sort(Sorted, SortFunction)
+		if not self.KeepOrder then
+			table.sort(Sorted, SortFunction)
+		end
 	end
 
 	-- Returns an enumerator<Node>
@@ -479,17 +489,18 @@ do
 	end
 end
 
--- This interface describes the logic behind a root folder (like AdvDupe1 or AdvDupe2).
+-- This interface describes the logic behind a root folder.
 
 local IRootFolder_MT = {}
 local IRootFolder    = setmetatable({}, IRootFolder_MT)
 
 do
-	AdvDupe2.IRootFolder = IRootFolder -- If other addons want to post-verify their IRootFolder implementations like we do
+	TargetRootTable.IRootFolder = IRootFolder -- If other addons want to post-verify their IRootFolder implementations like we do
 
 	-- todo; debug.getinfo and determine argument counts to further sanity check?
 	IRootFolder.Init             = function(Impl, Browser, Node) end
 	IRootFolder.GetFolderName    = function(Impl) end
+	IRootFolder.GetPlaceholderText = function(Impl, Field) end
 	-- These define node operations
 	-- These are RAW operations, as in the underlying Browser might do some prompts first
 	-- But for example, calling IRootFolder:UserDelete() is expected to actually delete the node
@@ -509,7 +520,7 @@ do
 	function IRootFolder_MT:__call(RootFolderType)
 		for FuncName, _ in pairs(IRootFolder) do
 			if not RootFolderType[FuncName] then
-				ErrorNoHaltWithStack("AdvDupe2: IRootFolder implementation failed to implement " .. FuncName .. ", this may not work as intended...")
+				ErrorNoHaltWithStack(FileBrowserPrefix .. ": IRootFolder implementation failed to implement " .. FuncName .. ", this may not work as intended...")
 			end
 		end
 
@@ -642,173 +653,56 @@ do
 	end
 end
 
--- This turns a data-folder path name into something AdvDupe2.UploadFile can tolerate
-local function GetNodeDataPath(Node)
-	local Path                = Node.Path
-	if not Path then return "" end
-
-	local FirstSlash          = string.find(Path, "/")
-	local RemovedFirstDirPath = string.sub(Path, FirstSlash + 1)
-	return string.StripExtension(RemovedFirstDirPath)
-end
-
--- wraps File.Exists and throws a notification
-local function FileExists(Path)
-	if not Path then
-		AdvDupe2.Notify("Expected path, got nil!")
-		return false
-	end
-
-	if not file.Exists(Path, "DATA") then
-		AdvDupe2.Notify("File '" .. Path .. "' does not exist.")
-		return false
-	end
-
-	return true
-end
-
-local function OpenPreview(Node, Area)
-	local Path     = GetNodeDataPath(Node)
-	local ReadPath
-
-	if Area == AdvDupe2.AREA_ADVDUPE2 then
-		ReadPath = AdvDupe2.DataFolder .. "/" .. Path .. ".txt"
-	elseif Area == AdvDupe2.AREA_PUBLIC then
-		ReadPath = AdvDupe2.DataFolder .. "/-Public-/" .. ReadPath .. ".txt"
-	else
-		ReadPath = "adv_duplicator/" .. Path .. ".txt"
-	end
-
-	if not FileExists(ReadPath) then return end
-
-	local Read = file.Read(ReadPath)
-	local Name = string.StripExtension(string.GetFileFromFilename(Path))
-
-	local Success, Dupe, Info, MoreInfo = AdvDupe2.Decode(Read)
-
-	if Success then
-		AdvDupe2.LoadGhosts(Dupe, Info, MoreInfo, Name, true)
-	end
-end
-
-
--- These are the builtin IRootFolder implementations.
-local AdvDupe1Folder, AdvDupe2Folder
+local DataFolderRoot_MT = {}
+local DataFolderRoot    = setmetatable({}, DataFolderRoot_MT)
 
 do
-	AdvDupe1Folder = {}
-	function AdvDupe1Folder:GetFolderName() return "Advanced Duplicator 1" end
-	function AdvDupe1Folder:Init(Browser, Node)
-		Node:LoadDataFolder("adv_duplicator/")
+	TargetRootTable.DataFolderRoot = DataFolderRoot
 
-		if Node:Count() < 0 then
-			Node:Remove()
-		end
+	function DataFolderRoot_MT:__call(Name, BasePath)
+		if Name == nil then return error("Cannot create a nameless data folder root") end
+		if BasePath == nil then return error("Cannot create a data folder root without a base path") end
+
+		return setmetatable({
+			Name      = Name,
+			BasePath  = BasePath,
+			-- Key-weak LUT's for size/modtimes.
+			-- They're key-weak so if a node gets deleted it isn't hung up by GC thinking
+			-- we care about the reference still
+			SizeCache = setmetatable({}, {__mode = 'k'}),
+			TimeCache = setmetatable({}, {__mode = 'k'})
+		}, {__index = DataFolderRoot})
 	end
 
-	function AdvDupe1Folder:UserLoad(Browser, Node)
-		AdvDupe2.UploadFile(GetNodeDataPath(Node), AdvDupe2.AREA_ADVDUPE1)
+	local function DeleteDataFolder(Path)
+		local Files, Directories = file.Find(Path .. "/*", "DATA")
+
+		for _, File in ipairs(Files or {}) do file.Delete(Path .. "/" .. File) end
+		for _, Directory in ipairs(Directories or {}) do DeleteDataFolder(Path .. "/" .. Directory) end
+
+		file.Delete(Path)
 	end
 
-	function AdvDupe1Folder:UserPreview(Browser, Node)
-		OpenPreview(Node, AdvDupe2.AREA_ADVDUPE1)
+	function DataFolderRoot:GetFolderName() return self.Name end
+	function DataFolderRoot:GetPlaceholderText(Field) end
+
+	function DataFolderRoot:Init(Browser, Node)
+		Node.Path = self.BasePath
+		Node:LoadDataFolder(self.BasePath .. "/")
 	end
 
+	function DataFolderRoot:UserLoad(Browser, Node) end
+	function DataFolderRoot:UserPreview(Browser, Node) end
+	function DataFolderRoot:UserSave(Browser, Node, Filename, Description) end
 
-	function AdvDupe1Folder:UserSave(Browser, Node, Filename, Description)
+	function DataFolderRoot:UserRename(Browser, Node, RenameTo)
+		if not Node:IsFile() then return false end
 
-	end
+		local Extension = string.GetExtensionFromFilename(Node.Path)
+		local NewPath   = string.GetPathFromFilename(Node.Path) .. RenameTo .. (Extension and ("." .. Extension) or "")
 
-	function AdvDupe1Folder:UserRename(Browser, Node, RenameTo)
-		return false
-	end
-
-	function AdvDupe1Folder:UserMenu(Browser, Node, Menu)
-		if Node:IsFile() then
-			Menu:AddOption("Open",    function() self:UserLoad(Browser, Node)  end, "icon16/page_go.png")
-		end
-	end
-
-	function AdvDupe1Folder:UserDelete(Browser, Node)
-		return false
-	end
-
-	function AdvDupe1Folder:UserMakeFolder(Browser, Node, Foldername)
-
-	end
-
-	function AdvDupe1Folder:UserGetModTime(Browser, Node)
-		return 0
-	end
-
-	function AdvDupe1Folder:UserGetSize(Browser, Node)
-		return 0
-	end
-
-	IRootFolder(AdvDupe1Folder) -- validation
-end
-
-do
-	AdvDupe2Folder = {
-		-- Key-weak LUT's for size/modtimes.
-		-- They're key-weak so if a node gets deleted it isn't hung up by GC thinking
-		-- we care about the reference still
-		SizeCache = setmetatable({}, {__mode = 'k'}),
-		TimeCache = setmetatable({}, {__mode = 'k'})
-	}
-	function AdvDupe2Folder:GetFolderName() return "Advanced Duplicator 2" end
-	function AdvDupe2Folder:Init(Browser, Node)
-		Node:LoadDataFolder("advdupe2/")
-	end
-
-	function AdvDupe2Folder:UserLoad(Browser, Node)
-		AdvDupe2.UploadFile(GetNodeDataPath(Node), AdvDupe2.AREA_ADVDUPE2)
-	end
-
-	function AdvDupe2Folder:UserPreview(Browser, Node)
-		OpenPreview(Node, AdvDupe2.AREA_ADVDUPE2)
-	end
-
-	function AdvDupe2Folder:UserSave(Browser, Node, Filename, Description)
-		local DataPath = (Node.Path or "advdupe2") .. "/" .. Filename
-		AdvDupe2.SavePath = DataPath
-
-		-- This is kinda weird but it's the only way I've been able to reliably avoid deadlocks here
-		hook.Add("AdvDupe2_InitProgressBar", "AdvDupe2_BrowserDownloadPrompt", function(Txt)
-			hook.Remove("AdvDupe2_InitProgressBar", "AdvDupe2_BrowserDownloadPrompt")
-			if Txt ~= "Saving:" then return end
-
-			Browser:ShowSavePrompt()
-			hook.Add("AdvDupe2_RemoveProgressBar", "AdvDupe2_BrowserDownloadPrompt", function()
-				hook.Remove("AdvDupe2_RemoveProgressBar", "AdvDupe2_BrowserDownloadPrompt")
-				Browser:HideSavePrompt()
-			end)
-		end)
-		-- Enqueue handler
-		Browser:AwaitingFile(AdvDupe2.GetFilename(DataPath), function(NewFilepath)
-			if not NewFilepath then
-				Browser:HideSavePrompt()
-				return
-			end
-			Node:Expand()
-			local NewFilename = string.GetFileFromFilename(NewFilepath)
-			local NewNode = Node:AddFile(NewFilename)
-			SetupDataFile(NewNode, NewFilepath, NewFilename)
-			Browser:HideSavePrompt()
-		end)
-
-		if game.SinglePlayer() then
-			RunConsoleCommand("AdvDupe2_SaveFile", Filename, Description, GetNodePath(Node))
-		else
-			RunConsoleCommand("AdvDupe2_SaveFile", Filename)
-		end
-	end
-
-	function AdvDupe2Folder:UserRename(Browser, Node, RenameTo)
-		local NodePath = "advdupe2/" .. GetNodeDataPath(Node) .. ".txt"
-		local NewNodePath = string.GetPathFromFilename(NodePath) .. RenameTo .. ".txt"
-		if file.Rename(NodePath, NewNodePath) then
-			SetupDataFile(Node, NewNodePath, RenameTo .. ".txt")
+		if file.Rename(Node.Path, NewPath) then
+			Node:SetDataPath(NewPath)
 			Node.ParentNode:MarkSortDirty()
 			Browser:ScrollTo(Node)
 			return true
@@ -817,7 +711,7 @@ do
 		return false
 	end
 
-	function AdvDupe2Folder:UserMenu(Browser, Node, Menu)
+	function DataFolderRoot:UserMenu(Browser, Node, Menu)
 		if Node:IsFile() then
 			Menu:AddOption("Open",    function() self:UserLoad(Browser, Node)  end, "icon16/page_go.png")
 			Menu:AddOption("Preview", function() self:UserPreview(Browser, Node) end, "icon16/information.png")
@@ -833,38 +727,43 @@ do
 		end
 	end
 
-	function AdvDupe2Folder:UserDelete(Browser, Node)
-		local NodePath = "advdupe2/" .. GetNodeDataPath(Node) .. ".txt"
-		local Success = file.Delete(NodePath)
+	function DataFolderRoot:UserDelete(Browser, Node)
+		if Node:IsRoot() then return false end
+
+		if Node:IsFolder() then
+			DeleteDataFolder(Node.Path)
+		else
+			file.Delete(Node.Path)
+		end
+
+		local Success = not file.Exists(Node.Path, "DATA")
 		if Success then
-			Node:Remove(Node)
+			Node:Remove()
 		end
 		return Success
 	end
 
-	function AdvDupe2Folder:UserMakeFolder(Browser, Node, Foldername)
-		local DataPath = (Node.Path or "advdupe2") .. "/" .. Foldername
+	function DataFolderRoot:UserMakeFolder(Browser, Node, Foldername)
+		local DataPath = Node.Path .. "/" .. Foldername
 
 		file.CreateDir(DataPath)
 
-		local NewNode = Node:AddFolder(Foldername)
-		SetupDataSubfolder(NewNode, DataPath, Foldername)
+		local NewNode = Node:AddDataFolder(DataPath)
 		Node:Expand()
 		NewNode:Expand()
 		Browser:ScrollTo(NewNode)
 	end
 
-	function AdvDupe2Folder:UserGetModTime(Browser, Node)
-		if not Node.Path then return end
-
+	function DataFolderRoot:UserGetModTime(Browser, Node)
 		local Time = self.TimeCache[Node]
 		if Time then return Time end
 
 		Time = file.Time(Node.Path, "DATA")
 		self.TimeCache[Node] = Time
+		return Time
 	end
 
-	function AdvDupe2Folder:UserGetSize(Browser, Node)
+	function DataFolderRoot:UserGetSize(Browser, Node)
 		if Node:IsFolder() then return -1 end
 
 		local Size = self.SizeCache[Node]
@@ -872,9 +771,8 @@ do
 
 		Size = file.Size(Node.Path, "DATA")
 		self.SizeCache[Node] = Size
+		return Size
 	end
-
-	IRootFolder(AdvDupe2Folder) -- validation
 end
 
 -- This is the base browser panel. Most VGUI interactions happen here
@@ -898,6 +796,7 @@ function BROWSERTREE:Init()
 
 	-- Implement NODE
 	NODE.InjectIntoBrowser(self, self:GetParent())
+	self.KeepOrder         = true
 	self.SortDirty         = true
 	self.ExpandedNodeArray = {}
 
@@ -1648,10 +1547,17 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 	end
 end
 
-function BROWSER:StartSave(Node)
-	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
+function BROWSER:GetPlaceholderText(Node, Field, Default)
+	return self:GetRootImpl(Node):GetPlaceholderText(Field) or Default
+end
 
-	SharedFileFolderLogic(self, Node, true, "Dupe name", "Dupe description", "disk", function(_, RootImpl, _, FileName, Desc)
+function BROWSER:StartSave(Node)
+	if not Node:IsFolder() then ErrorNoHaltWithStack(FileBrowserPrefix .. ": Attempted to call StartSave on a non-folder. Operation canceled.") return false end
+
+	local NamePlaceholder = self:GetPlaceholderText(Node, "SaveName", "File name")
+	local DescPlaceholder = self:GetPlaceholderText(Node, "SaveDescription", "Description")
+
+	SharedFileFolderLogic(self, Node, true, NamePlaceholder, DescPlaceholder, "disk", function(_, RootImpl, _, FileName, Desc)
 		RootImpl:UserSave(self, Node, FileName, Desc)
 		self.LastFileName = FileName
 		self.LastFileDesc = Desc
@@ -1660,7 +1566,7 @@ end
 
 local LastSearch = ""
 function BROWSER:StartSearch(Node)
-	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSearch on a non-folder. Operation canceled.") return false end
+	if not Node:IsFolder() then ErrorNoHaltWithStack(FileBrowserPrefix .. ": Attempted to call StartSearch on a non-folder. Operation canceled.") return false end
 
 	self.TreeView:StartSearch(Node, LastSearch)
 
@@ -1712,9 +1618,11 @@ function BROWSER:StartSearch(Node)
 end
 
 function BROWSER:StartFolder(Node)
-	if not Node:IsFolder() then ErrorNoHaltWithStack("AdvDupe2: Attempted to call StartSave on a non-folder. Operation canceled.") return false end
+	if not Node:IsFolder() then ErrorNoHaltWithStack(FileBrowserPrefix .. ": Attempted to call StartFolder on a non-folder. Operation canceled.") return false end
 
-	SharedFileFolderLogic(self, Node, false, "Dupe name", "Dupe description", "folder_add", function(_, RootImpl, _, FileName, Desc)
+	local NamePlaceholder = self:GetPlaceholderText(Node, "FolderName", "Folder name")
+
+	SharedFileFolderLogic(self, Node, false, NamePlaceholder, nil, "folder_add", function(_, RootImpl, _, FileName, Desc)
 		RootImpl:UserMakeFolder(self, Node, FileName, Desc)
 	end)
 end
@@ -1802,7 +1710,7 @@ function BROWSER:DecrementUserPromptStackPtr()
 	if not StackPtr then StackPtr = 0 self.UserPromptStackPtr = StackPtr end
 
 	StackPtr = StackPtr - 1
-	if StackPtr < 0 then ErrorNoHaltWithStack("AdvDupe2: User prompt stack underflow???") StackPtr = 0 end
+	if StackPtr < 0 then ErrorNoHaltWithStack(FileBrowserPrefix .. ": User prompt stack underflow???") StackPtr = 0 end
 	self.UserPromptStackPtr = StackPtr
 
 	return StackPtr + 1 -- +1 because we want to remove what was previously at that stack pointer
@@ -1979,7 +1887,7 @@ function BROWSER:Think()
 	self.TreeView:SetMouseInputEnabled(CanInput)
 end
 
-derma.DefineControl(LowercaseFileBrowserPrefix .. "_browser_panel", "AD2 File Browser", BROWSER, "Panel")
+derma.DefineControl(LowercaseFileBrowserPrefix .. "_browser_panel", FileBrowserPrefix .. " File Browser", BROWSER, "Panel")
 
 local PANEL = {}
 AccessorFunc(PANEL, "m_bBackground", "PaintBackground", FORCE_BOOL)
@@ -2042,9 +1950,6 @@ local function UpdateClientFiles(Browser)
 	Browser.TreeView:Clear()
 	Browser.TreeView:Expand()
 
-	Browser:AddRootFolder(AdvDupe1Folder)
-	Browser:AddRootFolder(AdvDupe2Folder)
-
 	hook.Run(FileBrowserPrefix .. "_PostMenuFolders", Browser)
 end
 
@@ -2068,7 +1973,7 @@ function PANEL:AddRightsideDivider()
 	self.RightsideButtons[#self.RightsideButtons + 1] = Panel
 end
 
-function PANEL:AddLeftsideButton(Icon, Tooltip, Action)
+function PANEL:AddLeftsideButton(Icon, Tooltip, Action, Index)
 	self.LeftsideButtons = self.LeftsideButtons or {}
 
 	local Button = self:Add "DImageButton"
@@ -2077,13 +1982,15 @@ function PANEL:AddLeftsideButton(Icon, Tooltip, Action)
 	Button:SetTooltip(Tooltip)
 	Button:SetTooltipDelay(0)
 	Button.DoClick = Action
-	
-	self.LeftsideButtons[#self.LeftsideButtons + 1] = Button
-	
+
+	table.insert(self.LeftsideButtons, Index or #self.LeftsideButtons + 1, Button)
+	self.LastX = nil
+	self:InvalidateLayout()
+
 	return Button
 end
 
-function PANEL:AddRightsideButton(Icon, Tooltip, Action)
+function PANEL:AddRightsideButton(Icon, Tooltip, Action, Index)
 	self.RightsideButtons = self.RightsideButtons or {}
 
 	local Button = self:Add "DImageButton"
@@ -2093,7 +2000,9 @@ function PANEL:AddRightsideButton(Icon, Tooltip, Action)
 	Button:SetTooltipDelay(0)
 	Button.DoClick = Action
 
-	self.RightsideButtons[#self.RightsideButtons + 1] = Button
+	table.insert(self.RightsideButtons, Index or #self.RightsideButtons + 1, Button)
+	self.LastX = nil
+	self:InvalidateLayout()
 
 	return Button
 end
@@ -2102,7 +2011,6 @@ local COLOR_SELECTED = color_white
 local COLOR_UNSELECTED = Color(143, 143, 143, 143)
 
 function PANEL:Init()
-	AdvDupe2.FileBrowser = self
 	self.Expanded = false
 	self.Expanding = false
 	self.LastX = 0
@@ -2154,22 +2062,10 @@ function PANEL:Init()
 		self.Settings:SetImage("icon16/cog.png")
 		UpdateClientFiles(self.Browser)
 	end)
-	self.Help    = self:AddRightsideButton("help", "Help Section", function(btn)
-		local Menu = DermaMenu()
-		Menu:AddOption("Bug Reporting", function()
-			gui.OpenURL("https://github.com/wiremod/advdupe2/issues")
-		end)
-		Menu:AddOption("Controls", function()
-			gui.OpenURL("https://github.com/wiremod/advdupe2/wiki/Controls")
-		end)
-		Menu:AddOption("Commands", function()
-			gui.OpenURL(
-				"https://github.com/wiremod/advdupe2/wiki/Server-settings")
-		end)
-		Menu:Open()
-	end)
 	self:AddRightsideDivider()
 	self.Settings = self:AddRightsideButton("cog", "Settings", function() self:OpenSettings() end)
+
+	hook.Run(FileBrowserPrefix .. "_BrowserCreated", self)
 end
 
 function PANEL:OpenSettings()
@@ -2289,14 +2185,6 @@ function PANEL:OpenSettings()
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_toexpander", "Left -> Expander Padding (pixels)", 0, 256)
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_expandertoicon", "Expander -> Icon Padding (pixels)", 0, 256)
 	CreateConvarSlider(LowercaseFileBrowserPrefix .. "_menu_nodepadding_icontotext", "Icon -> Text Padding (pixels)", 0, 256)
-end
-
-function PANEL:GetFullPath(node)
-	return GetFullPath(node)
-end
-
-function PANEL:GetNodePath(node)
-	return GetNodePath(node)
 end
 
 vgui.Register(LowercaseFileBrowserPrefix .. "_browser", PANEL, "Panel")
