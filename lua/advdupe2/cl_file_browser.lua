@@ -50,6 +50,11 @@ function AdvDupe2Root:Init(Browser, Node)
 	Node:Expand()
 end
 
+function AdvDupe2Root:CanDeleteNode(Node)
+	if Node:IsFolder() and string.sub(Node.Text, 1, 1) == "-" then return false end
+	return DataFolderRoot.CanDeleteNode(self, Node)
+end
+
 function AdvDupe2Root:GetPlaceholderText(Field)
 	if Field == "SaveName" then return "Dupe name" end
 	if Field == "SaveDescription" then return "Dupe description" end

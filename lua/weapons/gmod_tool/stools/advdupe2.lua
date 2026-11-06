@@ -1548,7 +1548,7 @@ if(CLIENT) then
 
 				RunConsoleCommand("AdvDupe2_SetStage")
 				hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
-			end)
+			end, "[^%w_ ]")
 		end
 
 		btn = vgui.Create("DButton", pnl)

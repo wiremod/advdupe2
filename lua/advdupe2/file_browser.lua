@@ -401,8 +401,9 @@ do
 	end
 
 	function NODE:SetDataPath(Path)
+		local Name   = string.GetFileFromFilename(Path)
 		self.Path    = Path
-		self.Text    = string.GetFileFromFilename(Path)
+		self.Text    = self:IsFile() and string.StripExtension(Name) or Name
 		self.Time    = nil
 		self.TimeStr = nil
 	end
@@ -510,6 +511,7 @@ do
 	IRootFolder.Init             = function(Impl, Browser, Node) end
 	IRootFolder.GetFolderName    = function(Impl) end
 	IRootFolder.GetPlaceholderText = function(Impl, Field) end
+	IRootFolder.GetNameFilter    = function(Impl) end
 	-- These define node operations
 	-- These are RAW operations, as in the underlying Browser might do some prompts first
 	-- But for example, calling IRootFolder:UserDelete() is expected to actually delete the node
@@ -674,8 +676,9 @@ do
 		if BasePath == nil then return error("Cannot create a data folder root without a base path") end
 
 		return setmetatable({
-			Name      = Name,
-			BasePath  = BasePath,
+			Name       = Name,
+			BasePath   = BasePath,
+			NameFilter = "[^%w_ ]",
 			-- Key-weak LUT's for size/modtimes.
 			-- They're key-weak so if a node gets deleted it isn't hung up by GC thinking
 			-- we care about the reference still
@@ -706,6 +709,11 @@ do
 
 	function DataFolderRoot:GetFolderName() return self.Name end
 	function DataFolderRoot:GetPlaceholderText(Field) end
+	function DataFolderRoot:GetNameFilter() return self.NameFilter end
+
+	function DataFolderRoot:CanDeleteNode(Node)
+		return not Node:IsRoot()
+	end
 
 	function DataFolderRoot:Init(Browser, Node)
 		Node.Path = self.BasePath
@@ -718,18 +726,17 @@ do
 
 	function DataFolderRoot:UserRename(Browser, Node, RenameTo)
 		if not Node:IsFile() then return false end
+		if RenameTo == Node.Text then return true end
 
 		local Extension = string.GetExtensionFromFilename(Node.Path)
-		local NewPath   = string.GetPathFromFilename(Node.Path) .. RenameTo .. (Extension and ("." .. Extension) or "")
+		local NewPath   = GetFreeDataPath(string.GetPathFromFilename(Node.Path), RenameTo, Extension)
 
-		if file.Rename(Node.Path, NewPath) then
-			Node:SetDataPath(NewPath)
-			Node.ParentNode:MarkSortDirty()
-			Browser:ScrollTo(Node)
-			return true
-		end
+		if not NewPath or not file.Rename(Node.Path, NewPath) then return false end
 
-		return false
+		Node:SetDataPath(NewPath)
+		Node.ParentNode:MarkSortDirty()
+		Browser:ScrollTo(Node)
+		return true
 	end
 
 	function DataFolderRoot:UserMove(Browser, Node, TargetFolder)
@@ -755,20 +762,22 @@ do
 			Menu:AddSpacer()
 			Menu:AddOption("Rename...", function() Browser:StartRename(Node) end, "icon16/textfield_rename.png")
 			Menu:AddOption("Move...",   function() Browser:StartMove(Node)   end, "icon16/arrow_right.png")
-			Menu:AddOption("Delete",    function() Browser:StartDelete(Node) end, "icon16/bin_closed.png")
+			if self:CanDeleteNode(Node) then
+				Menu:AddOption("Delete", function() Browser:StartDelete(Node) end, "icon16/bin_closed.png")
+			end
 		else
 			Menu:AddOption("Save",       function() Browser:StartSave(Node)   end, "icon16/disk.png")
 			Menu:AddOption("New Folder", function() Browser:StartFolder(Node) end, "icon16/folder_add.png")
 			Menu:AddSpacer()
 			Menu:AddOption("Search",     function() Browser:StartSearch(Node) end, "icon16/magnifier.png")
-			if not Node:IsRoot() then
+			if self:CanDeleteNode(Node) then
 				Menu:AddOption("Delete", function() Browser:StartDelete(Node) end, "icon16/bin_closed.png")
 			end
 		end
 	end
 
 	function DataFolderRoot:UserDelete(Browser, Node)
-		if Node:IsRoot() then return false end
+		if not self:CanDeleteNode(Node) then return false end
 
 		if Node:IsFolder() then
 			DeleteDataFolder(Node.Path)
@@ -785,6 +794,7 @@ do
 
 	function DataFolderRoot:UserMakeFolder(Browser, Node, Foldername)
 		local DataPath = Node.Path .. "/" .. Foldername
+		if file.Exists(DataPath, "DATA") then return false, "Folder name already exists." end
 
 		file.CreateDir(DataPath)
 
@@ -792,6 +802,7 @@ do
 		Node:Expand()
 		NewNode:Expand()
 		Browser:ScrollTo(NewNode)
+		return true
 	end
 
 	function DataFolderRoot:UserGetModTime(Browser, Node)
@@ -925,7 +936,7 @@ local function SortNodesByName(A, B)
 	if not IsFileA and IsFileB then return true end
 	if IsFileA and not IsFileB then return false end
 
-	local NameA, NameB = GetNumericalFilename(string.StripExtension(A.Text)), GetNumericalFilename(string.StripExtension(B.Text))
+	local NameA, NameB = GetNumericalFilename(A.Text), GetNumericalFilename(B.Text)
 
 	for I = 1, math.max(#NameA, #NameB) do
 		local AC, BC = NameA[I], NameB[I]
@@ -1435,7 +1446,59 @@ function BROWSER:Notify(Message, Level, Time)
 	timer.Simple(Time, function() if IsValid(Notif.Panel) then Notif:Close() end end)
 end
 
-local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, DescTextPlaceholder, Icon, Completed, LastName, LastDesc, SkipToDesc, BlockName, PickFolder)
+local History = {}
+
+local function AddHistory(Text)
+	Text = string.lower(Text or "")
+	if Text == "" or table.HasValue(History, Text) then return end
+
+	History[#History + 1] = Text
+	table.sort(History)
+end
+
+local function SetupNameEntry(Entry, NameFilter)
+	local MenuKey      = string.lower(input.LookupBinding("menu") or "q")
+	local PreviousText = Entry:GetText()
+	local FirstChange  = true
+
+	function Entry:OnChange()
+		local Text = self:GetText()
+
+		if FirstChange then
+			FirstChange = false
+			if string.lower(Text) == MenuKey then
+				self:SetText(PreviousText)
+				self:SelectAllText()
+				return
+			end
+		end
+
+		if NameFilter then
+			local Filtered, Count = string.gsub(Text, NameFilter, "")
+			if Count > 0 then
+				self:SetText(Filtered)
+				self:SetCaretPos(#Filtered)
+			end
+		end
+	end
+
+	function Entry:GetAutoComplete(Text)
+		if Text == "" then return end
+		Text = string.lower(Text)
+
+		local Options = {}
+		for _, Name in ipairs(History) do
+			if Name ~= Text and string.sub(Name, 1, #Text) == Text then
+				Options[#Options + 1] = Name
+				if #Options >= 8 then break end
+			end
+		end
+
+		return Options
+	end
+end
+
+local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, DescTextPlaceholder, Icon, Completed, LastName, LastDesc, NameFilter, PickFolder)
 	local Prompt = self:PushUserPrompt()
 	Prompt:SetBlocking(not PickFolder)
 	Prompt:SetDock(BOTTOM)
@@ -1461,7 +1524,9 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 		end
 
 		local RootImpl = self:GetRootImpl(Target)
-		Completed(self, RootImpl, Target, FileName, Desc and Desc:GetText() or "")
+		if Completed(self, RootImpl, Target, FileName, Desc and Desc:GetText() or "") == false then return end
+
+		AddHistory(FileName)
 		Prompt:Close()
 	end
 
@@ -1475,7 +1540,6 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 			Name:SetPlaceholderText(NameTextPlaceholder)
 			Name:SetZPos(1)
 			if LastName then Name:SetText(LastName) end
-			if BlockName then Name:SetEnabled(false) end
 
 		local DescParent = Prompt:Add("Panel")
 			DescParent:Dock(TOP)
@@ -1531,6 +1595,8 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 			Name:SetZPos(1)
 			if LastName then Name:SetText(LastName) end
 	end
+
+	SetupNameEntry(Name, NameFilter)
 
 	function Name:OnEnter()
 		self:KillFocus()
@@ -1589,13 +1655,8 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 		Prompt:Close()
 	end
 
-	if SkipToDesc then
-		Desc:RequestFocus()
-		Desc:OnMousePressed()
-	else
-		Name:RequestFocus()
-		Name:OnMousePressed()
-	end
+	Name:RequestFocus()
+	Name:OnMousePressed()
 end
 
 function BROWSER:GetPlaceholderText(Node, Field, Default)
@@ -1607,12 +1668,13 @@ function BROWSER:StartSave(Node)
 
 	local NamePlaceholder = self:GetPlaceholderText(Node, "SaveName", "File name")
 	local DescPlaceholder = self:GetPlaceholderText(Node, "SaveDescription", "Description")
+	local NameFilter      = self:GetRootImpl(Node):GetNameFilter()
 
 	SharedFileFolderLogic(self, Node, true, NamePlaceholder, DescPlaceholder, "disk", function(_, RootImpl, _, FileName, Desc)
 		RootImpl:UserSave(self, Node, FileName, Desc)
 		self.LastFileName = FileName
 		self.LastFileDesc = Desc
-	end, self.LastFileName, self.LastFileDesc)
+	end, self.LastFileName, self.LastFileDesc, NameFilter)
 end
 
 function BROWSER:IsSearching()
@@ -1692,9 +1754,12 @@ function BROWSER:StartSearch(Node)
 		Search:SetPlaceholderText("Search...")
 		Search:SetText(LastSearch)
 
+	SetupNameEntry(Search)
+
 	local function RunSearch()
 		local Query = Search:GetText()
 		LastSearch = Query
+		AddHistory(Query)
 
 		Prompt:Close()
 		self.SearchPrompt = nil
@@ -1726,18 +1791,28 @@ function BROWSER:StartFolder(Node)
 	if not Node:IsFolder() then ErrorNoHaltWithStack(FileBrowserPrefix .. ": Attempted to call StartFolder on a non-folder. Operation canceled.") return false end
 
 	local NamePlaceholder = self:GetPlaceholderText(Node, "FolderName", "Folder name")
+	local NameFilter      = self:GetRootImpl(Node):GetNameFilter()
 
-	SharedFileFolderLogic(self, Node, false, NamePlaceholder, nil, "folder_add", function(_, RootImpl, _, FileName, Desc)
-		RootImpl:UserMakeFolder(self, Node, FileName, Desc)
-	end)
+	SharedFileFolderLogic(self, Node, false, NamePlaceholder, nil, "folder_add", function(_, RootImpl, _, FileName)
+		local Success, Reason = RootImpl:UserMakeFolder(self, Node, FileName)
+		if Success == false then
+			self:Notify(Reason or "Could not create the folder.", NOTIFY_ERROR, 3)
+			return false
+		end
+	end, nil, nil, NameFilter)
 end
 
 function BROWSER:StartRename(Node)
-	SharedFileFolderLogic(self, Node, true, "", "New filename", "page_go", function(_, RootImpl, _, FileName, Desc)
-		if not RootImpl:UserRename(self, Node, Desc) then
+	local NameFilter = self:GetRootImpl(Node):GetNameFilter()
+
+	SharedFileFolderLogic(self, Node, false, "New name", nil, "page_edit", function(_, RootImpl, _, FileName)
+		if not RootImpl:UserRename(self, Node, FileName) then
 			self:Notify("Rename failed.", NOTIFY_ERROR, 5)
+			return false
 		end
-	end, string.GetFileFromFilename(Node.Path), nil, true, true)
+
+		self:Notify("File renamed to " .. Node.Text .. ".", NOTIFY_GENERIC, 3)
+	end, Node.Text, nil, NameFilter)
 end
 
 function BROWSER:StartDelete(Node)
@@ -1787,10 +1862,10 @@ function BROWSER:StartDelete(Node)
 	end
 end
 
-function BROWSER:StartPickFolder(NamePlaceholder, DescPlaceholder, Icon, Callback)
+function BROWSER:StartPickFolder(NamePlaceholder, DescPlaceholder, Icon, Callback, NameFilter)
 	SharedFileFolderLogic(self, nil, true, NamePlaceholder, DescPlaceholder, Icon, function(_, _, Folder, FileName, Desc)
 		Callback(Folder, FileName, Desc)
-	end, nil, nil, nil, nil, true)
+	end, nil, nil, NameFilter, true)
 end
 
 function BROWSER:StartMove(Node)
