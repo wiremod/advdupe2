@@ -113,8 +113,8 @@ function AdvDupe1Root:UserMenu(Browser, Node, Menu)
 end
 
 hook.Add("AdvDupe2_PostMenuFolders", "AdvDupe2_RootFolders", function(Browser)
-	Browser:AddRootFolder(AdvDupe2Root)
 	Browser:AddRootFolder(AdvDupe1Root)
+	Browser:AddRootFolder(AdvDupe2Root)
 end)
 
 hook.Add("AdvDupe2_BrowserCreated", "AdvDupe2_HelpButton", function(Panel)

@@ -55,27 +55,17 @@ function AdvDupe2.ReceiveFile(data, autoSave)
 		end
 	end
 
-	local filename = string.StripExtension(string.GetFileFromFilename( path ))
+	local FileBrowser = AdvDupe2.FileBrowser
 
-	local Browser = AdvDupe2.FileBrowser.Browser
-
-	if autoSave then
-		if IsValid(AdvDupe2.FileBrowser.AutoSaveNode) then
-			local add = true
-			for i = 1, #AdvDupe2.FileBrowser.AutoSaveNode.Files do
-				if filename == AdvDupe2.FileBrowser.AutoSaveNode.Files[i].Label:GetText() then
-					add = false
-					break
-				end
+	if IsValid(FileBrowser) then
+		if autoSave then
+			local AutoSaveNode = FileBrowser.AutoSaveNode
+			if AutoSaveNode and not AutoSaveNode:FindFileByPath(path) then
+				AutoSaveNode:AddDataFile(path)
 			end
-			if add then
-				error "Not implemented yet"
-				-- AutoSaveNode:AddFile(filename)
-				-- Browser.pnlCanvas:Sort(AdvDupe2.FileBrowser.AutoSaveNode)
-			end
+		else
+			FileBrowser.Browser:IncomingFile(path, path)
 		end
-	else
-		Browser:IncomingFile(path, path)
 	end
 
 	if not errored then

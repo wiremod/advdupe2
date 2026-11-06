@@ -509,6 +509,7 @@ do
 	IRootFolder.UserPreview      = function(Impl, Browser, Node) end
 	IRootFolder.UserSave         = function(Impl, Browser, Node, Filename, Description) end
 	IRootFolder.UserRename       = function(Impl, Browser, Node, RenameTo) end
+	IRootFolder.UserMove         = function(Impl, Browser, Node, TargetFolder) end
 	IRootFolder.UserMenu         = function(Impl, Browser, Node, Menu) end
 	IRootFolder.UserDelete       = function(Impl, Browser, Node) end
 	IRootFolder.UserMakeFolder   = function(Impl, Browser, Node, Foldername) end
@@ -683,6 +684,17 @@ do
 		file.Delete(Path)
 	end
 
+	local function GetFreeDataPath(Directory, Name, Extension)
+		local Suffix = Extension and ("." .. Extension) or ""
+		local Path   = Directory .. Name .. Suffix
+		if not file.Exists(Path, "DATA") then return Path end
+
+		for I = 1, 256 do
+			Path = string.format("%s%s_%03d%s", Directory, Name, I, Suffix)
+			if not file.Exists(Path, "DATA") then return Path end
+		end
+	end
+
 	function DataFolderRoot:GetFolderName() return self.Name end
 	function DataFolderRoot:GetPlaceholderText(Field) end
 
@@ -709,6 +721,22 @@ do
 		end
 
 		return false
+	end
+
+	function DataFolderRoot:UserMove(Browser, Node, TargetFolder)
+		if not Node:IsFile() or not TargetFolder:IsFolder() then return false end
+
+		local Extension = string.GetExtensionFromFilename(Node.Path)
+		local Name      = string.StripExtension(string.GetFileFromFilename(Node.Path))
+		local NewPath   = GetFreeDataPath(TargetFolder.Path .. "/", Name, Extension)
+
+		if not NewPath or not file.Rename(Node.Path, NewPath) then return false end
+
+		Node:Remove()
+		local NewNode = TargetFolder:AddDataFile(NewPath)
+		TargetFolder:Expand()
+		Browser:ScrollTo(NewNode)
+		return true
 	end
 
 	function DataFolderRoot:UserMenu(Browser, Node, Menu)
@@ -1362,6 +1390,8 @@ function BROWSER:Notify(Message, Level, Time)
 	Level = Level or NOTIFY_GENERIC
 	Time  = Time or 5
 
+	print("[" .. FileBrowserPrefix .. "] " .. tostring(Message))
+
 	local Notif = self:PushUserPrompt()
 	Notif:SetDock(TOP)
 
@@ -1393,9 +1423,9 @@ function BROWSER:Notify(Message, Level, Time)
 	timer.Simple(Time, function() if IsValid(Notif.Panel) then Notif:Close() end end)
 end
 
-local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, DescTextPlaceholder, Icon, Completed, LastName, LastDesc, SkipToDesc, BlockName)
+local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, DescTextPlaceholder, Icon, Completed, LastName, LastDesc, SkipToDesc, BlockName, PickFolder)
 	local Prompt = self:PushUserPrompt()
-	Prompt:SetBlocking(true)
+	Prompt:SetBlocking(not PickFolder)
 	Prompt:SetDock(BOTTOM)
 	Prompt.Panel:DockPadding(4,4,4,4)
 
@@ -1409,8 +1439,17 @@ local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, De
 			return
 		end
 
-		local RootImpl = self:GetRootImpl(Node)
-		Completed(self, RootImpl, Node, FileName, Desc and Desc:GetText() or "")
+		local Target = Node
+		if PickFolder then
+			Target = self.TreeView:GetSelectedItem()
+			if not Target or not Target:IsFolder() then
+				self:Notify("You must select a folder.", NOTIFY_ERROR, 2)
+				return
+			end
+		end
+
+		local RootImpl = self:GetRootImpl(Target)
+		Completed(self, RootImpl, Target, FileName, Desc and Desc:GetText() or "")
 		Prompt:Close()
 	end
 
@@ -1674,6 +1713,75 @@ function BROWSER:StartDelete(Node)
 		else
 			self:Notify("Delete failed.", NOTIFY_ERROR, 5)
 		end
+		Prompt:Close()
+	end
+
+	function Cancel:DoClick()
+		Prompt:Close()
+	end
+end
+
+function BROWSER:StartPickFolder(NamePlaceholder, DescPlaceholder, Icon, Callback)
+	SharedFileFolderLogic(self, nil, true, NamePlaceholder, DescPlaceholder, Icon, function(_, _, Folder, FileName, Desc)
+		Callback(Folder, FileName, Desc)
+	end, nil, nil, nil, nil, true)
+end
+
+function BROWSER:StartMove(Node)
+	if not Node:IsFile() then ErrorNoHaltWithStack(FileBrowserPrefix .. ": Attempted to call StartMove on a non-file. Operation canceled.") return false end
+
+	local Prompt = self:PushUserPrompt()
+	Prompt:SetDock(BOTTOM)
+	Prompt.Panel:DockPadding(4,4,4,4)
+
+	local DescParent = Prompt:Add("Panel")
+		DescParent:Dock(TOP)
+		DescParent:DockMargin(0, 4, 0, 0)
+		DescParent:SetSize(20, 32)
+		DescParent:SetPaintBackgroundEnabled(false)
+		DescParent:SetZPos(10000)
+
+	local Cancel = DescParent:Add("DImageButton")
+		Cancel:Dock(RIGHT)
+		Cancel:SetSize(20)
+		Cancel:SetStretchToFit(false)
+		Cancel:SetImage("icon16/cancel.png")
+
+	local Move = DescParent:Add("DImageButton")
+		Move:Dock(RIGHT)
+		Move:SetSize(24)
+		Move:SetStretchToFit(false)
+		Move:SetImage("icon16/page_paste.png")
+
+	local Name = DescParent:Add("DLabel")
+		Name:Dock(FILL)
+		Name:SetDark(true)
+		Name:SetText("Select the folder you want to move\n" .. Node.Text .. " to.")
+		Name:SetAutoStretchVertical(true)
+		Name:SetZPos(1)
+
+	function Move.DoClick()
+		local Target = self.TreeView:GetSelectedItem()
+		if not Target or Target == Node then
+			self:Notify("Select a folder to move the file to.", NOTIFY_ERROR, 3)
+			return
+		end
+
+		if not Target:IsFolder() then
+			self:Notify("You must select a folder as a destination.", NOTIFY_ERROR, 3)
+			return
+		end
+
+		if Target.Root ~= Node.Root or Target == Node.ParentNode then
+			self:Notify("Cannot move files between these directories.", NOTIFY_ERROR, 3)
+			return
+		end
+
+		if not self:GetRootImpl(Node):UserMove(self, Node, Target) then
+			self:Notify("Move failed.", NOTIFY_ERROR, 5)
+			return
+		end
+
 		Prompt:Close()
 	end
 

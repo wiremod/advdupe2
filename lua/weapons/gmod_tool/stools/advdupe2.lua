@@ -1537,55 +1537,18 @@ if(CLIENT) then
 			local ScrollBar = parent.VBar
 			ScrollBar:AnimateTo(0, 1, 0, 0.2)
 
-			FileBrowser.Submit:SetMaterial("icon16/disk.png")
-			FileBrowser.Submit:SetTooltip("Directory for Area Auto Save")
-			if(FileBrowser.FileName:GetValue()=="Folder_Name...") then
-				FileBrowser.FileName:SetValue("File_Name...")
-			end
-			FileBrowser.Desc:SetVisible(true)
-			FileBrowser.Info:SetVisible(false)
-			FileBrowser.FileName:SetVisible(true)
-			FileBrowser.FileName:SelectAllOnFocus(true)
-			FileBrowser.FileName:OnMousePressed()
-			FileBrowser.FileName:RequestFocus()
-			FileBrowser.Expanding=true
-			FileBrowser:Slide(true)
-			FileBrowser.Submit.DoClick = function()
-				local name = FileBrowser.FileName:GetValue()
-				if(name=="" or name=="File_Name...") then
-					AdvDupe2.Notify("Name field is blank.", NOTIFY_ERROR)
-					FileBrowser.FileName:SelectAllOnFocus(true)
-					FileBrowser.FileName:OnGetFocus()
-					FileBrowser.FileName:RequestFocus()
-					return
-				end
-				local desc = FileBrowser.Desc:GetValue()
-				if(desc=="Description...") then desc="" end
-
-				if(not IsValid(FileBrowser.Browser.pnlCanvas.m_pSelectedItem) or FileBrowser.Browser.pnlCanvas.m_pSelectedItem.Derma.ClassName~="advdupe2_browser_folder") then
-					AdvDupe2.Notify("Folder to save Area Auto Save not selected.", NOTIFY_ERROR)
-					return
-				end
-
-				FileBrowser.AutoSaveNode = FileBrowser.Browser.pnlCanvas.m_pSelectedItem
-				txtbox:SetValue(FileBrowser:GetFullPath(FileBrowser.Browser.pnlCanvas.m_pSelectedItem)..name)
+			FileBrowser.Browser:StartPickFolder("Auto save name", "Auto save description", "disk", function(Folder, name, desc)
+				FileBrowser.AutoSaveNode = Folder
+				txtbox:SetValue(FileBrowser:GetFullPath(Folder)..name)
 				AdvDupe2.AutoSavePath = txtbox:GetValue()
 				txtbox:SetTooltip(txtbox:GetValue())
 				AdvDupe2.AutoSaveDesc = desc
 
-				FileBrowser:Slide(false)
 				ScrollBar:AnimateTo(ScrollBar.CanvasSize, 1, 0, 0.2)
 
 				RunConsoleCommand("AdvDupe2_SetStage")
 				hook.Add("HUDPaint", "AdvDupe2_DrawSelectionBox", AdvDupe2.DrawSelectionBox)
-			end
-			FileBrowser.FileName.OnEnter = function()
-				FileBrowser.FileName:KillFocus()
-				FileBrowser.Desc:SelectAllOnFocus(true)
-				FileBrowser.Desc.OnMousePressed()
-				FileBrowser.Desc:RequestFocus()
-			end
-			FileBrowser.Desc.OnEnter = FileBrowser.Submit.DoClick
+			end)
 		end
 
 		btn = vgui.Create("DButton", pnl)
