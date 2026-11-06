@@ -424,6 +424,15 @@ do
 		return Node
 	end
 
+	function NODE:LoadAll()
+		if self.FirstObserved then
+			self:FirstObserved()
+			self.FirstObserved = nil
+		end
+
+		for _, Folder in ipairs(self.Folders) do Folder:LoadAll() end
+	end
+
 	function NODE:FindFileByPath(Path)
 		for _, File in ipairs(self.Files) do
 			if File.Path == Path then return File end
@@ -875,13 +884,18 @@ function BROWSERTREE:DoNodeRightClick(Node)
 		end
 	end
 
-	RootImpl:UserMenu(self.Browser, Node, Menu)
+	if self:IsSearching() then
+		Menu:AddOption("Open",    function() RootImpl:UserLoad(self.Browser, Node)    end, "icon16/page_go.png")
+		Menu:AddOption("Preview", function() RootImpl:UserPreview(self.Browser, Node) end, "icon16/information.png")
+	else
+		RootImpl:UserMenu(self.Browser, Node, Menu)
 
-	Menu:AddSpacer()
-	Menu:AddOption("Collapse Folder", function()
-		if Node.ParentNode ~= self then Node.ParentNode:CollapseRecursive() end
-	end, "icon16/arrow_in.png")
-	Menu:AddOption("Collapse Root", function() Node.Root:CollapseRecursive() end, "icon16/arrow_up.png")
+		Menu:AddSpacer()
+		Menu:AddOption("Collapse Folder", function()
+			if Node.ParentNode ~= self then Node.ParentNode:CollapseRecursive() end
+		end, "icon16/arrow_in.png")
+		Menu:AddOption("Collapse Root", function() Node.Root:CollapseRecursive() end, "icon16/arrow_up.png")
+	end
 
 	Menu:SetAlpha(0)
 	Menu:AlphaTo(255, 0.1, 0)
@@ -974,26 +988,21 @@ function BROWSERTREE:SortRecheck()
 
 	table.Empty(self.ExpandedNodeArray)
 	AscendingSwitch = self.Ascending
-	DoRecursiveVistesting(self.TargetNode and self.TargetNode or self, self.ExpandedNodeArray, nil, self:GetSortFunction())
+	local SortFunction = self:GetSortFunction()
+
+	if self.SearchResults then
+		table.sort(self.SearchResults, SortFunction)
+		for _, Node in ipairs(self.SearchResults) do
+			Node.Depth = 0
+			self.ExpandedNodeArray[#self.ExpandedNodeArray + 1] = Node
+		end
+	else
+		DoRecursiveVistesting(self, self.ExpandedNodeArray, nil, SortFunction)
+	end
 
 	-- This is how tall we are
 	local Tall = #self.ExpandedNodeArray * TallOfOneNode
 	self:SetTall(Tall)
-
-	if self.SearchQuery ~= nil and #self.SearchQuery > 0 then
-		self.SearchableNodes = {}
-		for _, Node in ipairs(self.ExpandedNodeArray) do
-			Node.SearchExcluded = string.find(Node.Text, self.SearchQuery) == nil
-			if not Node.SearchExcluded then
-				self.SearchableNodes[#self.SearchableNodes + 1] = Node
-			end
-		end
-	else
-		for _, Node in ipairs(self.ExpandedNodeArray) do
-			Node.SearchExcluded = nil
-		end
-		self.SearchableNodes = nil
-	end
 
 	self.SortDirty = false
 end
@@ -1017,51 +1026,47 @@ function BROWSERTREE:GetImmediateState()
 	return ImmediateState
 end
 
-function BROWSERTREE:StartSearch(TargetNode, LastSearch)
-	self.SearchQuery    = LastSearch
-	self.TargetNode     = TargetNode
-	self.LastSearchNode = nil
-	self.SortDirty = true
-	self.LastSearchIndex = 0
-
-	TargetNode:ExpandRecursive()
-end
-
-function BROWSERTREE:UpdateSearchQuery(Text)
-	self.SearchQuery = Text
-	if self.LastSearchNode ~= nil then self.LastSearchNode.SearchQueryHighlighted = nil end
-	self.LastSearchNode = nil
-	self.SortDirty = true
-	self.LastSearchIndex = 0
-	return Text
-end
-
-function BROWSERTREE:HighlightSearchNode(Node)
-	if self.LastSearchNode ~= nil then self.LastSearchNode.SearchQueryHighlighted = nil end
-	if Node ~= nil then Node.SearchQueryHighlighted = true end
-	self.LastSearchNode = Node
-end
-
-function BROWSERTREE:NextSearchNode()
-	if self.SearchQuery == nil then return end
-	if #self.SearchQuery == 0 then return end
-
-	self.LastSearchIndex = self.LastSearchIndex + 1
-	if self.LastSearchIndex > #self.SearchableNodes then
-		self.LastSearchIndex = 1
+local function CollectSearchResults(Node, Needle, Results)
+	for _, File in ipairs(Node.Files) do
+		if string.find(string.lower(File.Text), Needle, 1, true) then
+			Results[#Results + 1] = File
+		end
 	end
 
-	self:HighlightSearchNode(self.SearchableNodes[self.LastSearchIndex])
-	return self.LastSearchNode
+	for _, Folder in ipairs(Node.Folders) do
+		CollectSearchResults(Folder, Needle, Results)
+	end
+end
+
+function BROWSERTREE:IsSearching()
+	return self.SearchResults ~= nil
+end
+
+function BROWSERTREE:StartSearch(TargetNode, Query)
+	TargetNode:LoadAll()
+
+	local Results = {}
+	CollectSearchResults(TargetNode, string.lower(Query), Results)
+
+	if not self.SearchResults then
+		self.ScrollBeforeSearch = self.VBar:GetScroll()
+	end
+
+	self.SearchResults = Results
+	self.SortDirty     = true
+	self.VBar:SetScroll(0)
+
+	return #Results
 end
 
 function BROWSERTREE:EndSearch()
-	self.SearchQuery    = LastSearch
-	self.TargetNode     = TargetNode
-	if self.LastSearchNode ~= nil then self.LastSearchNode.SearchQueryHighlighted = nil end
-	self.LastSearchNode = nil
-	self.SortDirty = true
-	self.LastSearchIndex = 0
+	if not self.SearchResults then return end
+
+	self.SearchResults = nil
+	self.SortDirty     = true
+	self:SortRecheck()
+	self.VBar:SetScroll(self.ScrollBeforeSearch or 0)
+	self.ScrollBeforeSearch = nil
 end
 
 -- This function flushes in the immediate-mode state from C-funcs into Lua-land
@@ -1231,10 +1236,8 @@ function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 			local TextX, TextY        = GetTextPosition(NX, NY, NW, NH, Node.Depth)
 
 			-- Paint background
-			if IsDepressed or Node.SearchExcluded then
+			if IsDepressed then
 				SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
-			elseif Node.SearchQueryHighlighted then
-				SkinTex.Panels.Highlight(NX, NY, NW, NH, color_white)
 			elseif IsHovered then
 				SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
 			else
@@ -1612,57 +1615,111 @@ function BROWSER:StartSave(Node)
 	end, self.LastFileName, self.LastFileDesc)
 end
 
+function BROWSER:IsSearching()
+	return self.TreeView:IsSearching()
+end
+
+function BROWSER:EndSearch()
+	if self.SearchPrompt then
+		self.SearchPrompt:Close()
+		self.SearchPrompt = nil
+	end
+
+	self.TreeView:EndSearch()
+end
+
+local function CreatePromptRow(Prompt)
+	local Row = Prompt:Add("Panel")
+		Row:Dock(TOP)
+		Row:DockMargin(0, 4, 0, 0)
+		Row:SetSize(20, 20)
+		Row:SetPaintBackgroundEnabled(false)
+		Row:SetZPos(10000)
+
+	return Row
+end
+
+local function CreatePromptButton(Row, Icon, Size)
+	local Button = Row:Add("DImageButton")
+		Button:Dock(RIGHT)
+		Button:SetSize(Size or 20)
+		Button:SetStretchToFit(false)
+		Button:SetImage("icon16/" .. Icon .. ".png")
+
+	return Button
+end
+
+function BROWSER:ShowSearchResults(Count, Query)
+	local Prompt = self:PushUserPrompt()
+	Prompt:SetDock(BOTTOM)
+	Prompt.Panel:DockPadding(4,4,4,4)
+	self.SearchPrompt = Prompt
+
+	local Row = CreatePromptRow(Prompt)
+
+	local Return = CreatePromptButton(Row, "arrow_undo")
+		Return:SetTooltip("Return to Browser")
+
+	local Info = Row:Add("DLabel")
+		Info:Dock(FILL)
+		Info:SetDark(true)
+		Info:SetText(Count .. " files found searching for \"" .. Query .. "\"")
+
+	function Return.DoClick()
+		self:EndSearch()
+	end
+end
+
 local LastSearch = ""
 function BROWSER:StartSearch(Node)
 	if not Node:IsFolder() then ErrorNoHaltWithStack(FileBrowserPrefix .. ": Attempted to call StartSearch on a non-folder. Operation canceled.") return false end
 
-	self.TreeView:StartSearch(Node, LastSearch)
+	self:EndSearch()
 
 	local Prompt = self:PushUserPrompt()
 	Prompt:SetDock(BOTTOM)
 	Prompt.Panel:DockPadding(4,4,4,4)
+	self.SearchPrompt = Prompt
 
-	local Cancel = Prompt:Add("DImageButton")
-		Cancel:Dock(RIGHT)
-		Cancel:SetSize(20)
-		Cancel:SetStretchToFit(false)
-		Cancel:SetImage("icon16/cancel.png")
+	local Row    = CreatePromptRow(Prompt)
+	local Cancel = CreatePromptButton(Row, "cancel")
+	local Find   = CreatePromptButton(Row, "magnifier", 24)
+		Find:SetTooltip("Search Files")
 
-	local DescParent = Prompt:Add("Panel")
-		DescParent:Dock(TOP)
-		DescParent:DockMargin(0, 4, 0, 0)
-		DescParent:SetSize(20, 32)
-		DescParent:SetPaintBackgroundEnabled(false)
-		DescParent:SetZPos(10000)
-
-	local Search = DescParent:Add("DTextEntry")
+	local Search = Row:Add("DTextEntry")
 		Search:SetAllowNonAsciiCharacters(true)
-		Search:SetTabbingDisabled(false)
-		Search:Dock(TOP)
+		Search:Dock(FILL)
 		Search:SetPlaceholderText("Search...")
-		if LastSearch then Search:SetText(LastSearch) end
+		Search:SetText(LastSearch)
 
-	function Search.OnChange()
-		local value = Search:GetText()
-		LastSearch = self.TreeView:UpdateSearchQuery(value)
-	end
+	local function RunSearch()
+		local Query = Search:GetText()
+		LastSearch = Query
 
-	local _OnKeyCodeTyped = Search.OnKeyCodeTyped
-	function Search.OnKeyCodeTyped(dte, code)
-		if code ~= KEY_ENTER then return _OnKeyCodeTyped(dte, code) end
-		local Node = self.TreeView:NextSearchNode()
-		if Node then
-			self:ScrollTo(Node)
-		else
-			self:Notify("No search query!", NOTIFY_ERROR, 3)
-		end
-		return true
-	end
-
-	function Cancel.DoClick(_)
 		Prompt:Close()
-		self.TreeView:EndSearch()
+		self.SearchPrompt = nil
+		self:ShowSearchResults(self.TreeView:StartSearch(Node, Query), Query)
 	end
+
+	function Search:OnEnter()
+		RunSearch()
+	end
+
+	function Search:OnMousePressed()
+		self:OnGetFocus()
+		self:SelectAllOnFocus(true)
+	end
+
+	function Find.DoClick()
+		RunSearch()
+	end
+
+	function Cancel.DoClick()
+		self:EndSearch()
+	end
+
+	Search:RequestFocus()
+	Search:OnMousePressed()
 end
 
 function BROWSER:StartFolder(Node)
@@ -2064,6 +2121,7 @@ local function PanelSetSize(self, x, y)
 end
 
 local function UpdateClientFiles(Browser)
+	Browser:EndSearch()
 	Browser.TreeView:Clear()
 	Browser.TreeView:Expand()
 
@@ -2144,9 +2202,6 @@ function PANEL:Init()
 
 	self.SearchAll     = self:AddLeftsideButton("folder_magnify", "Search all root folders", function()
 		self.Browser:StartSearch(self.Browser.TreeView)
-		for _, Root in ipairs(self.Browser.TreeView.Folders) do
-			Root:Expand()
-		end
 	end)
 	do
 		self:AddLeftsideDivider()
