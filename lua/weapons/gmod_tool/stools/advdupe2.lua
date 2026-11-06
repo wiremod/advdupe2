@@ -1673,6 +1673,14 @@ if(CLIENT) then
 		tryToBuild()
 	end
 
+	concommand.Add("advdupe2_hardrefreshbrowser", function()
+		local CPanel = controlpanel.Get("advdupe2")
+		if not IsValid(CPanel) or CPanel:GetWide() <= 16 then return end
+
+		CPanel:Clear()
+		BuildCPanel(CPanel)
+	end, nil, "Hard refreshes the dupe browser (use if something really really broke)")
+
 	local StColor  = {r=130, g=25, b=40, a=255}
 	local NoColor  = {r=25, g=100, b=40, a=255}
 	local CurColor = {r=25, g=100, b=40, a=255}
