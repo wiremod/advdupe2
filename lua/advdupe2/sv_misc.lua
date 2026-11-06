@@ -79,15 +79,20 @@ local function SavePositions( Constraint )
 	end
 end
 
-local function monitorConstraint(name)
-	local oldFunc = constraint[name]
-	constraint[name] = function(...)
+local function replaceConstraintFunction(oldFunc)
+	return function(...)
 		local Constraint, b, c = oldFunc(...)
 		if Constraint and Constraint:IsValid() then
 			SavePositions(Constraint)
 		end
 		return Constraint, b, c
 	end
+end
+
+local function monitorConstraint(name)
+	local desc			= duplicator.ConstraintType[name]
+	desc.Func			= replaceConstraintFunction(desc.Func)
+	constraint[name]	= replaceConstraintFunction(constraint[name])
 end
 monitorConstraint("AdvBallsocket")
 monitorConstraint("Axis")
