@@ -33,6 +33,249 @@ local sub = string.sub
 local pcall = pcall
 local tostring = tostring
 local SysTime = SysTime
+local byte = string.byte
+local floor = math.floor
+local frexp = math.frexp
+local ldexp = math.ldexp
+
+--[[
+	String buffer implementation.
+	Based on the SFS
+]]
+local chars = {}; do
+	for i = 0, 255 do
+		chars[i] = char(i)
+	end
+end
+
+-- Encoder
+local function write_str(buf, str)
+	local buf_len = buf[0] + 1
+
+	buf[0] = buf_len
+	buf[buf_len] = str
+end
+
+local function write_byte(buf, chr)
+	local buf_len = buf[0] + 1
+
+	buf[0] = buf_len
+	buf[buf_len] = chars[chr]
+end
+
+local function write_u16(buf, num)
+	num = num % 0x10000
+
+	write_byte(buf, num % 0x100)
+	write_byte(buf, floor(num / 0x100))
+end
+
+local function write_u32(buf, num)
+	num = num % 0x100000000
+
+	write_byte(buf, num % 0x100)
+	write_byte(buf, floor(num / 0x100) % 0x100)
+	write_byte(buf, floor(num / 0x10000) % 0x100)
+	write_byte(buf, floor(num / 0x1000000) % 0x100)
+end
+
+local function write_double(buf, num)
+	local u32_1 = 0
+	local u32_2 = 0
+
+	if num == 0 then
+		u32_1 = 0x00000000
+
+		if 1 / num < 0 then
+			u32_1 = 0x80000000
+		end
+	elseif num ~= num then
+		-- NaN
+		u32_1 = 0x7FFFFFFF
+		u32_2 = 1
+	else
+		local sign = num < 0 and 1 or 0
+		num = sign == 1 and -num or num
+
+		if num == math.huge then
+			u32_1 = (sign * (2 ^ 31)) + (0x7FF * (2 ^ 20))
+		else
+			local mantissa, exponent = frexp(num)
+			local ieee_exponent = exponent + 1022
+
+			if ieee_exponent > 0 then
+				-- Normal numbers
+				local mantissa_scaled = (mantissa * 2 - 1) * (2 ^ 52)
+				local mantissa_upper = floor(mantissa_scaled / (2 ^ 32))
+				local mantissa_lower = mantissa_scaled % (2 ^ 32)
+
+				u32_1 = (sign * (2 ^ 31)) + (ieee_exponent * (2 ^ 20)) + (mantissa_upper % (2 ^ 20))
+				u32_2 = mantissa_lower
+			else
+				-- Subnormal numbers
+				local mantissa_scaled = mantissa * ldexp(1, 52 + ieee_exponent)
+				local mantissa_upper = floor(mantissa_scaled / (2 ^ 32))
+				local mantissa_lower = mantissa_scaled % (2 ^ 32)
+
+				u32_1 = (sign * (2 ^ 31)) + (mantissa_upper % (2 ^ 20))
+				u32_2 = mantissa_lower
+			end
+		end
+	end
+
+	-- AD2 uses little-endian doubles
+	write_u32(buf, u32_2)
+	write_u32(buf, u32_1)
+end
+
+local function new_buffer()
+	return {
+		[0] = 0
+	}
+end
+
+local function end_buffer(buf)
+	return concat(buf, nil, 1, buf[0])
+end
+
+-- Decoder
+local function setup_context(bytes, max_size)
+	if type(bytes) ~= "string" then
+		return nil, "bytes must be a string"
+	end
+
+	if max_size == nil then
+		max_size = #bytes
+	elseif type(max_size) ~= "number" then
+		return nil, "max_size must be a number"
+	elseif max_size < 1 then
+		return nil, "max_size must be greater than 0"
+	end
+
+	return {
+		1,
+		bytes,
+		#bytes,
+		max_size
+	}
+end
+
+local function read_bytes(ctx, size)
+	local index = ctx[1]
+	local end_index = index + size - 1
+
+	if end_index > ctx[3] then
+		return nil, "bytes underflow"
+	elseif end_index > ctx[4] then
+		return nil, "bytes overflow"
+	end
+
+	ctx[1] = end_index + 1
+
+	return byte(ctx[2], index, end_index)
+end
+
+local function read_str(ctx, size)
+	local index = ctx[1]
+	local end_index = index + size - 1
+
+	if end_index > ctx[3] then
+		return nil, "bytes underflow"
+	elseif end_index > ctx[4] then
+		return nil, "bytes overflow"
+	end
+
+	ctx[1] = index + size
+
+	return sub(ctx[2], index, end_index)
+end
+
+local function read_byte(ctx)
+	local value = read_bytes(ctx, 1)
+
+	return value
+end
+
+local function read_u16(ctx)
+	local b1, b2 = read_bytes(ctx, 2)
+
+	if b1 == nil then
+		error(b2, 0)
+	end
+
+	return b1 + b2 * 0x100
+end
+
+local function read_short(ctx)
+	local num = read_u16(ctx)
+
+	if num >= 0x8000 then
+		num = num - 0x10000
+	end
+
+	return num
+end
+
+local function read_u32(ctx)
+	local b1, b2, b3, b4 = read_bytes(ctx, 4)
+
+	if b1 == nil then
+		error(b2, 0)
+	end
+
+	return b1 + b2 * 0x100 + b3 * 0x10000 + b4 * 0x1000000
+end
+
+local function read_double(ctx)
+	local u32_2 = read_u32(ctx)
+	local u32_1 = read_u32(ctx)
+
+	local sign = floor(u32_1 / (2 ^ 31)) % 2 == 1 and -1 or 1
+	local exponent = floor(u32_1 / (2 ^ 20)) % (2 ^ 11)
+	local mantissa_upper = u32_1 % (2 ^ 20)
+
+	if exponent == 0x7FF then
+		if mantissa_upper == 0 and u32_2 == 0 then
+			return sign * math.huge
+		end
+
+		return 0 / 0
+	end
+
+	if exponent == 0 and mantissa_upper == 0 and u32_2 == 0 then
+		return sign * 0
+	end
+
+	local mantissa_scaled = mantissa_upper * (2 ^ 32) + u32_2
+
+	if exponent ~= 0 then
+		mantissa_scaled = (mantissa_scaled / (2 ^ 52)) + 1
+
+		return sign * ldexp(mantissa_scaled, exponent - 1023)
+	else
+		mantissa_scaled = mantissa_scaled / (2 ^ 52)
+
+		return sign * ldexp(mantissa_scaled, -1022)
+	end
+end
+
+local function read_data(ctx, size)
+	local str, err = read_str(ctx, size)
+
+	if err then
+		error(err, 0)
+	end
+
+	return str
+end
+
+local function tell(ctx)
+	return ctx[1] - 1
+end
+
+local function seek(ctx, position)
+	ctx[1] = math.max(floor(position), 0) + 1
+end
 
 --[[
 	Name:	GenerateDupeStamp
@@ -93,25 +336,25 @@ local function write(obj)
 	enc[TypeID(obj)](obj)
 end
 
-local len, tables, tablesLookup
+local len, tables, tables_lookup
 
 enc[TYPE_TABLE] = function(obj) --table
-	if not tablesLookup[obj] then
+	if not tables_lookup[obj] then
 		tables = tables + 1
-		tablesLookup[obj] = tables
+		tables_lookup[obj] = tables
 	else
-		buff:WriteByte(247)
-		buff:WriteShort(tablesLookup[obj])
+		write_byte(buff, 247)
+		write_u16(buff, tables_lookup[obj])
 		return
 	end
 
 	if isArray(obj) then
-		buff:WriteByte(254)
+		write_byte(buff, 254)
 		for i, v in pairs(obj) do
 			write(v)
 		end
 	else
-		buff:WriteByte(255)
+		write_byte(buff, 255)
 		for k, v in pairs(obj) do
 			if(enc[TypeID(k)] ~= noserializer and enc[TypeID(v)] ~= noserializer) then
 				write(k)
@@ -119,47 +362,47 @@ enc[TYPE_TABLE] = function(obj) --table
 			end
 		end
 	end
-	buff:WriteByte(246)
+	write_byte(buff, 246)
 end
 
 enc[TYPE_BOOL] = function(obj) --boolean
-	buff:WriteByte(obj and 253 or 252)
+	write_byte(buff, obj and 253 or 252)
 end
 
 enc[TYPE_NUMBER] = function(obj) --number
-	buff:WriteByte(251)
-	buff:WriteDouble(obj)
+	write_byte(buff, 251)
+	write_double(buff, obj)
 end
 
 enc[TYPE_VECTOR] = function(obj) --vector
-	buff:WriteByte(250)
-	buff:WriteDouble(obj.x)
-	buff:WriteDouble(obj.y)
-	buff:WriteDouble(obj.z)
+	write_byte(buff, 250)
+	write_double(buff, obj.x)
+	write_double(buff, obj.y)
+	write_double(buff, obj.z)
 end
 
 enc[TYPE_ANGLE] = function(obj) --angle
-	buff:WriteByte(249)
-	buff:WriteDouble(obj.p)
-	buff:WriteDouble(obj.y)
-	buff:WriteDouble(obj.r)
+	write_byte(buff, 249)
+	write_double(buff, obj.p)
+	write_double(buff, obj.y)
+	write_double(buff, obj.r)
 end
 
 enc[TYPE_STRING] = function(obj) --string
 	len = #obj
 	if len < 246 then
-		buff:WriteByte(len)
-		buff:Write(obj)
+		write_byte(buff, len)
+		write_str(buff, obj)
 	else
-		buff:WriteByte(248)
-		buff:WriteULong(len)
-		buff:Write(obj)
+		write_byte(buff, 248)
+		write_u32(buff, len)
+		write_str(buff, obj)
 	end
 end
 
 local function error_nodeserializer()
-	buff:Seek(buff:Tell()-1)
-	error(format("Couldn't find deserializer for type {typeid:%d}!", buff:ReadByte()))
+	seek(buff, tell(buff)-1)
+	error(format("Couldn't find deserializer for type {typeid:%d}!", read_byte(buff)))
 end
 
 local chunk = 4096
@@ -198,7 +441,7 @@ do --Version 4
 	for i = 1, 255 do dec[i] = error_nodeserializer end
 
 	local function read()
-		local tt = buff:ReadByte()
+		local tt = read_byte(buff)
 		if not tt then
 			error("Expected value, got EOF!")
 		end
@@ -272,20 +515,20 @@ do --Version 4
 		return false
 	end
 	dec[251] = function()
-		return buff:ReadDouble()
+		return read_double(buff)
 	end
 	dec[250] = function()
-		return Vector(buff:ReadDouble(),buff:ReadDouble(),buff:ReadDouble())
+		return Vector(read_double(buff),read_double(buff),read_double(buff))
 	end
 	dec[249] = function()
-		return Angle(buff:ReadDouble(),buff:ReadDouble(),buff:ReadDouble())
+		return Angle(read_double(buff),read_double(buff),read_double(buff))
 	end
 	dec[248] = function() --null-terminated string
-		local start = buff:Tell()
+		local start = tell(buff)
 		local slen = 0
 
 		while true do
-			local byte = buff:ReadByte()
+			local byte = read_byte(buff)
 
 			if byte == 0 or not byte then
 				break
@@ -297,20 +540,20 @@ do --Version 4
 			end
 		end
 
-		buff:Seek(start)
+		seek(buff, start)
 
-		local retv = buff:Read(slen)
+		local retv = read_data(buff, slen)
 		if(not retv) then retv="" end
-		buff:ReadByte()
+		read_byte(buff)
 
 		return retv
 	end
 	dec[247] = function() --table reference
 		reference = reference + 1
-		return tables[buff:ReadShort()]
+		return tables[read_short(buff)]
 	end
 
-	for i = 1, 246 do dec[i] = function() return buff:Read(i) end end
+	for i = 1, 246 do dec[i] = function() return read_data(buff, i) end end
 end
 
 do --Version 5
@@ -318,7 +561,7 @@ do --Version 5
 	for i = 1, 255 do dec[i] = error_nodeserializer end
 
 	local function read()
-		local tt = buff:ReadByte()
+		local tt = read_byte(buff)
 
 		if not tt then
 			error("Expected value, got EOF!")
@@ -384,52 +627,52 @@ do --Version 5
 		return false
 	end
 	dec[251] = function()
-		return buff:ReadDouble()
+		return read_double(buff)
 	end
 	dec[250] = function()
-		return Vector(buff:ReadDouble(),buff:ReadDouble(),buff:ReadDouble())
+		return Vector(read_double(buff),read_double(buff),read_double(buff))
 	end
 	dec[249] = function()
-		return Angle(buff:ReadDouble(),buff:ReadDouble(),buff:ReadDouble())
+		return Angle(read_double(buff),read_double(buff),read_double(buff))
 	end
 	dec[248] = function() -- Length>246 string
-		local slen = buff:ReadULong()
-		local retv = buff:Read(slen)
+		local slen = read_u32(buff)
+		local retv = read_data(buff, slen)
 		if(not retv) then retv = "" end
 		return retv
 	end
 	dec[247] = function() --table reference
-		return tables[buff:ReadShort()]
+		return tables[read_short(buff)]
 	end
 	dec[246] = function() --nil
 		return
 	end
 
-	for i = 1, 245 do dec[i] = function() return buff:Read(i) end end
+	for i = 1, 245 do dec[i] = function() return read_data(buff, i) end end
 
 	dec[0] = function() return "" end
 end
 
 local function serialize(tbl)
 	tables = 0
-	tablesLookup = {}
+	tables_lookup = {}
 
-	buff = file.Open("ad2temp.txt", "wb", "DATA")
-	if not buff then error("Failed to open file data/ad2temp.txt for writing!") end
-	write(tbl)
-	buff:Close()
+	local buffer = new_buffer()
+	buff = buffer
 
-	buff = file.Open("ad2temp.txt","rb","DATA")
-	if not buff then error("Failed to open file data/ad2temp.txt for reading!") end
-	local ret = buff:Read(buff:Size())
-	buff:Close()
-	return ret
+	local success, err = pcall(write, tbl)
+
+	buff = nil
+
+	if not success then
+		error(err, 0)
+	end
+
+	return end_buffer(buffer)
 end
 
-
 local function deserialize(str, read)
-
-	if(str == nil) then
+	if not str then
 		error("File could not be decompressed!")
 		return {}
 	end
@@ -438,16 +681,18 @@ local function deserialize(str, read)
 
 	tables = {}
 	reference = 0
-	buff = file.Open("ad2temp.txt","wb","DATA")
-	if not buff then error("Failed to open file data/ad2temp.txt for writing!") end
-	buff:Write(str)
-	buff:Flush()
-	buff:Close()
 
-	buff = file.Open("ad2temp.txt","rb", "DATA")
-	if not buff then error("Failed to open file data/ad2temp.txt for reading!") end
+	local context, err = setup_context(str, #str)
+
+	if not context then
+		error(err, 0)
+	end
+
+	buff = context
+
 	local success, tbl = pcall(read)
-	buff:Close()
+
+	buff = nil
 	tables = nil
 
 	if success then
