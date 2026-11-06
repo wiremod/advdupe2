@@ -658,6 +658,8 @@ do
 	-- Call this to close and pop later.
 	-- This also forces Blocking back to false for main UI panel.
 	function USERPROMPT:Close()
+		if self.OnClose and not self.Closing then self:OnClose() end
+
 		self.Blocking    = false
 		self.Closing     = true
 		self.StartClose  = UserInterfaceTimeFunc()
@@ -1049,6 +1051,12 @@ local function CollectSearchResults(Node, Needle, Results)
 	end
 end
 
+function BROWSERTREE:GetNodeIndex(Node)
+	for Index, ENode in ipairs(self.ExpandedNodeArray) do
+		if ENode == Node then return Index end
+	end
+end
+
 function BROWSERTREE:IsSearching()
 	return self.SearchResults ~= nil
 end
@@ -1249,7 +1257,9 @@ function BROWSERTREE:PaintCurrentState(PanelWidth, PanelHeight)
 			-- Paint background
 			if IsDepressed then
 				SkinTex.Panels.Dark(NX, NY, NW, NH, color_white)
-			elseif IsHovered then
+			elseif Node.Selected and self.FolderPick and self.FolderPick(Node) then
+				SkinTex.Panels.Highlight(NX, NY, NW, NH, color_white)
+			elseif Node.Selected or IsHovered then
 				SkinTex.Panels.Bright(NX, NY, NW, NH, color_white)
 			else
 				SkinTex.Panels.Normal(NX, NY, NW, NH, color_white)
@@ -1352,14 +1362,36 @@ function BROWSER:SetViewType(ViewType)
 	self:MarkSortDirty()
 end
 
+function BROWSER:KeepSelectedInPlace(Change)
+	local Tree     = self.TreeView
+	local Selected = Tree:GetSelectedItem()
+	if not Selected then return Change() end
+
+	Tree:SortRecheck()
+	local OldIndex = Tree:GetNodeIndex(Selected)
+
+	Change()
+	if not OldIndex then return end
+
+	Tree:SortRecheck()
+	local NewIndex = Tree:GetNodeIndex(Selected)
+	if not NewIndex then return end
+
+	Tree.VBar:SetScroll(Tree.VBar:GetScroll() + ((NewIndex - OldIndex) * TallOfOneNode))
+end
+
 function BROWSER:SetSortType(SortType)
-	self.TreeView.SortType = SortType or error("No sorttype provided")
-	self:MarkSortDirty()
+	self:KeepSelectedInPlace(function()
+		self.TreeView.SortType = SortType or error("No sorttype provided")
+		self:MarkSortDirty()
+	end)
 end
 
 function BROWSER:SetAscending(Ascending)
-	self.TreeView.Ascending = Ascending == true
-	self:MarkSortDirty()
+	self:KeepSelectedInPlace(function()
+		self.TreeView.Ascending = Ascending == true
+		self:MarkSortDirty()
+	end)
 end
 
 function BROWSER:MarkSortDirty()
@@ -1498,11 +1530,40 @@ local function SetupNameEntry(Entry, NameFilter)
 	end
 end
 
+local function FollowSelection(Label, Tree, GetText)
+	local LastText
+
+	function Label:Think()
+		DLabel.Think(self)
+
+		local Text = GetText(Tree:GetSelectedItem())
+		if Text ~= LastText then
+			LastText = Text
+			self:SetText(Text)
+		end
+	end
+end
+
 local function SharedFileFolderLogic(self, Node, DoDesc, NameTextPlaceholder, DescTextPlaceholder, Icon, Completed, LastName, LastDesc, NameFilter, PickFolder)
 	local Prompt = self:PushUserPrompt()
 	Prompt:SetBlocking(not PickFolder)
 	Prompt:SetDock(BOTTOM)
 	Prompt.Panel:DockPadding(4,4,4,4)
+
+	if PickFolder then
+		local function IsValidTarget(Target) return Target ~= nil and Target:IsFolder() end
+		self:SetFolderPick(Prompt, IsValidTarget)
+
+		local Where = Prompt:Add("DLabel")
+			Where:Dock(TOP)
+			Where:SetDark(true)
+			Where:SetTall(18)
+
+		FollowSelection(Where, self.TreeView, function(Target)
+			if IsValidTarget(Target) then return "Save to " .. Target.Path end
+			return "Select a folder to save to."
+		end)
+	end
 
 	local Name, Desc, Cancel, Save
 
@@ -1862,6 +1923,15 @@ function BROWSER:StartDelete(Node)
 	end
 end
 
+function BROWSER:SetFolderPick(Prompt, Validate)
+	local Tree = self.TreeView
+	Tree.FolderPick = Validate
+
+	Prompt.OnClose = function()
+		if Tree.FolderPick == Validate then Tree.FolderPick = nil end
+	end
+end
+
 function BROWSER:StartPickFolder(NamePlaceholder, DescPlaceholder, Icon, Callback, NameFilter)
 	SharedFileFolderLogic(self, nil, true, NamePlaceholder, DescPlaceholder, Icon, function(_, _, Folder, FileName, Desc)
 		Callback(Folder, FileName, Desc)
@@ -1894,12 +1964,21 @@ function BROWSER:StartMove(Node)
 		Move:SetStretchToFit(false)
 		Move:SetImage("icon16/page_paste.png")
 
+	local function IsValidTarget(Target)
+		return Target ~= nil and Target:IsFolder() and Target.Root == Node.Root and Target ~= Node.ParentNode
+	end
+	self:SetFolderPick(Prompt, IsValidTarget)
+
 	local Name = DescParent:Add("DLabel")
 		Name:Dock(FILL)
 		Name:SetDark(true)
-		Name:SetText("Select the folder you want to move\n" .. Node.Text .. " to.")
 		Name:SetAutoStretchVertical(true)
 		Name:SetZPos(1)
+
+	FollowSelection(Name, self.TreeView, function(Target)
+		if IsValidTarget(Target) then return "Move \"" .. Node.Text .. "\" to\n" .. Target.Path end
+		return "Select the folder you want to move\n" .. Node.Text .. " to."
+	end)
 
 	function Move.DoClick()
 		local Target = self.TreeView:GetSelectedItem()
@@ -2116,16 +2195,8 @@ end
 
 function BROWSER:ScrollTo(Node)
 	self.TreeView:SortRecheck()
-	local Index = -1
-
-	for K, ENode in ipairs(self.TreeView.ExpandedNodeArray) do
-		if ENode == Node then
-			Index = K
-			break
-		end
-	end
-
-	if Index == -1 then return end
+	local Index = self.TreeView:GetNodeIndex(Node)
+	if not Index then return end
 
 	local ScrollPos = math.Max(0, (Index * TallOfOneNode) - (self:GetTall() / 2))
 	self.TreeView.VBar:SetScroll(ScrollPos)
