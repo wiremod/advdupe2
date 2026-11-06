@@ -1077,15 +1077,8 @@ if(CLIENT) then
 		Panel:AddItem(Spacer)
 	end
 
-	local BuildCPanel
-	function BuildCPanel(CPanel)
+	local function BuildCPanel(CPanel)
 		CPanel:ClearControls()
-
-		local refresh = vgui.Create("DButton")
-		refresh:SetText("Hard-refresh")
-		refresh:Dock(TOP)
-		refresh.DoClick = function() CPanel:Clear() BuildCPanel(CPanel) end
-		CPanel:AddItem(refresh)
 
 		local FileBrowser = vgui.Create("advdupe2_browser", CPanel)
 		CPanel:AddItem(FileBrowser)

@@ -2148,10 +2148,6 @@ function PANEL:PerformLayout(w, h)
 	if (self:GetWide() == self.LastX) then return end
 	local x = self:GetWide()
 
-	if (self.Search) then
-		self.Search:SetWide(x)
-	end
-
 	self.Browser:SetWide(x)
 
 	local BtnX
@@ -2182,11 +2178,6 @@ local function PanelSetSize(self, x, y)
 
 		self.Browser:SetSize(x, y - 24)
 		self.Browser:SetPos(0, 24)
-
-		if (self.Search) then
-			self.Search:SetSize(x, y - 24)
-			self.Search:SetPos(0, 24)
-		end
 
 		self.LaidOut = true
 	else
@@ -2261,10 +2252,7 @@ local COLOR_SELECTED = color_white
 local COLOR_UNSELECTED = Color(143, 143, 143, 143)
 
 function PANEL:Init()
-	self.Expanded = false
-	self.Expanding = false
 	self.LastX = 0
-	self.LastY = 0
 	pnlorigsetsize = self.SetSize
 	self.SetSize = PanelSetSize
 
@@ -2280,16 +2268,6 @@ function PANEL:Init()
 	end)
 	do
 		self:AddLeftsideDivider()
-		self.SwitchToTree  = self:AddLeftsideButton("application_view_detail", "Tree view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
-		self.SwitchToList  = self:AddLeftsideButton("application_view_list", "List view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
-		self.SwitchToTiles = self:AddLeftsideButton("application_view_tile", "Tile view", function() self.Browser:Notify("Not yet implemented!", NOTIFY_ERROR, 3) end)
-
-		self.SwitchToTree.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TREE and COLOR_SELECTED or COLOR_UNSELECTED) end
-		self.SwitchToList.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_LIST and COLOR_SELECTED or COLOR_UNSELECTED) end
-		self.SwitchToTiles.Think = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.ViewType == VIEWTYPE_TILES and COLOR_SELECTED or COLOR_UNSELECTED) end
-	end
-	do
-		self:AddLeftsideDivider()
 		self.SwitchToName  = self:AddLeftsideButton("text_replace", "Sort by Name", function() self.Browser:SetSortType(SORTTYPE_NAME) end)
 		self.SwitchToTime  = self:AddLeftsideButton("time", "Sort by Time", function() self.Browser:SetSortType(SORTTYPE_TIME) end)
 
@@ -2301,11 +2279,10 @@ function PANEL:Init()
 
 		self.SwitchToName.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.SortType == SORTTYPE_NAME and COLOR_SELECTED or COLOR_UNSELECTED) end
 		self.SwitchToTime.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.SortType == SORTTYPE_TIME and COLOR_SELECTED or COLOR_UNSELECTED) end
-		self.SwitchAscending.Think  = function(b) b.m_Image:SetImageColor(self.Browser.TreeView.Ascending and COLOR_SELECTED or COLOR_UNSELECTED) end
-		self.SwitchDescending.Think  = function(b) b.m_Image:SetImageColor(not self.Browser.TreeView.Ascending and COLOR_SELECTED or COLOR_UNSELECTED) end
 	end
 	self.Refresh = self:AddRightsideButton("arrow_refresh", "Refresh Files", function(button)
 		self.Browser:ClearAllUserPrompts()
+		self.SettingsPanel = nil
 		self.Settings:SetImage("icon16/cog.png")
 		UpdateClientFiles(self.Browser)
 	end)
