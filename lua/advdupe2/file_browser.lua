@@ -752,6 +752,9 @@ do
 			Menu:AddOption("New Folder", function() Browser:StartFolder(Node) end, "icon16/folder_add.png")
 			Menu:AddSpacer()
 			Menu:AddOption("Search",     function() Browser:StartSearch(Node) end, "icon16/magnifier.png")
+			if not Node:IsRoot() then
+				Menu:AddOption("Delete", function() Browser:StartDelete(Node) end, "icon16/bin_closed.png")
+			end
 		end
 	end
 
@@ -873,6 +876,12 @@ function BROWSERTREE:DoNodeRightClick(Node)
 	end
 
 	RootImpl:UserMenu(self.Browser, Node, Menu)
+
+	Menu:AddSpacer()
+	Menu:AddOption("Collapse Folder", function()
+		if Node.ParentNode ~= self then Node.ParentNode:CollapseRecursive() end
+	end, "icon16/arrow_in.png")
+	Menu:AddOption("Collapse Root", function() Node.Root:CollapseRecursive() end, "icon16/arrow_up.png")
 
 	Menu:SetAlpha(0)
 	Menu:AlphaTo(255, 0.1, 0)
@@ -1702,7 +1711,7 @@ function BROWSER:StartDelete(Node)
 	local Name = DescParent:Add("DLabel")
 		Name:Dock(FILL)
 		Name:SetDark(true)
-		Name:SetText("Are you sure to want to delete\n" .. Node.Path .. "?")
+		Name:SetText("Are you sure you want to delete\n" .. Node.Path .. "?")
 		Name:SetAutoStretchVertical(true)
 		Name:SetZPos(1)
 

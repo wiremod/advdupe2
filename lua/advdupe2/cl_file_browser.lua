@@ -45,6 +45,11 @@ end
 local AdvDupe2Root = DataFolderRoot("Advanced Duplicator 2", AdvDupe2.DataFolder)
 AdvDupe2Root.Area  = AdvDupe2.AREA_ADVDUPE2
 
+function AdvDupe2Root:Init(Browser, Node)
+	DataFolderRoot.Init(self, Browser, Node)
+	Node:Expand()
+end
+
 function AdvDupe2Root:GetPlaceholderText(Field)
 	if Field == "SaveName" then return "Dupe name" end
 	if Field == "SaveDescription" then return "Dupe description" end
@@ -87,33 +92,7 @@ function AdvDupe2Root:UserSave(Browser, Node, Filename, Description)
 	RunConsoleCommand("AdvDupe2_SaveFile", Filename, Description)
 end
 
-local AdvDupe1Root = DataFolderRoot("Advanced Duplicator 1", "adv_duplicator")
-AdvDupe1Root.Area  = AdvDupe2.AREA_ADVDUPE1
-
-function AdvDupe1Root:Init(Browser, Node)
-	DataFolderRoot.Init(self, Browser, Node)
-
-	if Node:Count() < 0 then
-		Node:Remove()
-	end
-end
-
-function AdvDupe1Root:UserLoad(Browser, Node)
-	AdvDupe2.UploadFile(GetNodeDataPath(Node), self.Area)
-end
-
-function AdvDupe1Root:UserPreview(Browser, Node)
-	OpenPreview(Node)
-end
-
-function AdvDupe1Root:UserMenu(Browser, Node, Menu)
-	if Node:IsFile() then
-		Menu:AddOption("Open", function() self:UserLoad(Browser, Node) end, "icon16/page_go.png")
-	end
-end
-
 hook.Add("AdvDupe2_PostMenuFolders", "AdvDupe2_RootFolders", function(Browser)
-	Browser:AddRootFolder(AdvDupe1Root)
 	Browser:AddRootFolder(AdvDupe2Root)
 end)
 
