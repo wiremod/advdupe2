@@ -18,7 +18,8 @@ function AdvDupe2.Notify(ply,msg,typ, showsvr, dur)
 end
 
 AddCSLuaFile( "autorun/client/advdupe2_cl_init.lua" )
-AddCSLuaFile( "advdupe2/file_browser.lua" )
+AddCSLuaFile( "advdupe2/file_browser/init.lua" )
+include( "advdupe2/file_browser/init.lua" )
 AddCSLuaFile( "advdupe2/cl_file_browser.lua" )
 AddCSLuaFile( "advdupe2/sh_codec.lua" )
 AddCSLuaFile( "advdupe2/cl_file.lua" )

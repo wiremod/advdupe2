@@ -1080,7 +1080,7 @@ if(CLIENT) then
 	local function BuildCPanel(CPanel)
 		CPanel:ClearControls()
 
-		local FileBrowser = vgui.Create("advdupe2_browser", CPanel)
+		local FileBrowser = AdvDupe2.CreateFileBrowser(CPanel)
 		CPanel:AddItem(FileBrowser)
 		FileBrowser:SetSize(CPanel:GetWide(), 405)
 		AdvDupe2.FileBrowser = FileBrowser

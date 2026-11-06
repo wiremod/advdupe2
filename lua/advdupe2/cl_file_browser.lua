@@ -1,4 +1,7 @@
-local DataFolderRoot = AdvDupe2.DataFolderRoot
+local FileBrowser    = include("advdupe2/file_browser/init.lua")
+local DataFolderRoot = FileBrowser.DataFolderRoot
+
+AdvDupe2.FileBrowserLibrary = FileBrowser
 
 -- This turns a data-folder path name into something AdvDupe2.UploadFile can tolerate
 local function GetNodeDataPath(Node)
@@ -97,11 +100,7 @@ function AdvDupe2Root:UserSave(Browser, Node, Filename, Description)
 	RunConsoleCommand("AdvDupe2_SaveFile", Filename, Description)
 end
 
-hook.Add("AdvDupe2_PostMenuFolders", "AdvDupe2_RootFolders", function(Browser)
-	Browser:AddRootFolder(AdvDupe2Root)
-end)
-
-hook.Add("AdvDupe2_BrowserCreated", "AdvDupe2_HelpButton", function(Panel)
+local function AddHelpButton(Panel)
 	Panel.Help = Panel:AddRightsideButton("help", "Help Section", function()
 		local Menu = DermaMenu()
 		Menu:AddOption("Bug Reporting", function()
@@ -115,15 +114,13 @@ hook.Add("AdvDupe2_BrowserCreated", "AdvDupe2_HelpButton", function(Panel)
 		end)
 		Menu:Open()
 	end, 2)
-end)
+end
 
-local BrowserControl = vgui.GetControlTable("advdupe2_browser")
-
-function BrowserControl:GetNodePath(Node)
+local function GetNodePath(_, Node)
 	return GetNodeDataPath(Node), Node.Root.RootImpl.Area
 end
 
-function BrowserControl:GetFullPath(Node)
+local function GetFullPath(_, Node)
 	local BasePath     = Node.Root.RootImpl.BasePath
 	local RelativePath = GetNodeDataPath(Node)
 
@@ -132,4 +129,17 @@ function BrowserControl:GetFullPath(Node)
 	end
 
 	return BasePath .. "/" .. RelativePath .. "/"
+end
+
+function AdvDupe2.CreateFileBrowser(Parent)
+	local Settings = FileBrowser.CreateSettings("advdupe2")
+	Settings:AddRootFolder(AdvDupe2Root)
+	Settings:OnBrowserCreated(AddHelpButton)
+
+	hook.Run("AdvDupe2_FileBrowserSettings", Settings)
+
+	local Panel = FileBrowser.Create(Settings, Parent)
+	Panel.GetNodePath = GetNodePath
+	Panel.GetFullPath = GetFullPath
+	return Panel
 end
