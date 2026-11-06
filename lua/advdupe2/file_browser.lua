@@ -16,51 +16,64 @@ local count = 0
 
 local function AddHistory(txt)
 	txt = string.lower(txt)
-	local char1 = txt[1]
-	local char2
+
 	for i = 1, #History do
-		char2 = History[i][1]
-		if (char1 == char2) then
-			if (History[i] == txt) then
-				return
-			end
-		elseif (char1 < char2) then
-			break
+		if (History[i] == txt) then return end
+
+		if (txt < History[i]) then
+			table.insert(History, i, txt)
+			return
 		end
 	end
 
-	table.insert(History, txt)
-	table.sort(History, function(a, b) return a < b end)
+	History[#History + 1] = txt
 end
 
 local function NarrowHistory(txt, last)
 	txt = string.lower(txt)
+
 	local temp = {}
+	local tempCount = 0
+
 	if (last <= #txt and last ~= 0 and #txt ~= 1) then
+		local targetChar = txt[last + 1]
+
 		for i = 1, #Narrow do
-			if (Narrow[i][last + 1] == txt[last + 1]) then
-				table.insert(temp, Narrow[i])
-			elseif (Narrow[i][last + 1] ~= '') then
+			local entry = Narrow[i]
+			local char = entry[last + 1]
+
+			if (char == targetChar) then
+				tempCount = tempCount + 1
+				temp[tempCount] = entry
+			elseif (char ~= "") then
 				break
 			end
 		end
 	else
 		local char1 = txt[1]
-		local char2
+
 		for i = 1, #History do
-			char2 = History[i][1]
+			local entry = History[i]
+			local char2 = entry[1]
+
 			if (char1 == char2) then
 				if (#txt > 1) then
+					local matched = true
+
 					for k = 2, #txt do
-						if (txt[k] ~= History[i][k]) then
+						if (txt[k] ~= entry[k]) then
+							matched = false
 							break
 						end
-						if (k == #txt) then
-							table.insert(temp, History[i])
-						end
+					end
+
+					if (matched) then
+						tempCount = tempCount + 1
+						temp[tempCount] = entry
 					end
 				else
-					table.insert(temp, History[i])
+					tempCount = tempCount + 1
+					temp[tempCount] = entry
 				end
 			elseif (char1 < char2) then
 				break
@@ -369,28 +382,32 @@ end
 local function DeleteFilesInFolders(path)
 	local files, folders = file.Find(path .. "*", "DATA")
 
-	for k, v in pairs(files) do file.Delete(path .. v) end
+	for i = 1, #files do
+		file.Delete(path .. files[i])
+	end
 
-	for k, v in pairs(folders) do DeleteFilesInFolders(path .. v .. "/") end
+	for i = 1, #folders do
+		DeleteFilesInFolders(path .. folders[i] .. "/")
+	end
 
 	file.Delete(path)
 end
 
-local function SearchNodes(node, name)
-	local tab = {}
-	for k, v in pairs(node.Files) do
-		if (string.find(string.lower(v.Label:GetText()), name)) then
-			table.insert(tab, v)
+local function SearchNodes(node, name, results)
+	results = results or {}
+
+	for i = 1, #node.Files do
+		local fileNode = node.Files[i]
+		if (string.find(string.lower(fileNode.Label:GetText()), name)) then
+			results[#results + 1] = fileNode
 		end
 	end
 
-	for k, v in pairs(node.Folders) do
-		for i, j in pairs(SearchNodes(v, name)) do
-			table.insert(tab, j)
-		end
+	for i = 1, #node.Folders do
+		SearchNodes(node.Folders[i], name, results)
 	end
 
-	return tab
+	return results
 end
 
 local function Search(node, name)
@@ -402,7 +419,8 @@ local function Search(node, name)
 	pnFileBr.Browser:SetVisible(false)
 	local Files = SearchNodes(node, name)
 	tableSortNodes(Files)
-	for k, v in pairs(Files) do
+	for i = 1, #Files do
+		local v = Files[i]
 		pnFileBr.Search.pnlCanvas:AddFile(v.Label:GetText()).Ref = v
 	end
 end
